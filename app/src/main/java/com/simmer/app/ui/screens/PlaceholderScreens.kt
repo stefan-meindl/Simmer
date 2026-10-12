@@ -6,10 +6,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.DarkMode
-import androidx.compose.material.icons.outlined.LightMode
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -23,7 +19,9 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.simmer.app.R
 import com.simmer.app.ui.theme.LocalSimmerColors
 
 // ---------------------------------------------------------------------------
@@ -62,7 +60,7 @@ fun RecipesPlaceholder(
                 actions = {
                     IconButton(onClick = onThemeToggle) {
                         Icon(
-                            imageVector = if (isDarkTheme) Icons.Outlined.LightMode else Icons.Outlined.DarkMode,
+                            painter = painterResource(if (isDarkTheme) R.drawable.ic_sun else R.drawable.ic_moon),
                             contentDescription = if (isDarkTheme) "Switch to light theme" else "Switch to dark theme",
                             tint = colors.textPrimary,
                         )
@@ -109,7 +107,7 @@ private fun RecipeFlowScaffold(
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(
-                            imageVector = Icons.AutoMirrored.Outlined.ArrowBack,
+                            painter = painterResource(R.drawable.ic_arrow_left),
                             contentDescription = "Back",
                             tint = colors.textPrimary,
                         )
