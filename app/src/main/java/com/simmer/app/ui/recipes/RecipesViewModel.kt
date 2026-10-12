@@ -21,7 +21,7 @@ private const val KEY_TAGS = "tags"
 
 sealed interface RecipesUi {
     data object Loading : RecipesUi
-    data class Content(val overview: RecipesOverview, val tags: Set<String>) : RecipesUi
+    data class Content(val overview: RecipesOverview) : RecipesUi
 }
 
 /** Filters live in [SavedStateHandle], so they survive rotation and process death. */
@@ -42,7 +42,7 @@ class RecipesViewModel @Inject constructor(
         recipes.recipes, shopping.planned, query, category, tags,
     ) { all, planned, query, category, tags ->
         val filters = RecipeFilters(query, category, tags.toSet())
-        RecipesUi.Content(recipesOverview(all, planned, filters), filters.tags)
+        RecipesUi.Content(recipesOverview(all, planned, filters))
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecipesUi.Loading)
 
     fun setQuery(query: String) {

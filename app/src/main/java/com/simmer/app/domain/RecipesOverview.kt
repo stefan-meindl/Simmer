@@ -12,11 +12,10 @@ data class RecipeFilters(
     val tags: Set<String> = emptySet(),
 )
 
-/** A Planned Recipe with the label of each non-default swap and each add-in that is on. */
+/** A Planned Recipe and its saved choice. */
 data class PlannedEntry(
     val recipe: Recipe,
     val choice: PlannedChoice,
-    val variationLabels: List<String>,
 )
 
 /** Everything the Recipes overview shows for a set of recipes, Planned Recipes and filters. */
@@ -25,10 +24,18 @@ data class RecipesOverview(
     val categories: List<String>,
     /** The active category, or null for All (also when the chosen one is no longer present). */
     val category: String?,
+    /** Tags currently selected; they AND with each other, the category and the search. */
+    val tags: Set<String>,
     val recipes: List<Recipe>,
     val planned: List<PlannedEntry>,
     val filtersActive: Boolean,
-)
+) {
+    /** Index of the active tab: 0 is "All", then [categories] in order. */
+    val selectedTab: Int get() = category?.let { categories.indexOf(it) + 1 } ?: 0
+
+    /** The category a tab index stands for; 0 ("All") is null. */
+    fun categoryForTab(index: Int): String? = categories.getOrNull(index - 1)
+}
 
 /**
  * Filters [all] by title or ingredient name ([RecipeFilters.query]), category and tags, which all AND.
@@ -52,9 +59,10 @@ fun recipesOverview(
     return RecipesOverview(
         categories = categories,
         category = category,
+        tags = filters.tags,
         recipes = visible,
         planned = all.mapNotNull { r ->
-            planned[r.id]?.let { PlannedEntry(r, it, selectionLabels(r, it.selection)) }
+            planned[r.id]?.let { PlannedEntry(r, it) }
         },
         filtersActive = query.isNotEmpty() || category != null || filters.tags.isNotEmpty(),
     )

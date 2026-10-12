@@ -37,6 +37,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -49,6 +50,7 @@ import com.simmer.app.domain.FILTER_TAGS
 import com.simmer.app.domain.PlannedEntry
 import com.simmer.app.domain.RecipesOverview
 import com.simmer.app.domain.model.Recipe
+import com.simmer.app.domain.selectionSummary
 import com.simmer.app.ui.components.Badge
 import com.simmer.app.ui.components.BadgeVariant
 import com.simmer.app.ui.components.FilterChip
@@ -109,18 +111,16 @@ fun RecipesScreen(
                 val overview = content.overview
                 item(key = "tabs") {
                     val labels = listOf(stringResource(R.string.recipes_all)) +
-                        overview.categories.map { categoryLabel(it) }
+                        overview.categories.map { displayLabel(it) }
                     UnderlineTabs(
                         tabs = labels,
-                        selectedIndex = overview.category?.let { overview.categories.indexOf(it) + 1 } ?: 0,
-                        onTabSelected = { i ->
-                            viewModel.selectCategory(if (i == 0) null else overview.categories[i - 1])
-                        },
+                        selectedIndex = overview.selectedTab,
+                        onTabSelected = { viewModel.selectCategory(overview.categoryForTab(it)) },
                         scrollable = true,
                     )
                 }
                 item(key = "chips") {
-                    TagChips(content.tags, viewModel::toggleTag)
+                    TagChips(overview.tags, viewModel::toggleTag)
                 }
                 if (overview.planned.isNotEmpty()) {
                     item(key = "planned-title") { SectionTitle(stringResource(R.string.recipes_planned)) }
@@ -186,7 +186,7 @@ private fun TagChips(selected: Set<String>, onToggle: (String) -> Unit) {
         modifier = Modifier.fillMaxWidth(),
     ) {
         FILTER_TAGS.forEach { tag ->
-            FilterChip(label = tagLabel(tag), selected = tag in selected, onToggle = { onToggle(tag) })
+            FilterChip(label = displayLabel(tag), selected = tag in selected, onToggle = { onToggle(tag) })
         }
     }
 }
@@ -205,7 +205,8 @@ private fun SectionTitle(text: String) {
 private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit) {
     val colors = LocalSimmerColors.current
     val servings = pluralStringResource(R.plurals.flow_servings_count, entry.choice.servings, entry.choice.servings)
-    val summary = (listOf(servings) + entry.variationLabels).joinToString(" · ")
+    val summary = selectionSummary(entry.recipe, entry.choice.selection, servings)
+    val continueLabel = stringResource(R.string.recipes_continue_description, entry.recipe.title)
     val shape = RoundedCornerShape(12.dp)
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -220,7 +221,11 @@ private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit) {
             Text(entry.recipe.title, style = SimmerTextStyle_BodyMdMedium, color = colors.textPrimary)
             Text(summary, style = SimmerTextStyle_BodySm, color = colors.textSecondary)
         }
-        PrimaryButton(text = stringResource(R.string.recipes_continue), onClick = onContinue)
+        PrimaryButton(
+            text = stringResource(R.string.recipes_continue),
+            onClick = onContinue,
+            modifier = Modifier.semantics { contentDescription = continueLabel },
+        )
     }
 }
 
@@ -302,7 +307,7 @@ private fun RecipeCard(recipe: Recipe, onClick: () -> Unit) {
                     text = stringResource(
                         R.string.recipes_meta,
                         formatMinutes(recipe.time),
-                        difficultyLabel(recipe.difficulty),
+                        displayLabel(recipe.difficulty),
                     ),
                     style = SimmerTextStyle_BodySm,
                     color = colors.textSecondary,
@@ -317,7 +322,7 @@ private fun RecipeCard(recipe: Recipe, onClick: () -> Unit) {
                 }
                 if (recipe.tags.isNotEmpty()) {
                     Text(
-                        text = recipe.tags.map { tagLabel(it) }.joinToString(" · "),
+                        text = recipe.tags.map { displayLabel(it) }.joinToString(" · "),
                         style = SimmerTextStyle_Caption,
                         color = colors.textTertiary,
                     )
@@ -334,36 +339,28 @@ private fun CardBadges(recipe: Recipe) {
         horizontalArrangement = Arrangement.spacedBy(6.dp),
         verticalArrangement = Arrangement.spacedBy(6.dp),
     ) {
-        Badge(label = categoryLabel(recipe.category), variant = BadgeVariant.Cream)
+        Badge(label = displayLabel(recipe.category), variant = BadgeVariant.Cream)
         if (recipe.mine) Badge(label = stringResource(R.string.recipes_mine), variant = BadgeVariant.Primary)
         if (recipe.edited) Badge(label = stringResource(R.string.recipes_edited), variant = BadgeVariant.Dark)
     }
 }
 
-/** Localised category; categories without a translation (User Recipes) show as written. */
-@Composable
-private fun categoryLabel(category: String): String = when (category) {
-    "Mains" -> stringResource(R.string.category_mains)
-    "Pasta" -> stringResource(R.string.category_pasta)
-    "Breakfast" -> stringResource(R.string.category_breakfast)
-    "Sides" -> stringResource(R.string.category_sides)
-    else -> category
-}
+/** Stored (English) category, tag and difficulty values that have a translation. */
+internal val DISPLAY_LABELS: Map<String, Int> = mapOf(
+    "Mains" to R.string.category_mains,
+    "Pasta" to R.string.category_pasta,
+    "Breakfast" to R.string.category_breakfast,
+    "Sides" to R.string.category_sides,
+    "Vegetarian" to R.string.tag_vegetarian,
+    "Quick" to R.string.tag_quick,
+    "Spicy" to R.string.tag_spicy,
+    "One-pot" to R.string.tag_one_pot,
+    "Make-ahead" to R.string.tag_make_ahead,
+    "Easy" to R.string.difficulty_easy,
+    "Medium" to R.string.difficulty_medium,
+    "Hard" to R.string.difficulty_hard,
+)
 
+/** Localised category, tag or difficulty; values without a translation (User Recipes) show as written. */
 @Composable
-private fun tagLabel(tag: String): String = when (tag) {
-    "Vegetarian" -> stringResource(R.string.tag_vegetarian)
-    "Quick" -> stringResource(R.string.tag_quick)
-    "Spicy" -> stringResource(R.string.tag_spicy)
-    "One-pot" -> stringResource(R.string.tag_one_pot)
-    "Make-ahead" -> stringResource(R.string.tag_make_ahead)
-    else -> tag
-}
-
-@Composable
-private fun difficultyLabel(difficulty: String): String = when (difficulty) {
-    "Easy" -> stringResource(R.string.difficulty_easy)
-    "Medium" -> stringResource(R.string.difficulty_medium)
-    "Hard" -> stringResource(R.string.difficulty_hard)
-    else -> difficulty
-}
+private fun displayLabel(raw: String): String = DISPLAY_LABELS[raw]?.let { stringResource(it) } ?: raw
