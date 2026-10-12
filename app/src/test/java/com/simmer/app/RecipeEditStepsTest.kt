@@ -53,8 +53,33 @@ class RecipeEditStepsTest {
         fun secs(m: String) = d.updateStep(key) { it.copy(minutes = m) }.toRecipe().steps.first { it.id == "p-spice" }.durationSecs
         assertEquals(90, secs("1.5"))
         assertEquals(90, secs("1,5"))
-        assertEquals(30, secs("0.1"))
-        assertEquals(120, secs("oops"))
+        assertEquals(6, secs("0.1"))
+        assertEquals(15, secs("0.25"))
+    }
+
+    @Test fun `empty or zero timer means no timer`() {
+        val d = draft()
+        val key = d.stepKey("p-spice")
+        fun secs(m: String) = d.updateStep(key) { it.copy(minutes = m) }.toRecipe().steps.first { it.id == "p-spice" }.durationSecs
+        assertEquals(0, secs(""))
+        assertEquals(0, secs("  "))
+        assertEquals(0, secs("0"))
+        assertEquals(0, secs("0,0"))
+    }
+
+    @Test fun `a step without a timer opens with an empty field and stays without`() {
+        val step = chilli.steps.first { it.id == "p-spice" }.copy(durationSecs = 0)
+        val d = RecipeDraft.from(chilli.copy(steps = listOf(step)))
+        assertEquals("", d.steps.single().minutes)
+        assertEquals(0, d.toRecipe().steps.single().durationSecs)
+    }
+
+    @Test fun `new steps start without a timer`() {
+        val d = draft().addStep("cook")
+        val row = d.steps.last()
+        assertEquals("", row.minutes)
+        val filled = d.updateStep(row.key) { it.copy(text = "Stir.") }.toRecipe()
+        assertEquals(0, filled.steps.last().durationSecs)
     }
 
     @Test fun `blank step title falls back to the start of the text`() {
@@ -138,7 +163,9 @@ class RecipeEditStepsTest {
         val key = d.stepKey("p-spice")
         assertTrue(d.canSave)
         assertFalse(d.updateStep(key) { it.copy(minutes = "oops") }.canSave)
-        assertFalse(d.updateStep(key) { it.copy(minutes = "") }.canSave)
+        assertFalse(d.updateStep(key) { it.copy(minutes = "1x") }.canSave)
+        assertTrue(d.updateStep(key) { it.copy(minutes = "") }.canSave)
+        assertTrue(d.updateStep(key) { it.copy(minutes = "0") }.canSave)
         assertTrue(d.updateStep(key) { it.copy(minutes = "1,5") }.canSave)
     }
 

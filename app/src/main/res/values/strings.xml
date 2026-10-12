@@ -257,6 +257,7 @@
     <string name="edit_no_links">No ingredients found in this text yet.</string>
     <string name="edit_timer">Timer (min)</string>
     <string name="edit_phase">Phase</string>
+    <string name="edit_timer_hint">Optional</string>
     <string name="edit_move_up">Move up</string>
     <string name="edit_move_down">Move down</string>
     <string name="edit_remove_step">Remove step</string>

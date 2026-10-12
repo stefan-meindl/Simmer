@@ -23,3 +23,13 @@ fun stepPlan(recipe: Recipe, servings: Int, selection: Selection): StepPlan {
     val steps = resolve(recipe, servings, selection).steps
     return StepPlan(prep = steps.count { it.phase == "prep" }, cook = steps.count { it.phase == "cook" })
 }
+
+// ---------------------------------------------------------------------------
+// Skipping Flow Phase 2
+// ---------------------------------------------------------------------------
+
+/**
+ * Whether Flow Phase 2 has anything to ask: at least one Method offers more than one option.
+ * When false the cooking flow goes from Flow Phase 1 straight to Flow Phase 3.
+ */
+fun hasSelectableMethod(recipe: Recipe): Boolean = recipe.methods.any { it.options.size > 1 }

@@ -86,6 +86,15 @@ class NormalizeTest {
         assertTrue("Duration should be at least 30", (step?.durationSecs ?: 0) >= 30)
     }
 
+    @Test fun `normalize leaves a step without d as no timer`() {
+        val input = exampleInput().toMutableMap()
+        @Suppress("UNCHECKED_CAST")
+        val steps = (input["steps"] as List<Map<String, Any?>>).toMutableList()
+        steps.add(mapOf("id" to "p97", "ph" to "prep", "t" to "Rest", "b" to "Let it rest."))
+        input["steps"] = steps
+        assertEquals(0, normalize(input).steps.find { it.id == "p97" }?.durationSecs)
+    }
+
     @Test fun `normalize clamps step duration to 24h maximum`() {
         val input = exampleInput().toMutableMap()
         @Suppress("UNCHECKED_CAST")

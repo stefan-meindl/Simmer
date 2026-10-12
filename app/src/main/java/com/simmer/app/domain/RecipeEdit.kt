@@ -15,8 +15,6 @@ val RECIPE_CATEGORIES = listOf("Mains", "Pasta", "Breakfast", "Sides", "Soups", 
 
 val RECIPE_DIFFICULTIES = listOf("Easy", "Medium", "Hard")
 
-private const val MIN_STEP_SECS = 30
-
 /** The two [Step] phases, as stored. */
 object StepPhase {
     const val PREP = "prep"
@@ -129,7 +127,7 @@ data class RecipeDraft(
     fun addStep(phase: String): RecipeDraft {
         val n = nextKey
         val id = freshId("s-e$n", steps.map { it.id })
-        val row = StepDraft(key = "k$n", id = id, phase = phase, title = "", text = "", minutes = "5", origSecs = 300)
+        val row = StepDraft(key = "k$n", id = id, phase = phase, title = "", text = "", minutes = "", origSecs = 0)
         return copy(steps = steps + row, nextKey = n + 1)
     }
 
@@ -227,7 +225,7 @@ data class RecipeDraft(
             val steps = recipe.steps.mapIndexed { i, s ->
                 StepDraft(
                     key = "k${i}s", id = s.id, phase = s.phase, title = s.title, text = plainText(s.body),
-                    minutes = decimalText(Math.round(s.durationSecs / 6.0) / 10.0), origSecs = s.durationSecs,
+                    minutes = minutesText(s.durationSecs), origSecs = s.durationSecs,
                     originalBody = s.body, needs = s.needs, ifCondition = s.ifCondition,
                 )
             }
@@ -252,9 +250,13 @@ data class RecipeDraft(
 /** The amount is as it was, or reads as a number above zero. */
 val IngredientDraft.qtyValid: Boolean get() = qty.trim() == decimalText(origQty) || parseQty(qty) > 0
 
-/** The timer is as it was, or reads as a number above zero. */
+/** The timer is empty (no timer), as it was, or reads as a number. */
 val StepDraft.minutesValid: Boolean
-    get() = minutes.trim() == decimalText(Math.round(origSecs / 6.0) / 10.0) || parseQty(minutes) > 0
+    get() = minutes.isBlank() || minutes.trim() == minutesText(origSecs) || parseQty(minutes) > 0 ||
+        minutes.trim().replace(',', '.').toDoubleOrNull() == 0.0
+
+/** Timer field text for [secs]; empty when the Step has no timer. */
+private fun minutesText(secs: Int): String = if (secs <= 0) "" else decimalText(Math.round(secs / 6.0) / 10.0)
 
 private fun IngredientDraft.toIngredient(): Ingredient {
     val u = unit.trim()
@@ -269,9 +271,9 @@ private fun IngredientDraft.toIngredient(): Ingredient {
 private fun StepDraft.toStep(ingredients: List<Ingredient>, origNames: Map<String, String>, stepIds: Set<String>): Step {
     val minutesValue = parseQty(minutes)
     val secs = when {
-        minutes.trim() == decimalText(Math.round(origSecs / 6.0) / 10.0) -> origSecs
-        minutesValue > 0 -> Math.round(minutesValue * 60).toInt().coerceAtLeast(MIN_STEP_SECS)
-        else -> origSecs
+        minutes.trim() == minutesText(origSecs) -> origSecs
+        minutesValue > 0 -> Math.round(minutesValue * 60).toInt().coerceAtLeast(1)
+        else -> 0
     }
     val unchanged = text == plainText(originalBody) && originalBody.linkedIds().all { id ->
         val kept = ingredients.firstOrNull { it.id == id }

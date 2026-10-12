@@ -73,11 +73,11 @@ The shopping-list category an ingredient belongs to (e.g. Produce, Dairy, Spices
 _Avoid_: Section, category, shop section
 
 **Step**:
-A single instruction in a recipe, belonging to exactly one phase. Has a title, body text, optional timer duration, and optional dependencies on other steps.
+A single instruction in a recipe, belonging to exactly one phase. Has a title, body text, an optional timer duration (0 seconds = no timer, so no StepTimer shows), and optional dependencies on other steps.
 _Avoid_: Instruction, task
 
 **StepTimer**:
-The countdown button on a Step that has a timer duration. Cycles idle, running, paused, done. Keyed by recipe and step, so several run at once; a running StepTimer lives in the TimerService foreground service and is restored after process death from its end time.
+The countdown button on a Step that has a timer duration; a Step without one shows no StepTimer. Cycles idle, running, paused, done. Keyed by recipe and step, so several run at once; a running StepTimer lives in the TimerService foreground service and is restored after process death from its end time.
 _Avoid_: Countdown, alarm
 
 **Phase**:
@@ -111,7 +111,7 @@ An optional modification to a recipe. Two kinds: a **swap** replaces one set of 
 _Avoid_: Option, customisation, modification
 
 **Method**:
-A cooking-technique choice that determines which steps are shown and what timers apply (e.g. hob vs. oven vs. microwave).
+A cooking-technique choice that determines which steps are shown and what timers apply (e.g. hob vs. oven vs. microwave). Flow Phase 2 is skipped when no Method offers more than one option (`hasSelectableMethod`); Flow Phase 1 then starts cooking directly.
 _Avoid_: Technique, cooking mode, appliance mode
 
 **Step plan**:

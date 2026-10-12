@@ -83,7 +83,7 @@ data class Step(
     val id: String,
     val phase: String,  // "prep" | "cook"
     val title: String,
-    val durationSecs: Int,      // duration in seconds
+    val durationSecs: Int,      // timer in seconds; 0 = no timer
     val body: String,   // body text with {id:text} links
     val needs: List<String> = emptyList(),
     val ifCondition: String? = null,

@@ -571,10 +571,10 @@ private fun StepsSection(ui: EditUi.Content, vm: EditRecipeViewModel) {
     }
 }
 
-/** "5 min", "45 s", or a dash while the timer text is not a number. */
-private fun timerText(minutes: String): String {
+/** "5 min", "45 s"; null when the Step has no timer (empty, zero or not a number yet). */
+private fun timerText(minutes: String): String? {
     val m = parseQty(minutes)
-    return if (m > 0) formatDuration(Math.round(m * 60).toInt()) else "–"
+    return if (m > 0) formatDuration(Math.round(m * 60).toInt()) else null
 }
 
 @Composable
@@ -594,9 +594,11 @@ private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Bool
                 color = colors.textPrimary,
             )
         }
-        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            Icon(painterResource(R.drawable.ic_timer), contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(14.dp))
-            Text(text = timerText(step.minutes), style = SimmerTextStyle_Caption, color = colors.textSecondary)
+        timerText(step.minutes)?.let { timer ->
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(painterResource(R.drawable.ic_timer), contentDescription = null, tint = colors.textSecondary, modifier = Modifier.size(14.dp))
+                Text(text = timer, style = SimmerTextStyle_Caption, color = colors.textSecondary)
+            }
         }
     }
     if (open) {
@@ -635,26 +637,24 @@ private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Bool
                     )
                 }
             }
-            Row(horizontalArrangement = Arrangement.spacedBy(FieldGap), verticalAlignment = Alignment.Bottom) {
-                SimmerTextField(
-                    value = step.minutes,
-                    onValueChange = { v -> change { it.copy(minutes = v) } },
-                    label = stringResource(R.string.edit_timer),
-                    isError = !step.minutesValid,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.weight(1f),
-                )
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1.4f)) {
-                    FieldLabel(stringResource(R.string.edit_phase))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf(StepPhase.PREP to R.string.flow_phase_preparation, StepPhase.COOK to R.string.flow_phase_cooking).forEach { (value, label) ->
-                            ChoiceButton(
-                                label = stringResource(label),
-                                selected = step.phase == value,
-                                onClick = { vm.edit { it.setPhase(step.key, value) } },
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
+            SimmerTextField(
+                value = step.minutes,
+                onValueChange = { v -> change { it.copy(minutes = v) } },
+                label = stringResource(R.string.edit_timer),
+                placeholder = stringResource(R.string.edit_timer_hint),
+                isError = !step.minutesValid,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            )
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                FieldLabel(stringResource(R.string.edit_phase))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    listOf(StepPhase.PREP to R.string.flow_phase_preparation, StepPhase.COOK to R.string.flow_phase_cooking).forEach { (value, label) ->
+                        ChoiceButton(
+                            label = stringResource(label),
+                            selected = step.phase == value,
+                            onClick = { vm.edit { it.setPhase(step.key, value) } },
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                 }
             }
@@ -664,11 +664,15 @@ private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Bool
                     text = stringResource(R.string.edit_move_up),
                     onClick = { vm.edit { it.moveStep(step.key, -1) } },
                     enabled = draft.canMove(step.key, -1),
+                    icon = { Icon(painterResource(R.drawable.ic_arrow_up), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    modifier = Modifier.weight(1f),
                 )
                 SecondaryButton(
                     text = stringResource(R.string.edit_move_down),
                     onClick = { vm.edit { it.moveStep(step.key, 1) } },
                     enabled = draft.canMove(step.key, 1),
+                    icon = { Icon(painterResource(R.drawable.ic_arrow_down), contentDescription = null, modifier = Modifier.size(20.dp)) },
+                    modifier = Modifier.weight(1f),
                 )
             }
             IconLinkButton(R.drawable.ic_trash, stringResource(R.string.edit_remove_step)) {

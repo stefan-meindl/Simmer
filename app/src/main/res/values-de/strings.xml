@@ -255,6 +255,7 @@
     <string name="edit_no_links">Noch keine Zutaten im Text gefunden.</string>
     <string name="edit_timer">Timer (Min.)</string>
     <string name="edit_phase">Phase</string>
+    <string name="edit_timer_hint">Optional</string>
     <string name="edit_move_up">Nach oben</string>
     <string name="edit_move_down">Nach unten</string>
     <string name="edit_remove_step">Schritt entfernen</string>

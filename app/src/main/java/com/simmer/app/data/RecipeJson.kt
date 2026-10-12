@@ -60,7 +60,7 @@ data class StepJson(
     val id: String,
     val ph: String,
     val t: String,
-    val d: Int,
+    val d: Int = 0,
     val b: String,
     val needs: List<String> = emptyList(),
     val ifCondition: String? = null,
