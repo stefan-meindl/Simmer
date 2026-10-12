@@ -8,7 +8,12 @@ import com.simmer.app.data.RecipeRepository
 import com.simmer.app.data.ShoppingRepository
 import com.simmer.app.data.decodeSelection
 import com.simmer.app.data.encodeSelection
+import com.simmer.app.domain.CookingProgressStore
 import com.simmer.app.domain.Phase1State
+import com.simmer.app.domain.StepPlan
+import com.simmer.app.domain.model.Method
+import com.simmer.app.domain.model.Recipe
+import com.simmer.app.domain.stepPlan
 import com.simmer.app.domain.PlannedChoice
 import com.simmer.app.domain.stepServings
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -40,12 +45,25 @@ sealed interface Phase1Ui {
     ) : Phase1Ui
 }
 
+sealed interface Phase2Ui {
+    data object Loading : Phase2Ui
+    data class Content(
+        val recipe: Recipe,
+        val servings: Int,
+        val units: String,
+        val methods: List<Method>,
+        val picks: Map<String, String>,
+        val plan: StepPlan,
+    ) : Phase2Ui
+}
+
 @HiltViewModel
 class RecipeFlowViewModel @Inject constructor(
     private val savedState: SavedStateHandle,
     private val recipes: RecipeRepository,
     private val shopping: ShoppingRepository,
-    prefs: PrefsRepository,
+    private val progress: CookingProgressStore,
+    private val prefs: PrefsRepository,
 ) : ViewModel() {
 
     private val recipeId: String = checkNotNull(savedState["recipeId"])
@@ -69,6 +87,22 @@ class RecipeFlowViewModel @Inject constructor(
             else -> Phase1Ui.Loading
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Phase1Ui.Loading)
+
+    /** Phase 2 view: every Method with all its options, with the step plan for the current choices. */
+    val phase2: StateFlow<Phase2Ui> = combine(
+        phase1, prefs.units,
+    ) { state, units ->
+        if (state == null) Phase2Ui.Loading else {
+            Phase2Ui.Content(
+                recipe = state.recipe,
+                servings = state.servings,
+                units = units,
+                methods = state.recipe.methods,
+                picks = state.selection.choice,
+                plan = stepPlan(state.recipe, state.servings, state.selection),
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Phase2Ui.Loading)
 
     /** Servings and selection saved before process death, if any. */
     private fun savedDraft(): PlannedChoice? {
@@ -100,14 +134,23 @@ class RecipeFlowViewModel @Inject constructor(
         }
     }
 
-    fun stepServings(delta: Int) =
-        phase1.update { it?.withServings(stepServings(it.servings, delta)) }
+    /** Applies a change to the flow state; cooking progress made on the old plan is dropped. */
+    private fun edit(change: (Phase1State) -> Phase1State) {
+        phase1.update { old ->
+            if (old == null) return@update null
+            val new = change(old)
+            if (old.changesCookingPlan(new)) progress.reset(recipeId)
+            new
+        }
+    }
 
-    fun selectSwap(variationId: String, value: String) =
-        phase1.update { it?.withSwap(variationId, value) }
+    fun stepServings(delta: Int) = edit { it.withServings(stepServings(it.servings, delta)) }
 
-    fun setAddIn(variationId: String, on: Boolean) =
-        phase1.update { it?.withAddIn(variationId, on) }
+    fun selectSwap(variationId: String, value: String) = edit { it.withSwap(variationId, value) }
+
+    fun selectMethod(methodId: String, value: String) = edit { it.withSwap(methodId, value) }
+
+    fun setAddIn(variationId: String, on: Boolean) = edit { it.withAddIn(variationId, on) }
 
     fun dismissToast() {
         toast.value = null

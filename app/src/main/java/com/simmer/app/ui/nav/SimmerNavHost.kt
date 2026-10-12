@@ -1,15 +1,17 @@
 package com.simmer.app.ui.nav
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.simmer.app.ui.flow.RecipeFlowPhase1Screen
+import com.simmer.app.ui.flow.RecipeFlowPhase2Screen
 import com.simmer.app.ui.screens.AddRecipePlaceholder
 import com.simmer.app.ui.screens.EditRecipePlaceholder
-import com.simmer.app.ui.screens.RecipeFlowPhase2Placeholder
 import com.simmer.app.ui.screens.RecipeFlowPhase3Placeholder
 import com.simmer.app.ui.screens.RecipesPlaceholder
 import com.simmer.app.ui.screens.SettingsPlaceholder
@@ -78,9 +80,15 @@ fun SimmerNavHost(
 
         composable<RecipeFlowPhase2> { backStackEntry ->
             val route: RecipeFlowPhase2 = backStackEntry.toRoute()
-            RecipeFlowPhase2Placeholder(
-                recipeId = route.recipeId,
+            // Phases 1 and 2 edit one selection, so share the phase 1 entry's ViewModel.
+            val flowEntry = remember(backStackEntry) { navController.getBackStackEntry<RecipeFlow>() }
+            RecipeFlowPhase2Screen(
+                viewModel = hiltViewModel(flowEntry),
                 onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
+                onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
+                // Phase 3 is reached only via Start cooking.
+                onPhaseClick = { phase -> if (phase == 1) navController.popBackStack() },
             )
         }
 

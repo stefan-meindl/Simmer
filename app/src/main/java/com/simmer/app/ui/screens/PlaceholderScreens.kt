@@ -159,15 +159,6 @@ fun RecipeFlowPlaceholder(recipeId: String, onBack: () -> Unit, modifier: Modifi
 }
 
 @Composable
-fun RecipeFlowPhase2Placeholder(recipeId: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    RecipeFlowScaffold(
-        title = "Recipe Flow Phase 2 (id=$recipeId)",
-        onBack = onBack,
-        modifier = modifier,
-    )
-}
-
-@Composable
 fun RecipeFlowPhase3Placeholder(recipeId: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
     RecipeFlowScaffold(
         title = "Recipe Flow Phase 3 (id=$recipeId)",

@@ -46,4 +46,19 @@
         <item quantity="other">%1$d Std.</item>
     </plurals>
     <string name="flow_time_h_min">%1$s %2$s</string>
+
+    <!-- Recipe flow: phase 2 (methods) -->
+    <string name="flow_methods_title">Wie willst du es zubereiten?</string>
+    <string name="flow_methods_caption">Deine Auswahl bestimmt Schritte und Timer für %1$s.</string>
+    <plurals name="flow_prep_steps_count">
+        <item quantity="one">%1$d Vorbereitungsschritt</item>
+        <item quantity="other">%1$d Vorbereitungsschritte</item>
+    </plurals>
+    <plurals name="flow_cook_steps_count">
+        <item quantity="one">%1$d Kochschritt</item>
+        <item quantity="other">%1$d Kochschritte</item>
+    </plurals>
+    <string name="flow_plan">%1$s, dann %2$s.</string>
+    <string name="flow_prep_first">Die Vorbereitung kommt zuerst, damit alles bereit ist, wenn die Pfanne heiß ist.</string>
+    <string name="flow_start_cooking">Kochen starten</string>
 </resources>
