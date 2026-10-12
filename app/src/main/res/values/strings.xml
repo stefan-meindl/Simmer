@@ -234,7 +234,10 @@
     <string name="edit_difficulty">Difficulty</string>
     <string name="edit_category">Category</string>
     <string name="edit_ingredients">Ingredients</string>
-    <string name="edit_ingredients_count">%1$d ingredients · Amounts for %2$s servings</string>
+    <plurals name="edit_ingredients_count">
+        <item quantity="one">%1$d ingredient · Amounts for %2$s servings</item>
+        <item quantity="other">%1$d ingredients · Amounts for %2$s servings</item>
+    </plurals>
     <string name="edit_new_ingredient">New ingredient</string>
     <string name="edit_name">Name</string>
     <string name="edit_amount">Amount</string>

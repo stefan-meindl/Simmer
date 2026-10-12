@@ -177,6 +177,10 @@ Open `chilli`, tap Edit (top right of any flow phase). The Add recipe review doe
 - After Save or Restore you land on the flow phase you came from (try Phase 1, 2 and 3), showing the new content; servings and picks are kept.
 - User recipe (throwaway branch): Save replaces it in place (no new card, no "Edited" badge). Delete recipe: back on the Recipes tab, the card and its Planned card are gone, and its items are gone from the Shopping list (manual items stay).
 - Add recipe draft (throwaway branch): Edit, change the title, Save: the placeholder review shows the new title; nothing is stored in Room (no new card on Recipes).
+- Ingredients caption: "1 ingredient" (de: "1 Zutat") with one row, "N ingredients" otherwise.
+- Amount or Timer typed as text such as "lots": the field shows the error outline and Save changes is disabled; a number, "1,5" or "1 1/2" enables it again. A nameless ingredient or textless step with a bad value does not block Save (it is dropped).
+- Step phase: open a Preparation step, tap Cooking: it appears as the last Cooking step.
+- Delete the Garlic ingredient and Save without touching "Chop the vegetables": in Phase 3 "garlic" in that step is no longer underlined; the other links are.
 - Rotate and `adb shell am kill com.simmer.app` with edits and an open row: edits and open rows are restored.
 - German: all labels translate; categories Suppen, Salate, Backen etc. Light and dark theme. Large font: nothing clipped, accordion rows grow. Touch targets >= 44dp, rows >= 56dp. The keyboard does not cover the focused field or the bottom bar.
 - Compare against Design/ (Edit recipe screen in `Recipe App.dc.html`).

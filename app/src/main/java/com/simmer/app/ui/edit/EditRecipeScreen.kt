@@ -36,6 +36,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.heading
@@ -55,6 +56,9 @@ import com.simmer.app.domain.RECIPE_CATEGORIES
 import com.simmer.app.domain.RECIPE_DIFFICULTIES
 import com.simmer.app.domain.RecipeDraft
 import com.simmer.app.domain.StepDraft
+import com.simmer.app.domain.StepPhase
+import com.simmer.app.domain.minutesValid
+import com.simmer.app.domain.qtyValid
 import com.simmer.app.domain.formatDuration
 import com.simmer.app.domain.parseQty
 import com.simmer.app.ui.components.OptionCard
@@ -411,6 +415,14 @@ private fun InfoLine(text: String) {
     }
 }
 
+/** "Only when ..." line for an ingredient or step Condition; nothing when there is none. */
+@Composable
+private fun ConditionLine(condition: String?, draft: RecipeDraft) {
+    condition?.takeIf { it.isNotBlank() }?.let { cond ->
+        InfoLine(stringResource(R.string.edit_only_when, draft.conditionLabel(cond, conditionWords())))
+    }
+}
+
 // ---------------------------------------------------------------------------
 // Ingredients
 // ---------------------------------------------------------------------------
@@ -421,8 +433,9 @@ private fun IngredientsSection(ui: EditUi.Content, vm: EditRecipeViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(FieldGap)) {
         SectionHeading(
             text = stringResource(R.string.edit_ingredients),
-            caption = stringResource(
-                R.string.edit_ingredients_count,
+            caption = pluralStringResource(
+                R.plurals.edit_ingredients_count,
+                draft.ingredients.size,
                 draft.ingredients.size,
                 draft.servings.ifBlank { draft.base.base.toString() },
             ),
@@ -488,6 +501,7 @@ private fun IngredientRow(ing: IngredientDraft, draft: RecipeDraft, open: Boolea
                     value = ing.qty,
                     onValueChange = { v -> change { it.copy(qty = v) } },
                     label = stringResource(R.string.edit_amount),
+                    isError = !ing.qtyValid,
                     // Text keyboard, so 1/2, 1 1/2 and the fraction glyphs can be typed.
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text),
                     modifier = Modifier.weight(1f),
@@ -509,9 +523,7 @@ private fun IngredientRow(ing: IngredientDraft, draft: RecipeDraft, open: Boolea
                 onValueChange = { v -> change { it.copy(aisle = v) } },
                 label = stringResource(R.string.edit_aisle),
             )
-            ing.ifCondition?.takeIf { it.isNotBlank() }?.let { cond ->
-                InfoLine(stringResource(R.string.edit_only_when, draft.conditionLabel(cond, conditionWords())))
-            }
+            ConditionLine(ing.ifCondition, draft)
             IconLinkButton(R.drawable.ic_trash, stringResource(R.string.edit_remove_ingredient)) {
                 vm.edit { it.removeIngredient(ing.key) }
             }
@@ -532,11 +544,11 @@ private fun conditionWords() = ConditionWords(
 
 @Composable
 private fun StepsSection(ui: EditUi.Content, vm: EditRecipeViewModel) {
-    listOf("prep", "cook").forEach { phase ->
+    StepPhase.all.forEach { phase ->
         val steps = ui.draft.stepsIn(phase)
         Column(verticalArrangement = Arrangement.spacedBy(FieldGap)) {
             SectionHeading(
-                text = stringResource(if (phase == "prep") R.string.flow_phase_preparation else R.string.flow_phase_cooking),
+                text = stringResource(if (phase == StepPhase.PREP) R.string.flow_phase_preparation else R.string.flow_phase_cooking),
                 caption = stringResource(R.string.edit_steps_hint),
             )
             if (steps.isNotEmpty()) {
@@ -550,7 +562,7 @@ private fun StepsSection(ui: EditUi.Content, vm: EditRecipeViewModel) {
                 }
             }
             SecondaryButton(
-                text = stringResource(if (phase == "prep") R.string.edit_add_prep else R.string.edit_add_cook),
+                text = stringResource(if (phase == StepPhase.PREP) R.string.edit_add_prep else R.string.edit_add_cook),
                 onClick = { vm.addStep(phase) },
                 icon = { Icon(painterResource(R.drawable.ic_plus), contentDescription = null, modifier = Modifier.size(18.dp)) },
                 modifier = Modifier.fillMaxWidth(),
@@ -572,7 +584,7 @@ private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Bool
     AccordionHeader(open = open, onToggle = { vm.toggleStep(step.key) }) { mod ->
         Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = mod) {
             Text(
-                text = stringResource(if (step.phase == "prep") R.string.edit_prep_n else R.string.edit_step_n, number),
+                text = stringResource(if (step.phase == StepPhase.PREP) R.string.edit_prep_n else R.string.edit_step_n, number),
                 style = SimmerTextStyle_Micro,
                 color = colors.textTertiary,
             )
@@ -628,13 +640,14 @@ private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Bool
                     value = step.minutes,
                     onValueChange = { v -> change { it.copy(minutes = v) } },
                     label = stringResource(R.string.edit_timer),
+                    isError = !step.minutesValid,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                     modifier = Modifier.weight(1f),
                 )
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1.4f)) {
                     FieldLabel(stringResource(R.string.edit_phase))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        listOf("prep" to R.string.flow_phase_preparation, "cook" to R.string.flow_phase_cooking).forEach { (value, label) ->
+                        listOf(StepPhase.PREP to R.string.flow_phase_preparation, StepPhase.COOK to R.string.flow_phase_cooking).forEach { (value, label) ->
                             ChoiceButton(
                                 label = stringResource(label),
                                 selected = step.phase == value,
@@ -645,9 +658,7 @@ private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Bool
                     }
                 }
             }
-            step.ifCondition?.takeIf { it.isNotBlank() }?.let { cond ->
-                InfoLine(stringResource(R.string.edit_only_when, draft.conditionLabel(cond, conditionWords())))
-            }
+            ConditionLine(step.ifCondition, draft)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SecondaryButton(
                     text = stringResource(R.string.edit_move_up),

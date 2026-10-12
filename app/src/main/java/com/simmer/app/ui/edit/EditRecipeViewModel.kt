@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.RecipeEditor
 import com.simmer.app.domain.RecipeDraft
+import com.simmer.app.domain.StepPhase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -82,7 +83,7 @@ class EditRecipeViewModel @Inject constructor(
         savedState[KEY_OPEN_ING] = draft.value?.ingredients?.last()?.key
     }
 
-    /** Appends a blank step to [phase] (`prep` or `cook`) and opens it. */
+    /** Appends a blank step to [phase] ([StepPhase.PREP] or [StepPhase.COOK]) and opens it. */
     fun addStep(phase: String) {
         edit { it.addStep(phase) }
         savedState[KEY_OPEN_STEP] = draft.value?.steps?.last()?.key

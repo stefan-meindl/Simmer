@@ -17,6 +17,13 @@ val RECIPE_DIFFICULTIES = listOf("Easy", "Medium", "Hard")
 
 private const val MIN_STEP_SECS = 30
 
+/** The two [Step] phases, as stored. */
+object StepPhase {
+    const val PREP = "prep"
+    const val COOK = "cook"
+    val all = listOf(PREP, COOK)
+}
+
 /** Phrases that put a Condition into words; each takes the option or add-in label as `%s`. */
 data class ConditionWords(val not: String, val added: String, val notAdded: String)
 
@@ -32,6 +39,8 @@ data class IngredientDraft(
     val aisle: String,
     /** What the form cannot edit, carried through to the saved ingredient. */
     val origQty: Double = 0.0,
+    /** Name when the form opened; a step's links are redone when it changes. */
+    val origName: String = "",
     val origUnit: String = "",
     val uPlural: String = "",
     val tips: List<String> = emptyList(),
@@ -83,9 +92,18 @@ data class RecipeDraft(
     /** User Recipes can be deleted; built-ins and drafts cannot. */
     val canDelete: Boolean get() = stored && mine
 
-    /** Save needs a title, a named ingredient and a step with text. */
+    /**
+     * Save needs a title, a named ingredient and a step with text, and every row [toRecipe] keeps
+     * must have a readable amount or timer. Rows [toRecipe] drops (nameless ingredients, textless
+     * steps) are ignored here too, so Save never depends on a row that is not saved.
+     */
     val canSave: Boolean
-        get() = title.isNotBlank() && ingredients.any { it.name.isNotBlank() } && steps.any { it.text.isNotBlank() }
+        get() = title.isNotBlank() && keptIngredients().isNotEmpty() && keptSteps().isNotEmpty() &&
+            keptIngredients().all { it.qtyValid } && keptSteps().all { it.minutesValid }
+
+    private fun keptIngredients() = ingredients.filter { it.name.isNotBlank() }
+
+    private fun keptSteps() = steps.filter { it.text.isNotBlank() }
 
     fun stepsIn(phase: String): List<StepDraft> = steps.filter { it.phase == phase }
 
@@ -115,7 +133,12 @@ data class RecipeDraft(
         return copy(steps = steps + row, nextKey = n + 1)
     }
 
-    fun setPhase(key: String, phase: String) = updateStep(key) { it.copy(phase = phase) }
+    /** Moves the step to [phase], at the end of that group. */
+    fun setPhase(key: String, phase: String): RecipeDraft {
+        val step = steps.firstOrNull { it.key == key } ?: return this
+        if (step.phase == phase) return this
+        return copy(steps = steps.filter { it.key != key } + step.copy(phase = phase))
+    }
 
     private fun neighbour(key: String, dir: Int): StepDraft? {
         val me = steps.firstOrNull { it.key == key } ?: return null
@@ -140,9 +163,7 @@ data class RecipeDraft(
         )
     }
 
-    private fun named(): List<IngredientDraft> = ingredients.filter { it.name.isNotBlank() }
-
-    private fun linkable(): List<Ingredient> = named().map { Ingredient(it.id, it.name.trim(), 0.0, "") }
+    private fun linkable(): List<Ingredient> = keptIngredients().map { Ingredient(it.id, it.name.trim(), 0.0, "") }
 
     /** Names of the ingredients found in the step's text, in reading order. */
     fun linkedNames(stepKey: String): List<String> {
@@ -170,13 +191,15 @@ data class RecipeDraft(
     }
 
     /**
-     * The saved recipe. Nameless ingredients and textless steps are dropped. Step text left as it was
-     * keeps its markup; other text is linked again with [link]. Add-in variations whose ingredient is gone are dropped.
+     * The saved recipe. Nameless ingredients and textless steps are dropped (their rows, even if
+     * invalid, do not matter). Step text left as it was keeps its markup unless a linked ingredient
+     * was deleted or renamed; otherwise it is linked again with [link]. Add-in variations whose
+     * ingredient is gone are dropped.
      */
     fun toRecipe(): Recipe {
-        val kept = named()
+        val kept = keptIngredients()
         val ingredientsOut = kept.map { it.toIngredient() }
-        val stepRows = steps.filter { it.text.isNotBlank() }
+        val stepRows = keptSteps()
         val stepIds = stepRows.map { it.id }.toSet()
         val original = base.toDomain(mine = mine, edited = edited)
         return original.copy(
@@ -187,7 +210,7 @@ data class RecipeDraft(
             difficulty = difficulty,
             category = category,
             ingredients = ingredientsOut,
-            steps = stepRows.map { it.toStep(ingredientsOut, stepIds) },
+            steps = stepRows.map { it.toStep(ingredientsOut, kept.associate { r -> r.id to r.origName.trim() }, stepIds) },
             variations = original.variations.filter { v -> v.kind != "add" || ingredientsOut.any { it.id == v.ing } },
         )
     }
@@ -197,7 +220,7 @@ data class RecipeDraft(
             val ingredients = recipe.ingredients.mapIndexed { i, ing ->
                 IngredientDraft(
                     key = "k${i}i", id = ing.id, name = ing.name, qty = decimalText(ing.quantity), unit = ing.unit,
-                    note = ing.note, aisle = ing.aisle, origQty = ing.quantity, origUnit = ing.unit, uPlural = ing.uPlural,
+                    note = ing.note, aisle = ing.aisle, origQty = ing.quantity, origName = ing.name, origUnit = ing.unit, uPlural = ing.uPlural,
                     tips = ing.tips, ifCondition = ing.ifCondition, alt = ing.alt,
                 )
             }
@@ -226,6 +249,13 @@ data class RecipeDraft(
     }
 }
 
+/** The amount is as it was, or reads as a number above zero. */
+val IngredientDraft.qtyValid: Boolean get() = qty.trim() == decimalText(origQty) || parseQty(qty) > 0
+
+/** The timer is as it was, or reads as a number above zero. */
+val StepDraft.minutesValid: Boolean
+    get() = minutes.trim() == decimalText(Math.round(origSecs / 6.0) / 10.0) || parseQty(minutes) > 0
+
 private fun IngredientDraft.toIngredient(): Ingredient {
     val u = unit.trim()
     val quantity = if (qty.trim() == decimalText(origQty)) origQty else parseQty(qty).takeIf { it > 0 } ?: origQty
@@ -236,14 +266,18 @@ private fun IngredientDraft.toIngredient(): Ingredient {
     )
 }
 
-private fun StepDraft.toStep(ingredients: List<Ingredient>, stepIds: Set<String>): Step {
+private fun StepDraft.toStep(ingredients: List<Ingredient>, origNames: Map<String, String>, stepIds: Set<String>): Step {
     val minutesValue = parseQty(minutes)
     val secs = when {
         minutes.trim() == decimalText(Math.round(origSecs / 6.0) / 10.0) -> origSecs
         minutesValue > 0 -> Math.round(minutesValue * 60).toInt().coerceAtLeast(MIN_STEP_SECS)
         else -> origSecs
     }
-    val body = if (text == plainText(originalBody)) originalBody else link(text.trim(), ingredients)
+    val unchanged = text == plainText(originalBody) && originalBody.linkedIds().all { id ->
+        val kept = ingredients.firstOrNull { it.id == id }
+        kept != null && kept.name == origNames[id]
+    }
+    val body = if (unchanged) originalBody else link(text.trim(), ingredients)
     return Step(
         id = id, phase = phase,
         title = title.trim().ifEmpty { text.trim().split(Regex("[.!]"))[0].take(40).trim() },
@@ -251,10 +285,12 @@ private fun StepDraft.toStep(ingredients: List<Ingredient>, stepIds: Set<String>
     )
 }
 
-private val LINK = Regex("\\{[^:{}]+:([^}]+)\\}")
+private val LINK = Regex("\\{([^:{}]+):([^}]+)\\}")
+
+private fun String.linkedIds(): List<String> = LINK.findAll(this).map { it.groupValues[1] }.toList()
 
 /** Step text with its `{id:text}` links replaced by the shown text. */
-fun plainText(body: String): String = LINK.replace(body, "$1")
+fun plainText(body: String): String = LINK.replace(body, "$2")
 
 /** Number as typed in the form: no trailing zeros, at most three decimals. */
 fun decimalText(value: Double): String =

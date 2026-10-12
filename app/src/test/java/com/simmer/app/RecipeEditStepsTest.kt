@@ -111,6 +111,42 @@ class RecipeEditStepsTest {
         assertEquals("cook", moved.toRecipe().steps.first { it.id == "p-veg" }.phase)
     }
 
+    @Test fun `switching phase puts the step at the end of the other group`() {
+        val d = draft()
+        val moved = d.setPhase(d.stepKey("p-veg"), "cook")
+        assertEquals("p-veg", moved.stepsIn("cook").last().id)
+        assertEquals("p-veg", moved.toRecipe().steps.last().id)
+        assertEquals(d, d.setPhase(d.stepKey("p-veg"), "prep"))
+    }
+
+    @Test fun `unchanged step relinks when one of its linked ingredients was deleted`() {
+        val d = draft()
+        val gone = d.removeIngredient(d.ingredients.first { it.id == "ga" }.key)
+        val body = gone.toRecipe().steps.first { it.id == "p-veg" }.body
+        assertEquals("Finely chop the {on:onions}, dice the {pe:red pepper} and crush the garlic. Keep them in separate piles.", body)
+    }
+
+    @Test fun `unchanged step relinks when a linked ingredient was renamed`() {
+        val d = draft()
+        val renamed = d.updateIngredient(d.ingredients.first { it.id == "ga" }.key) { it.copy(name = "Shallots") }
+        val body = renamed.toRecipe().steps.first { it.id == "p-veg" }.body
+        assertTrue(body, "{ga:" !in body)
+    }
+
+    @Test fun `unparsable timer blocks save and a valid one does not`() {
+        val d = draft()
+        val key = d.stepKey("p-spice")
+        assertTrue(d.canSave)
+        assertFalse(d.updateStep(key) { it.copy(minutes = "oops") }.canSave)
+        assertFalse(d.updateStep(key) { it.copy(minutes = "") }.canSave)
+        assertTrue(d.updateStep(key) { it.copy(minutes = "1,5") }.canSave)
+    }
+
+    @Test fun `an invalid timer on a textless step that is dropped does not block save`() {
+        val d = draft().addStep("prep")
+        assertTrue(d.updateStep(d.steps.last().key) { it.copy(minutes = "oops") }.canSave)
+    }
+
     @Test fun `removing a step drops it and the needs that pointed at it`() {
         val d = draft()
         val needing = chilli.steps.first { "p-veg" in it.needs }

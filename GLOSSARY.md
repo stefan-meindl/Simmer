@@ -26,6 +26,22 @@ _Avoid_: Saved recipe, queued recipe
 The servings and Selection saved with a Planned Recipe when the user taps "Add to list" (`PlannedChoice`). The flow shows "On your list" only while the current servings and Selection equal it; an add-in toggled off counts as never toggled.
 _Avoid_: Saved choice, plan
 
+**Edit recipe**:
+The screen that edits one Recipe's title, summary, servings, time, difficulty, Category, Ingredients and Steps. Save writes the result back; Restore original (built-ins with a Local override) and Delete recipe (User Recipes only) live there too. Opens from the cooking flow's Edit button.
+_Avoid_: Editor screen, recipe form
+
+**Recipe draft**:
+The in-progress state of Edit recipe (`RecipeDraft`): fields as typed text, built from a Recipe and turned back into one by `toRecipe`. Rows with no name or no text are dropped on save; Save is disabled until the title, an Ingredient and a Step are present and every kept amount and timer reads as a number. Kept in saved state, so it survives rotation and process death.
+_Avoid_: Form state, edit state
+
+**Add recipe draft**:
+The unsaved Recipe the Add recipe review shows (`RecipeDraftStore`). Edit recipe opened without a recipe id works on it and writes back to the store, not to Room. Held in memory only; it does not survive process death.
+_Avoid_: Pending recipe, import result
+
+**Local override**:
+A built-in Recipe's saved edit, stored in Room with `edited = true`. Restore original removes it and brings the shipped version back.
+_Avoid_: Customised recipe, fork
+
 **Base**:
 The number of servings a recipe's ingredient amounts are originally written for. All displayed quantities are scaled relative to this number.
 _Avoid_: Default servings, original servings
