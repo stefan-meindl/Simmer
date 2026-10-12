@@ -72,6 +72,7 @@ import com.simmer.app.domain.formatDuration
 import com.simmer.app.domain.model.BodySegment
 import com.simmer.app.domain.model.ResolvedIngredient
 import com.simmer.app.domain.selectionSummary
+import com.simmer.app.domain.hasSelectableMethod
 import com.simmer.app.ui.components.DarkButton
 import com.simmer.app.ui.components.GradientHeroCard
 import com.simmer.app.ui.components.LinkButton
@@ -149,8 +150,8 @@ fun RecipeFlowPhase3Screen(
         when (val content = ui) {
             Phase3Ui.Loading -> Unit
             is Phase3Ui.Content -> Column(modifier = Modifier.fillMaxSize()) {
-                FlowTopBar(title = content.recipe.title, phase = 3, onBack = onBack, onEdit = onEdit)
-                FlowProgress(current = 3, onSegmentClick = onPhaseClick)
+                FlowTopBar(title = content.recipe.title, phase = 3, skipsMethods = !hasSelectableMethod(content.recipe), onBack = onBack, onEdit = onEdit)
+                FlowProgress(current = 3, skipsMethods = !hasSelectableMethod(content.recipe), onSegmentClick = onPhaseClick)
                 CookingList(
                     content = content,
                     onMarkDone = viewModel::markStepDone,

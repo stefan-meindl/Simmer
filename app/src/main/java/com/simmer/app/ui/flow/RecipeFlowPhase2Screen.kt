@@ -83,8 +83,8 @@ fun RecipeFlowPhase2Screen(
         when (val u = ui) {
             Phase2Ui.Loading -> Unit
             is Phase2Ui.Content -> Column(modifier = Modifier.fillMaxSize()) {
-                FlowTopBar(title = u.recipe.title, phase = 2, onBack = onBack, onEdit = onEdit)
-                FlowProgress(current = 2, onSegmentClick = onPhaseClick)
+                FlowTopBar(title = u.recipe.title, phase = 2, skipsMethods = false, onBack = onBack, onEdit = onEdit)
+                FlowProgress(current = 2, skipsMethods = false, onSegmentClick = onPhaseClick)
 
                 Column(
                     verticalArrangement = Arrangement.spacedBy(28.dp),

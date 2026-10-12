@@ -89,7 +89,7 @@ Open `chilli`, tap Preparation:
 - Changing servings or any pick (Phase 1 or 2) clears Cooking Progress; steps marked done in Phase 3 start over.
 
 
-- Skipping Phase 2 (needs the throwaway branch's "No-method test" recipe, or any recipe whose Methods have at most one option each): in Phase 1 the bottom button reads "Start cooking" (de: "Kochen starten") and opens Phase 3 directly; Prep steps show as "Prep n"; Back from Phase 3 (and the Preparation segment) returns to Phase 1. `chilli` still shows "Preparation" and Phase 2. Swap and add-in variations on Phase 1 do not change this. Resume case: from the throwaway recipe's Phase 1, an entry to Phase 2 (restored back stack) pops back to Phase 1 instead of showing an empty "How will you cook it?".
+- Skipping Phase 2 (needs the throwaway branch's "No-method test" recipe, or any recipe whose Methods have at most one option each): in Phase 1 the bottom button reads "Start cooking" (de: "Kochen starten") and opens Phase 3 directly; Prep steps show as "Prep n"; Back from Phase 3 returns to Phase 1. The chrome has 2 phases on Phases 1 and 3: captions "Step 1 of 2 · Servings" and "Step 2 of 2 · Cooking" (de: "Schritt 1 von 2 · ..."), and the progress bar shows only two equal-width segments, Servings and Cooking, with no greyed Preparation segment; on Phase 3 tapping the Servings segment returns to Phase 1. `chilli` keeps 3 phases ("Step 3 of 3 · Cooking"). `chilli` still shows "Preparation" and Phase 2. Swap and add-in variations on Phase 1 do not change this. Resume case: from the throwaway recipe's Phase 1, an entry to Phase 2 (restored back stack) pops back to Phase 1 instead of showing an empty "How will you cook it?".
 
 ### Recipe flow, Phase 3 (#7)
 

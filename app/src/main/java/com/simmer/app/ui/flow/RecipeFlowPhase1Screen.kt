@@ -94,7 +94,7 @@ fun RecipeFlowPhase1Screen(
         when (val u = ui) {
             Phase1Ui.Loading -> Unit
             Phase1Ui.NotFound -> Column {
-                FlowTopBar("", 1, onBack, onEdit = {})
+                FlowTopBar("", 1, skipsMethods = false, onBack = onBack, onEdit = {})
                 Text(
                     text = stringResource(R.string.flow_recipe_not_found),
                     style = SimmerTextStyle_BodyMd,
@@ -137,9 +137,9 @@ private fun Phase1Content(
     }
 
     Column(modifier = Modifier.fillMaxSize()) {
-        FlowTopBar(title = recipe.title, phase = 1, onBack = onBack, onEdit = onEdit)
+        FlowTopBar(title = recipe.title, phase = 1, skipsMethods = !hasSelectableMethod(recipe), onBack = onBack, onEdit = onEdit)
         // Phase 1 is the first segment, so no earlier segment can be tapped.
-        FlowProgress(current = 1, onSegmentClick = { onBack() })
+        FlowProgress(current = 1, skipsMethods = !hasSelectableMethod(recipe), onSegmentClick = { onBack() })
 
         Box(modifier = Modifier.weight(1f)) {
             Column(

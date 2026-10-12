@@ -23,7 +23,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.simmer.app.R
-import com.simmer.app.domain.FLOW_PHASE_COUNT
+import com.simmer.app.domain.flowPhaseCount
+import com.simmer.app.domain.flowPhaseNumber
 import com.simmer.app.domain.ProgressSegment
 import com.simmer.app.domain.SegmentState
 import com.simmer.app.domain.progressSegments
@@ -44,12 +45,13 @@ private fun phaseLabel(phase: Int): String = stringResource(
 
 /**
  * Top bar shared by the recipe-flow phases: back button, recipe title,
- * "Step n of 3 · <phase>" caption and an Edit button.
+ * "Step n of m · <phase>" (m is 2 when Phase 2 is skipped) caption and an Edit button.
  */
 @Composable
 fun FlowTopBar(
     title: String,
     phase: Int,
+    skipsMethods: Boolean,
     onBack: () -> Unit,
     onEdit: () -> Unit,
     modifier: Modifier = Modifier,
@@ -83,7 +85,7 @@ fun FlowTopBar(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = stringResource(R.string.flow_step_caption, phase, phaseLabel(phase), FLOW_PHASE_COUNT),
+                text = stringResource(R.string.flow_step_caption, flowPhaseNumber(phase, skipsMethods), phaseLabel(phase), flowPhaseCount(skipsMethods)),
                 style = SimmerTextStyle_Caption,
                 color = colors.textTertiary,
             )
@@ -93,13 +95,14 @@ fun FlowTopBar(
 }
 
 /**
- * 3-segment progress indicator. Done segments (orange, secondary text) navigate
+ * Progress indicator. Done segments (orange, secondary text) navigate
  * back via [onSegmentClick]; the current one is orange with accent text; future
  * ones are grey and not tappable.
  */
 @Composable
 fun FlowProgress(
     current: Int,
+    skipsMethods: Boolean,
     onSegmentClick: (phase: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -109,7 +112,7 @@ fun FlowProgress(
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
     ) {
-        progressSegments(current).forEach { seg ->
+        progressSegments(current, skipsMethods).forEach { seg ->
             Segment(seg, onClick = { onSegmentClick(seg.phase) }, modifier = Modifier.weight(1f))
         }
     }
