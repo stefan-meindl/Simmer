@@ -1,0 +1,266 @@
+[
+  {
+    "id": "chilli",
+    "title": "Chilli con carne",
+    "category": "Mains",
+    "tags": ["Spicy", "One-pot", "Make-ahead"],
+    "time": 90,
+    "difficulty": "Easy",
+    "base": 4,
+    "icon": "flame",
+    "summary": "A slow-simmered chilli with kidney beans and smoked paprika, served over rice.",
+    "variations": [
+      { "id": "mince", "kind": "swap", "label": "Mince", "options": [{ "v": "beef", "l": "Beef" }, { "v": "plant", "l": "Plant-based" }], "def": "beef" },
+      { "id": "choc", "kind": "add", "label": "Dark chocolate", "d": "Adds depth and rounds off the heat.", "ing": "dc" },
+      { "id": "beer", "kind": "add", "label": "Dark beer", "d": "Replaces half the stock for a malty sauce.", "ing": "be" },
+      { "id": "cin", "kind": "add", "label": "Cinnamon", "d": "A warm note in the background.", "ing": "cn" }
+    ],
+    "methods": [
+      {
+        "id": "chilli",
+        "label": "The chilli",
+        "q": "How do you want to simmer the chilli?",
+        "options": [
+          { "v": "pot", "l": "Pot on the hob", "icon": "flame", "time": "1 h", "d": "Simmer gently, stirring now and then." },
+          { "v": "oven", "l": "In the oven", "icon": "layers", "time": "2 h", "d": "Covered at 150°C. Richer, no stirring." },
+          { "v": "slow", "l": "Slow cooker", "icon": "timer", "time": "6 h", "d": "Brown first, then leave it on low." }
+        ]
+      },
+      {
+        "id": "rice",
+        "label": "Rice",
+        "q": "How do you want to cook the rice?",
+        "options": [
+          { "v": "pot", "l": "In a pot", "icon": "flame", "time": "18 min", "d": "Absorption method on the hob." },
+          { "v": "microwave", "l": "Microwave", "icon": "zap", "time": "12 min", "d": "Hands-off, no pot to wash." },
+          { "v": "cooker", "l": "Rice cooker", "icon": "timer", "time": "30 min", "d": "Switch it on and forget it." }
+        ]
+      }
+    ],
+    "ingredients": [
+      { "id": "oi", "name": "Olive oil", "q": 2, "u": "tbsp", "aisle": "Pantry" },
+      { "id": "on", "name": "Onions", "q": 2, "u": "", "note": "finely chopped", "aisle": "Produce" },
+      { "id": "pe", "name": "Red pepper", "q": 1, "u": "", "note": "diced", "aisle": "Produce" },
+      { "id": "ga", "name": "Garlic", "q": 3, "u": ["clove", "cloves"], "note": "crushed", "aisle": "Produce" },
+      { "id": "mb", "name": "Beef mince", "q": 500, "u": "g", "if": "mince=beef", "aisle": "Meat" },
+      { "id": "mp", "name": "Plant-based mince", "q": 400, "u": "g", "if": "mince=plant", "aisle": "Chilled" },
+      { "id": "cu", "name": "Ground cumin", "q": 2, "u": "tsp", "aisle": "Spices" },
+      { "id": "pa", "name": "Smoked paprika", "q": 1, "u": "tsp", "aisle": "Spices" },
+      { "id": "ch", "name": "Chilli flakes", "q": 1, "u": "tsp", "aisle": "Spices" },
+      { "id": "or", "name": "Dried oregano", "q": 1, "u": "tsp", "aisle": "Spices" },
+      { "id": "cn", "name": "Ground cinnamon", "q": 0.5, "u": "tsp", "if": "add:cin", "aisle": "Spices" },
+      { "id": "tp", "name": "Tomato purée", "q": 2, "u": "tbsp", "aisle": "Tins & jars" },
+      { "id": "to", "name": "Chopped tomatoes", "q": 800, "u": "g", "note": "2 tins", "aisle": "Tins & jars" },
+      { "id": "kb", "name": "Kidney beans", "q": 400, "u": "g", "note": "1 tin", "aisle": "Tins & jars" },
+      { "id": "st", "name": "Stock", "q": 300, "u": "ml", "alt": [["add:beer", 150]], "aisle": "Pantry" },
+      { "id": "be", "name": "Dark beer", "q": 200, "u": "ml", "if": "add:beer", "aisle": "Drinks" },
+      { "id": "dc", "name": "Dark chocolate", "q": 20, "u": "g", "note": "70% cocoa", "if": "add:choc", "aisle": "Baking" },
+      { "id": "ri", "name": "Long-grain rice", "q": 300, "u": "g", "aisle": "Pantry" },
+      { "id": "wa", "name": "Water", "q": 450, "u": "ml", "alt": [["rice=microwave", 600]], "note": "for the rice" },
+      { "id": "cr", "name": "Soured cream", "q": 150, "u": "ml", "note": "to serve", "aisle": "Dairy" },
+      { "id": "co", "name": "Coriander", "q": 1, "u": ["bunch", "bunches"], "note": "to serve", "aisle": "Produce" }
+    ],
+    "steps": [
+      { "id": "p-veg", "ph": "prep", "t": "Chop the vegetables", "d": 600, "b": "Finely chop the {on:onions}, dice the {pe:red pepper} and crush the {ga:garlic}. Keep them in separate piles." },
+      { "id": "p-spice", "ph": "prep", "if": "!add:cin", "t": "Mix the spices", "d": 120, "b": "Stir the {cu:cumin}, {pa:smoked paprika}, {ch:chilli flakes} and {or:oregano} together in a small bowl." },
+      { "id": "p-spice", "ph": "prep", "if": "add:cin", "t": "Mix the spices", "d": 120, "b": "Stir the {cu:cumin}, {pa:smoked paprika}, {ch:chilli flakes}, {or:oregano} and {cn:cinnamon} together in a small bowl." },
+      { "id": "p-beans", "ph": "prep", "t": "Drain the beans", "d": 60, "b": "Tip the {kb:kidney beans} into a sieve and rinse under cold water." },
+      { "id": "p-choc", "ph": "prep", "if": "add:choc", "t": "Chop the chocolate", "d": 60, "b": "Roughly chop the {dc:dark chocolate} so it melts evenly later." },
+      { "id": "p-rice", "ph": "prep", "t": "Rinse the rice", "d": 120, "b": "Rinse the {ri:rice} in a sieve until the water runs clear, then leave it to drain." },
+      { "id": "c-soft", "ph": "cook", "needs": ["p-veg"], "t": "Soften the onions", "d": 480, "b": "Heat the {oi:olive oil} in a large pot over a medium heat. Add the {on:onions} and {pe:pepper} and cook until soft. Add the {ga:garlic} for the last minute." },
+      { "id": "c-brown", "ph": "cook", "if": "mince=beef", "t": "Brown the mince", "d": 480, "b": "Turn up the heat, add the {mb:beef mince} and break it up with a spoon until browned all over." },
+      { "id": "c-brown", "ph": "cook", "if": "mince=plant", "t": "Brown the mince", "d": 300, "b": "Add the {mp:plant-based mince} and break it up with a spoon until lightly browned." },
+      { "id": "c-spice", "ph": "cook", "needs": ["p-spice"], "t": "Toast the spices", "d": 60, "b": "Stir in the spice mix and the {tp:tomato purée}. Cook for a minute until fragrant." },
+      { "id": "c-liquid", "ph": "cook", "if": "!add:beer", "needs": ["p-beans"], "t": "Add the liquids", "d": 120, "b": "Pour in the {to:chopped tomatoes} and {st:stock}, then add the {kb:kidney beans}. Stir and bring to a simmer." },
+      { "id": "c-liquid", "ph": "cook", "if": "add:beer", "needs": ["p-beans"], "t": "Add the liquids", "d": 240, "b": "Pour in the {be:dark beer} and let it bubble for 2 minutes. Add the {to:chopped tomatoes}, {st:stock} and {kb:kidney beans}, then bring to a simmer." },
+      { "id": "c-sim", "ph": "cook", "if": "chilli=pot", "t": "Simmer the chilli", "d": 3600, "b": "Partly cover and simmer gently for an hour, stirring now and then. Add a splash of water if it gets too thick." },
+      { "id": "c-sim", "ph": "cook", "if": "chilli=oven", "t": "Braise in the oven", "d": 7200, "b": "Cover the pot with a lid and move it to the oven at 150°C. Stir once halfway through." },
+      { "id": "c-sim", "ph": "cook", "if": "chilli=slow", "t": "Slow cook", "d": 21600, "b": "Transfer everything to the slow cooker, cover and cook on low for 6 hours." },
+      { "id": "r-pot", "ph": "cook", "if": "rice=pot", "needs": ["p-rice"], "t": "Cook the rice", "d": 1080, "b": "Put the {ri:rice} in a pot with the {wa:water} and a pinch of salt. Bring to the boil, cover and cook on the lowest heat for 12 minutes, then leave to rest off the heat for 6." },
+      { "id": "r-mw", "ph": "cook", "if": "rice=microwave", "needs": ["p-rice"], "t": "Microwave the rice", "d": 720, "b": "Put the {ri:rice} and {wa:water} in a large microwave-safe bowl. Cover loosely and cook on full power for 10 minutes, then let it stand for 2." },
+      { "id": "r-rc", "ph": "cook", "if": "rice=cooker", "needs": ["p-rice"], "t": "Start the rice cooker", "d": 1800, "b": "Add the {ri:rice} and {wa:water} to the rice cooker, close the lid and switch it on. It keeps warm until you serve." },
+      { "id": "c-fin", "ph": "cook", "if": "add:choc", "needs": ["p-choc"], "t": "Finish and serve", "d": 120, "b": "Stir the {dc:chocolate} into the chilli until melted. Taste, season with salt and serve over the rice with {cr:soured cream} and {co:coriander}." },
+      { "id": "c-fin", "ph": "cook", "if": "!add:choc", "t": "Season and serve", "d": 60, "b": "Taste and season with salt. Serve over the rice with {cr:soured cream} and {co:coriander}." }
+    ]
+  },
+  {
+    "id": "curry",
+    "title": "Thai green curry",
+    "category": "Mains",
+    "tags": ["Spicy", "Quick"],
+    "time": 35,
+    "difficulty": "Easy",
+    "base": 2,
+    "icon": "chef-hat",
+    "summary": "Green curry paste and coconut milk with crisp green beans and jasmine rice.",
+    "variations": [
+      { "id": "protein", "kind": "swap", "label": "Protein", "options": [{ "v": "chicken", "l": "Chicken" }, { "v": "tofu", "l": "Tofu" }], "def": "chicken" },
+      { "id": "basil", "kind": "add", "label": "Thai basil", "d": "Aniseed freshness stirred in at the end.", "ing": "tb" },
+      { "id": "bamboo", "kind": "add", "label": "Bamboo shoots", "d": "Extra crunch and bulk.", "ing": "bs" }
+    ],
+    "methods": [
+      {
+        "id": "rice",
+        "label": "Rice",
+        "q": "How do you want to cook the jasmine rice?",
+        "options": [
+          { "v": "pot", "l": "In a pot", "icon": "flame", "time": "18 min", "d": "Absorption method on the hob." },
+          { "v": "microwave", "l": "Microwave", "icon": "zap", "time": "12 min", "d": "Hands-off, no pot to wash." },
+          { "v": "cooker", "l": "Rice cooker", "icon": "timer", "time": "30 min", "d": "Switch it on and forget it." }
+        ]
+      }
+    ],
+    "ingredients": [
+      { "id": "cp", "name": "Green curry paste", "q": 3, "u": "tbsp", "aisle": "World foods" },
+      { "id": "cm", "name": "Coconut milk", "q": 400, "u": "ml", "note": "1 tin", "aisle": "Tins & jars" },
+      { "id": "ck", "name": "Chicken thighs", "q": 300, "u": "g", "note": "boneless", "if": "protein=chicken", "aisle": "Meat" },
+      { "id": "tf", "name": "Firm tofu", "q": 280, "u": "g", "if": "protein=tofu", "aisle": "Chilled" },
+      { "id": "gb", "name": "Green beans", "q": 150, "u": "g", "aisle": "Produce" },
+      { "id": "bs", "name": "Bamboo shoots", "q": 120, "u": "g", "note": "drained", "if": "add:bamboo", "aisle": "World foods" },
+      { "id": "fs", "name": "Fish sauce", "q": 1, "u": "tbsp", "if": "protein=chicken", "aisle": "World foods" },
+      { "id": "ss", "name": "Soy sauce", "q": 1, "u": "tbsp", "if": "protein=tofu", "aisle": "World foods" },
+      { "id": "li", "name": "Lime", "q": 1, "u": "", "aisle": "Produce" },
+      { "id": "tb", "name": "Thai basil", "q": 1, "u": ["handful", "handfuls"], "if": "add:basil", "aisle": "Produce" },
+      { "id": "ri", "name": "Jasmine rice", "q": 150, "u": "g", "aisle": "Pantry" },
+      { "id": "wa", "name": "Water", "q": 225, "u": "ml", "alt": [["rice=microwave", 300]], "note": "for the rice" }
+    ],
+    "steps": [
+      { "id": "p-pro", "ph": "prep", "if": "protein=chicken", "t": "Cut the chicken", "d": 300, "b": "Cut the {ck:chicken thighs} into bite-sized pieces." },
+      { "id": "p-pro", "ph": "prep", "if": "protein=tofu", "t": "Press and cube the tofu", "d": 600, "b": "Wrap the {tf:tofu} in kitchen paper, weigh it down for 10 minutes, then cut into cubes." },
+      { "id": "p-beans", "ph": "prep", "t": "Trim the beans", "d": 180, "b": "Trim the {gb:green beans} and cut them in half." },
+      { "id": "p-rice", "ph": "prep", "t": "Rinse the rice", "d": 120, "b": "Rinse the {ri:jasmine rice} until the water runs clear." },
+      { "id": "r-pot", "ph": "cook", "if": "rice=pot", "needs": ["p-rice"], "t": "Cook the rice", "d": 1080, "b": "Put the {ri:rice} in a pot with the {wa:water} and a pinch of salt. Bring to the boil, cover and cook on the lowest heat for 12 minutes, then leave to rest off the heat for 6." },
+      { "id": "r-mw", "ph": "cook", "if": "rice=microwave", "needs": ["p-rice"], "t": "Microwave the rice", "d": 720, "b": "Put the {ri:rice} and {wa:water} in a large microwave-safe bowl. Cover loosely and cook on full power for 10 minutes, then let it stand for 2." },
+      { "id": "r-rc", "ph": "cook", "if": "rice=cooker", "needs": ["p-rice"], "t": "Start the rice cooker", "d": 1800, "b": "Add the {ri:rice} and {wa:water} to the rice cooker, close the lid and switch it on. It keeps warm until you serve." },
+      { "id": "c-paste", "ph": "cook", "t": "Fry the paste", "d": 120, "b": "Spoon the thick cream from the top of the {cm:coconut milk} into a wok. Fry the {cp:curry paste} in it until fragrant." },
+      { "id": "c-pro", "ph": "cook", "if": "protein=chicken", "needs": ["p-pro"], "t": "Cook the chicken", "d": 300, "b": "Add the {ck:chicken} and stir to coat in the paste. Cook until no longer pink on the outside." },
+      { "id": "c-pro", "ph": "cook", "if": "protein=tofu", "needs": ["p-pro"], "t": "Brown the tofu", "d": 300, "b": "Add the {tf:tofu} and fry, turning gently, until golden on most sides." },
+      { "id": "c-sim", "ph": "cook", "if": "!add:bamboo", "needs": ["p-beans"], "t": "Simmer", "d": 480, "b": "Pour in the rest of the {cm:coconut milk}, add the {gb:green beans} and simmer until just tender." },
+      { "id": "c-sim", "ph": "cook", "if": "add:bamboo", "needs": ["p-beans"], "t": "Simmer", "d": 480, "b": "Pour in the rest of the {cm:coconut milk}, add the {gb:green beans} and {bs:bamboo shoots} and simmer until just tender." },
+      { "id": "c-fin", "ph": "cook", "if": "protein=chicken", "t": "Season and serve", "d": 60, "b": "Season with the {fs:fish sauce} and a squeeze of {li:lime}. Serve with the rice." },
+      { "id": "c-fin", "ph": "cook", "if": "protein=tofu", "t": "Season and serve", "d": 60, "b": "Season with the {ss:soy sauce} and a squeeze of {li:lime}. Serve with the rice." },
+      { "id": "c-basil", "ph": "cook", "if": "add:basil", "t": "Add the basil", "d": 30, "b": "Take the wok off the heat and stir through the {tb:Thai basil}." }
+    ]
+  },
+  {
+    "id": "tagliatelle",
+    "title": "Tagliatelle with shallot cream",
+    "category": "Pasta",
+    "tags": ["Vegetarian", "Quick"],
+    "time": 30,
+    "difficulty": "Easy",
+    "base": 2,
+    "icon": "utensils",
+    "summary": "A quick weeknight pasta with a silky shallot and parmesan sauce.",
+    "variations": [],
+    "methods": [
+      {
+        "id": "pasta",
+        "label": "Pasta",
+        "q": "Which pasta are you using?",
+        "options": [
+          { "v": "dried", "l": "Dried", "icon": "clock", "time": "9 min", "d": "Easy to keep in the cupboard." },
+          { "v": "fresh", "l": "Fresh", "icon": "zap", "time": "3 min", "d": "Silkier and much quicker." }
+        ]
+      }
+    ],
+    "ingredients": [
+      { "id": "t1", "name": "Tagliatelle", "q": 200, "u": "g", "aisle": "Pantry", "alt": [["pasta=fresh", 250]] },
+      { "id": "t2", "name": "Butter", "q": 40, "u": "g", "note": "unsalted, cold", "aisle": "Dairy" },
+      { "id": "t3", "name": "Shallot", "q": 1, "u": "", "note": "finely chopped", "aisle": "Produce" },
+      { "id": "t4", "name": "Double cream", "q": 200, "u": "ml", "aisle": "Dairy" },
+      { "id": "t5", "name": "Parmesan", "q": 60, "u": "g", "note": "finely grated", "aisle": "Dairy" },
+      { "id": "t6", "name": "Flat-leaf parsley", "q": 1, "u": ["handful", "handfuls"], "note": "chopped", "aisle": "Produce" }
+    ],
+    "steps": [
+      { "id": "p-sh", "ph": "prep", "t": "Chop the shallot", "d": 180, "b": "Peel and finely chop the {t3:shallot}." },
+      { "id": "p-pa", "ph": "prep", "t": "Grate and chop", "d": 180, "b": "Finely grate the {t5:parmesan} and chop the {t6:parsley}." },
+      { "id": "c-wat", "ph": "cook", "t": "Boil the water", "d": 600, "b": "Bring a large pot of well-salted water to the boil." },
+      { "id": "c-sau", "ph": "cook", "needs": ["p-sh"], "t": "Make the sauce", "d": 480, "b": "Melt half the {t2:butter} in a wide pan over a low heat. Cook the {t3:shallot} until soft, then pour in the {t4:cream} and simmer gently." },
+      { "id": "c-pas", "ph": "cook", "if": "pasta=dried", "t": "Cook the pasta", "d": 540, "b": "Add the {t1:tagliatelle} to the boiling water and cook until just tender. Keep a cup of the cooking water." },
+      { "id": "c-pas", "ph": "cook", "if": "pasta=fresh", "t": "Cook the pasta", "d": 180, "b": "Drop the {t1:fresh tagliatelle} into the boiling water and cook for 2–3 minutes. Keep a cup of the cooking water." },
+      { "id": "c-tog", "ph": "cook", "needs": ["p-pa"], "t": "Bring it together", "d": 60, "b": "Toss the pasta into the sauce with the rest of the {t2:butter} and the {t5:parmesan}. Loosen with pasta water and finish with the {t6:parsley}." }
+    ]
+  },
+  {
+    "id": "shakshuka",
+    "title": "Shakshuka",
+    "category": "Breakfast",
+    "tags": ["Vegetarian", "One-pot"],
+    "time": 35,
+    "difficulty": "Medium",
+    "base": 2,
+    "icon": "egg",
+    "summary": "Eggs poached in a smoky pepper and tomato sauce, finished with feta.",
+    "variations": [
+      { "id": "harissa", "kind": "add", "label": "Harissa", "d": "Swaps the paprika smoke for chilli warmth.", "ing": "hr" }
+    ],
+    "methods": [
+      {
+        "id": "eggs",
+        "label": "The eggs",
+        "q": "How do you want to cook the eggs?",
+        "options": [
+          { "v": "hob", "l": "Covered on the hob", "icon": "flame", "time": "7 min", "d": "Fast, with runny yolks." },
+          { "v": "oven", "l": "In the oven", "icon": "layers", "time": "10 min", "d": "Even, set whites at 200°C." }
+        ]
+      }
+    ],
+    "ingredients": [
+      { "id": "s1", "name": "Onion", "q": 1, "u": "", "note": "sliced", "aisle": "Produce" },
+      { "id": "s2", "name": "Red peppers", "q": 2, "u": "", "note": "sliced", "aisle": "Produce" },
+      { "id": "s3", "name": "Garlic", "q": 2, "u": ["clove", "cloves"], "aisle": "Produce" },
+      { "id": "s4", "name": "Chopped tomatoes", "q": 400, "u": "g", "note": "1 tin", "aisle": "Tins & jars" },
+      { "id": "s5", "name": "Smoked paprika", "q": 1, "u": "tsp", "aisle": "Spices" },
+      { "id": "hr", "name": "Harissa", "q": 1, "u": "tbsp", "if": "add:harissa", "aisle": "World foods" },
+      { "id": "s6", "name": "Eggs", "q": 4, "u": "", "aisle": "Dairy & eggs" },
+      { "id": "s7", "name": "Feta", "q": 50, "u": "g", "aisle": "Dairy & eggs" }
+    ],
+    "steps": [
+      { "id": "p-veg", "ph": "prep", "t": "Slice the vegetables", "d": 420, "b": "Thinly slice the {s1:onion} and {s2:peppers}, and crush the {s3:garlic}." },
+      { "id": "c-veg", "ph": "cook", "needs": ["p-veg"], "t": "Soften the vegetables", "d": 600, "b": "Cook the {s1:onion} and {s2:peppers} in a little oil until soft. Add the {s3:garlic} and {s5:paprika} for the last minute." },
+      { "id": "c-sau", "ph": "cook", "if": "!add:harissa", "t": "Simmer the sauce", "d": 600, "b": "Pour in the {s4:tomatoes}, season and simmer until thick." },
+      { "id": "c-sau", "ph": "cook", "if": "add:harissa", "t": "Simmer the sauce", "d": 600, "b": "Stir in the {hr:harissa}, pour in the {s4:tomatoes}, season and simmer until thick." },
+      { "id": "c-egg", "ph": "cook", "if": "eggs=hob", "t": "Cook the eggs", "d": 420, "b": "Make four hollows and crack in the {s6:eggs}. Cover and cook until the whites are set. Crumble over the {s7:feta}." },
+      { "id": "c-egg", "ph": "cook", "if": "eggs=oven", "t": "Bake the eggs", "d": 600, "b": "Make four hollows, crack in the {s6:eggs} and bake at 200°C until the whites are set. Crumble over the {s7:feta}." }
+    ]
+  },
+  {
+    "id": "carrots",
+    "title": "Roast carrots with tahini",
+    "category": "Sides",
+    "tags": ["Vegetarian", "Make-ahead"],
+    "time": 45,
+    "difficulty": "Easy",
+    "base": 4,
+    "icon": "carrot",
+    "summary": "Sweet roasted carrots with cumin, a lemony tahini dressing and a little honey.",
+    "variations": [],
+    "methods": [
+      {
+        "id": "roast",
+        "label": "The carrots",
+        "q": "How do you want to roast them?",
+        "options": [
+          { "v": "oven", "l": "Oven", "icon": "flame", "time": "30 min", "d": "At 220°C on a single tray." },
+          { "v": "air", "l": "Air fryer", "icon": "zap", "time": "18 min", "d": "At 200°C, shaken halfway." }
+        ]
+      }
+    ],
+    "ingredients": [
+      { "id": "c1", "name": "Carrots", "q": 800, "u": "g", "note": "halved lengthways", "aisle": "Produce" },
+      { "id": "c2", "name": "Olive oil", "q": 3, "u": "tbsp", "aisle": "Pantry" },
+      { "id": "c3", "name": "Cumin seeds", "q": 1, "u": "tsp", "aisle": "Spices" },
+      { "id": "c4", "name": "Tahini", "q": 3, "u": "tbsp", "aisle": "Tins & jars" },
+      { "id": "c5", "name": "Lemon", "q": 1, "u": "", "note": "juiced", "aisle": "Produce" },
+      { "id": "c6", "name": "Honey", "q": 1, "u": "tsp", "aisle": "Pantry" }
+    ],
+    "steps": [
+      { "id": "p-car", "ph": "prep", "t": "Prepare the carrots", "d": 300, "b": "Halve the {c1:carrots} lengthways and toss with the {c2:olive oil} and {c3:cumin seeds}." },
+      { "id": "p-dre", "ph": "prep", "t": "Make the dressing", "d": 180, "b": "Whisk the {c4:tahini} with the {c5:lemon juice}, a pinch of salt and enough cold water to make it pourable." },
+      { "id": "c-roa", "ph": "cook", "if": "roast=oven", "needs": ["p-car"], "t": "Roast the carrots", "d": 1800, "b": "Spread the {c1:carrots} on a tray and roast at 220°C until caramelised." },
+      { "id": "c-roa", "ph": "cook", "if": "roast=air", "needs": ["p-car"], "t": "Air-fry the carrots", "d": 1080, "b": "Air-fry the {c1:carrots} at 200°C, shaking the basket halfway." },
+      { "id": "c-ser", "ph": "cook", "needs": ["p-dre"], "t": "Dress and serve", "d": 60, "b": "Spoon the dressing over the warm carrots and drizzle with the {c6:honey}." }
+    ]
+  }
+]
