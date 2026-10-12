@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.IBinder
 import com.simmer.app.domain.StepTimerStore
+import com.simmer.app.domain.TIMER_TICK_MS
 import com.simmer.app.domain.TimerState
 import com.simmer.app.domain.TimerStatus
 import androidx.core.app.ServiceCompat
@@ -54,7 +55,7 @@ class TimerService : Service() {
             scope.launch {
                 while (true) {
                     store.tick()
-                    delay(TICK_MS)
+                    delay(TIMER_TICK_MS)
                 }
             }
         }
@@ -73,7 +74,7 @@ class TimerService : Service() {
         if (running.isEmpty()) {
             if (forcePromote) promote(null, TimerNotifications.placeholder(this))
             stopForeground(STOP_FOREGROUND_REMOVE)
-            posted.keys.forEach { manager.cancel(TimerNotifications.idFor(it)) }
+            posted.keys.forEach { manager.cancel(TimerNotifications.runningId(it)) }
             posted.clear()
             foregroundKey = null
             stopSelf()
@@ -82,11 +83,11 @@ class TimerService : Service() {
         // Timers that stopped running lose their notification.
         (posted.keys - running.keys).forEach { key ->
             posted.remove(key)
-            if (key != foregroundKey) manager.cancel(TimerNotifications.idFor(key))
+            if (key != foregroundKey) manager.cancel(TimerNotifications.runningId(key))
         }
         // The foreground notification belongs to a timer that still runs.
         if (foregroundKey !in running) {
-            val oldId = foregroundKey?.let(TimerNotifications::idFor)
+            val oldId = foregroundKey?.let(TimerNotifications::runningId)
             val key = running.keys.first()
             promote(key, TimerNotifications.running(this, running.getValue(key)))
             posted[key] = running.getValue(key).endAtMs
@@ -94,7 +95,7 @@ class TimerService : Service() {
         }
         running.forEach { (key, timer) ->
             if (posted[key] != timer.endAtMs) {
-                manager.notify(TimerNotifications.idFor(key), TimerNotifications.running(this, timer))
+                manager.notify(TimerNotifications.runningId(key), TimerNotifications.running(this, timer))
                 posted[key] = timer.endAtMs
             }
         }
@@ -103,15 +104,11 @@ class TimerService : Service() {
     private fun promote(key: String?, notification: Notification) {
         ServiceCompat.startForeground(
             this,
-            key?.let(TimerNotifications::idFor) ?: PLACEHOLDER_ID,
+            key?.let(TimerNotifications::runningId) ?: TimerNotifications.PLACEHOLDER_ID,
             notification,
             ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE,
         )
         foregroundKey = key
     }
 
-    private companion object {
-        const val TICK_MS = 250L
-        const val PLACEHOLDER_ID = 1
-    }
 }

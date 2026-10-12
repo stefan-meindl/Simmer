@@ -115,6 +115,7 @@ class StepTimerAndroidTest {
         val noHost = object : TimerHost {
             override fun ensureRunning() = Unit
             override fun finished(key: String, title: String) = Unit
+            override fun dismissFinished(key: String) = Unit
         }
         context.getSharedPreferences("step_timers", Context.MODE_PRIVATE).edit().clear().commit()
         var now = 5_000_000L

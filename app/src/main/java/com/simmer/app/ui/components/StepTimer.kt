@@ -34,6 +34,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.simmer.app.R
+import com.simmer.app.domain.TIMER_TICK_MS
 import com.simmer.app.domain.TimerState
 import com.simmer.app.domain.TimerStatus
 import com.simmer.app.domain.formatClock
@@ -76,21 +77,27 @@ fun StepTimer(
     }
 }
 
-/** A [StepTimer] that counts down against the wall clock; [state] is null while idle. */
+/**
+ * A [StepTimer] that counts down against the wall clock; [state] is null while idle. While running
+ * it calls [onTick] with every redraw, so the timer also finishes when the foreground service
+ * could not be started.
+ */
 @Composable
 fun LiveStepTimer(
     state: TimerState?,
     durationSecs: Int,
     onToggle: () -> Unit,
     onReset: () -> Unit,
+    onTick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val timer = state ?: TimerState.idle(durationSecs)
     val now by produceState(System.currentTimeMillis(), timer.status, timer.endAtMs) {
         value = System.currentTimeMillis()
         while (timer.status == TimerStatus.Running) {
-            delay(250)
+            delay(TIMER_TICK_MS)
             value = System.currentTimeMillis()
+            onTick()
         }
     }
     StepTimer(
@@ -136,18 +143,18 @@ private fun TimerButton(
     val colors = LocalSimmerColors.current
     val interaction = remember { MutableInteractionSource() }
     val pressed by interaction.collectIsPressedAsState()
-    val filled = status == TimerStatus.Idle || status == TimerStatus.Running
+    val accentFilled = status == TimerStatus.Idle || status == TimerStatus.Running
     val done = status == TimerStatus.Done
 
     val fill = when {
         done -> colors.surfaceInverse
-        filled -> if (pressed) colors.accentPressed else colors.accent
+        accentFilled -> if (pressed) colors.accentPressed else colors.accent
         else -> Color.Transparent
     }
     val border = if (done) colors.surfaceInverse else if (pressed) colors.accentPressed else colors.accent
     val content = when {
         done -> colors.textInverse
-        filled -> colors.accentFg
+        accentFilled -> colors.accentFg
         else -> colors.textAccent
     }
     val icon = when (status) {

@@ -18,6 +18,9 @@ interface TimerHost {
 
     /** The timer under [key] reached zero. */
     fun finished(key: String, title: String)
+
+    /** The Done timer under [key] was reset or restarted; its finished alert is obsolete. */
+    fun dismissFinished(key: String)
 }
 
 /**
@@ -46,19 +49,28 @@ class StepTimerStore(
         val current = state.value[key] ?: TimerState.idle(durationSecs, title)
         val next = current.toggle(clock())
         put(key, next)
+        if (current.status == TimerStatus.Done) host.dismissFinished(key)
         if (next.status == TimerStatus.Running) host.ensureRunning()
     }
 
     fun reset(key: String) {
-        state.value[key]?.let { put(key, it.reset()) }
+        val current = state.value[key] ?: return
+        put(key, current.reset())
+        if (current.status == TimerStatus.Done) host.dismissFinished(key)
     }
 
-    /** Finishes every running timer whose time is up and alerts for each, once. */
+    /**
+     * Finishes every running timer whose time is up and alerts for each, once. Safe to call from
+     * several places (the service and the visible timers); a finished timer is no longer Running.
+     */
     fun tick() {
         val now = clock()
-        val finished = state.value.filter { (_, t) -> t.status == TimerStatus.Running && t.tick(now).status == TimerStatus.Done }
+        val finished = state.value
+            .filterValues { it.status == TimerStatus.Running }
+            .mapValues { (_, t) -> t.tick(now) }
+            .filterValues { it.status == TimerStatus.Done }
         if (finished.isEmpty()) return
-        change { map -> map.mapValues { (_, t) -> t.tick(now) } }
+        change { map -> map + finished }
         finished.forEach { (key, t) -> host.finished(key, t.title) }
     }
 

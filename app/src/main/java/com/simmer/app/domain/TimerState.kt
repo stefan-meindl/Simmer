@@ -1,5 +1,8 @@
 package com.simmer.app.domain
 
+/** How often running timers are checked and their clock redrawn. */
+const val TIMER_TICK_MS = 250L
+
 enum class TimerStatus { Idle, Running, Paused, Done }
 
 /**

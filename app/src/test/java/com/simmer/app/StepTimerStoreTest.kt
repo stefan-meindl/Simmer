@@ -15,8 +15,10 @@ class StepTimerStoreTest {
     private class FakeHost : TimerHost {
         var serviceRequests = 0
         val finished = mutableListOf<String>()
+        val dismissed = mutableListOf<String>()
         override fun ensureRunning() { serviceRequests++ }
         override fun finished(key: String, title: String) { finished += key }
+        override fun dismissFinished(key: String) { dismissed += key }
     }
 
     private class FakePersistence : TimerPersistence {
@@ -118,6 +120,35 @@ class StepTimerStoreTest {
         val reopened = store()
         assertEquals(TimerStatus.Done, reopened.timers.value.getValue("chilli/s1").status)
         assertEquals(listOf("chilli/s1"), host.finished)
+    }
+
+    @Test
+    fun resettingADoneTimerDismissesItsFinishedNotification() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 60)
+        now += 60_000
+        store.tick()
+        store.reset("chilli/s1")
+        assertEquals(listOf("chilli/s1"), host.dismissed)
+    }
+
+    @Test
+    fun tappingADoneTimerDismissesItsFinishedNotification() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 60)
+        now += 60_000
+        store.tick()
+        store.toggle("chilli/s1", "Simmer", 60)
+        assertEquals(listOf("chilli/s1"), host.dismissed)
+    }
+
+    @Test
+    fun resettingAPausedTimerDismissesNothing() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 60)
+        store.toggle("chilli/s1", "Simmer", 60)
+        store.reset("chilli/s1")
+        assertTrue(host.dismissed.isEmpty())
     }
 
     @Test

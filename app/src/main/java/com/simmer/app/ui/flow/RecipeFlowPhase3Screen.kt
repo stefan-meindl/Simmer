@@ -137,6 +137,7 @@ fun RecipeFlowPhase3Screen(
             askNotificationPermission()
         },
         onReset = viewModel::resetTimer,
+        onTick = viewModel::tickTimers,
     )
 
     Box(
@@ -250,6 +251,7 @@ private class TimerControls(
     val states: Map<String, TimerState>,
     val onToggle: (stepId: String, title: String, durationSecs: Int) -> Unit,
     val onReset: (stepId: String) -> Unit,
+    val onTick: () -> Unit,
 )
 
 @Composable
@@ -409,6 +411,7 @@ private fun OpenStepCard(
                     durationSecs = step.durationSecs,
                     onToggle = { timers.onToggle(step.id, step.title, step.durationSecs) },
                     onReset = { timers.onReset(step.id) },
+                    onTick = timers.onTick,
                 )
             }
         }

@@ -210,6 +210,9 @@ class RecipeFlowViewModel @Inject constructor(
     fun toggleTimer(stepId: String, title: String, durationSecs: Int) =
         stepTimers.toggle("$recipeId/$stepId", title, durationSecs)
 
+    /** Called by visible running timers, so they finish even without the foreground service. */
+    fun tickTimers() = stepTimers.tick()
+
     fun resetTimer(stepId: String) = stepTimers.reset("$recipeId/$stepId")
 
     fun markStepDone(stepId: String) = progress.markDone(recipeId, stepId)

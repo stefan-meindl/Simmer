@@ -48,13 +48,20 @@ object TimerNotifications {
         manager.createNotificationChannels(listOf(running, done))
     }
 
-    /** Stable notification id per timer key. */
-    fun idFor(key: String): Int = key.hashCode()
+    /** Id of the service's placeholder notification; no timer notification may use it. */
+    const val PLACEHOLDER_ID = 1
+
+    /** Ids of a timer's ongoing and finished notifications. They differ, and never equal [PLACEHOLDER_ID]. */
+    fun runningId(key: String): Int = safe("running/$key".hashCode())
+
+    fun doneId(key: String): Int = safe("done/$key".hashCode())
+
+    private fun safe(id: Int) = if (id == PLACEHOLDER_ID) id + 1 else id
 
     fun running(context: Context, timer: TimerState): Notification =
         NotificationCompat.Builder(context, CHANNEL_RUNNING)
             .setSmallIcon(R.drawable.ic_timer)
-            .setContentTitle(titleOf(context, timer))
+            .setContentTitle(titleOf(context, timer.title))
             .setContentText(context.getString(R.string.timer_notification_running))
             .setOngoing(true)
             .setOnlyAlertOnce(true)
@@ -68,10 +75,10 @@ object TimerNotifications {
             .setContentIntent(openApp(context))
             .build()
 
-    fun done(context: Context, timer: TimerState): Notification =
+    fun done(context: Context, title: String): Notification =
         NotificationCompat.Builder(context, CHANNEL_DONE)
             .setSmallIcon(R.drawable.ic_timer)
-            .setContentTitle(titleOf(context, timer))
+            .setContentTitle(titleOf(context, title))
             .setContentText(context.getString(R.string.timer_notification_done))
             .setAutoCancel(true)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
@@ -86,8 +93,8 @@ object TimerNotifications {
             .setOngoing(true)
             .build()
 
-    private fun titleOf(context: Context, timer: TimerState) =
-        timer.title.ifBlank { context.getString(R.string.timer_notification_fallback_title) }
+    private fun titleOf(context: Context, title: String) =
+        title.ifBlank { context.getString(R.string.timer_notification_fallback_title) }
 
     private fun openApp(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
