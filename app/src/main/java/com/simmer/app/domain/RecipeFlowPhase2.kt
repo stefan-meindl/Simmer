@@ -4,15 +4,10 @@ import com.simmer.app.domain.model.Method
 import com.simmer.app.domain.model.MethodOption
 import com.simmer.app.domain.model.Recipe
 import com.simmer.app.domain.model.Selection
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.update
 
 // ---------------------------------------------------------------------------
 // Appliance filtering
 // ---------------------------------------------------------------------------
-
-/** Appliances a user owns until they edit their kitchen. */
-val DEFAULT_APPLIANCES: Set<String> = setOf("hob", "oven", "microwave")
 
 /** The appliance a Method option needs, by option value. Options not listed need none. */
 private val OPTION_APPLIANCE = mapOf(
@@ -64,24 +59,4 @@ data class StepPlan(val prep: Int, val cook: Int)
 fun stepPlan(recipe: Recipe, servings: Int, selection: Selection): StepPlan {
     val steps = resolve(recipe, servings, selection).steps
     return StepPlan(prep = steps.count { it.phase == "prep" }, cook = steps.count { it.phase == "cook" })
-}
-
-// ---------------------------------------------------------------------------
-// Cooking progress
-// ---------------------------------------------------------------------------
-
-/** True when [new] cooks differently from [old], so progress made on [old] no longer applies. */
-fun changesCookingPlan(old: Phase1State, new: Phase1State): Boolean =
-    old.servings != new.servings || old.selection.normalised() != new.selection.normalised()
-
-/** Steps marked done per recipe (in memory). */
-class CookingProgressStore {
-    private val done = MutableStateFlow<Map<String, Set<String>>>(emptyMap())
-
-    fun doneSteps(recipeId: String): Set<String> = done.value[recipeId].orEmpty()
-
-    fun markDone(recipeId: String, stepId: String) =
-        done.update { it + (recipeId to it[recipeId].orEmpty() + stepId) }
-
-    fun reset(recipeId: String) = done.update { it - recipeId }
 }

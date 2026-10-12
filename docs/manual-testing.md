@@ -72,7 +72,7 @@ Open `chilli`:
 - Caption reads "n items · s servings".
 - Add to list: toast "Added n items for s servings...", button becomes "On your list"; change servings or a choice and it reverts to "Add to list". Toast "View list" opens Shopping tab.
 - Add again: replaces items (Shopping list UI is a later ticket; inspect Room via Android Studio App Inspection > Databases: `shopping_items`, `planned_recipes`).
-- Progress bar: 3 segments, only current is active; "Preparation" goes to Phase 2 placeholder.
+- Progress bar: 3 segments, only current is active; "Preparation" opens Phase 2 (see below); the Cooking segment does nothing (Phase 3 is reached only via Start cooking).
 - Back button and Edit button (placeholder).
 - Kill process mid-edit: servings and selection restored.
 
@@ -84,6 +84,6 @@ Open `chilli`, tap Preparation:
 - Radio cards: icon tile, label, description, time; selected has thick orange outline; TalkBack reads radio + selected.
 - Settings units imperial: oven card reads "Covered at 300°F."
 - Cream panel "x preparation steps, then y cooking steps." changes when picking another method.
-- Back returns to Phase 1 with state kept; changing servings or a swap in Phase 1 shows the new counts here.
+- Tapping the Servings segment or Back returns to Phase 1 with state kept; changing servings or a swap in Phase 1 shows the new counts here.
 - Start cooking opens the Phase 3 placeholder. Rotate and kill the process on this screen: picks restored.
 

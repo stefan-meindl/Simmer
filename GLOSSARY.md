@@ -57,7 +57,7 @@ One of the three ordered screens of the cooking flow, shown as the progress indi
 _Avoid_: Stage, page, screen number
 
 **Cooking Progress**:
-The Steps a user has marked done while cooking a recipe (`CookingProgressStore`). Reset whenever servings or the Selection change, since the Steps themselves change.
+The Steps a user has marked done while cooking a recipe (`CookingProgressStore`). Reset on any change to servings or the Selection, since the Steps themselves change. Persistence is owned by issue #7.
 _Avoid_: Done state, checklist
 
 **Link**:
@@ -77,6 +77,14 @@ _Avoid_: Option, customisation, modification
 **Method**:
 A cooking-technique choice that determines which steps are shown and what timers apply (e.g. hob vs. oven vs. microwave). Methods are filtered by the user's kitchen appliances.
 _Avoid_: Technique, cooking mode, appliance mode
+
+**Kitchen mode**:
+The user's setting for how strictly Methods are filtered by their appliances: `free` offers every option, other modes limit options to owned appliances (a Method with no usable option keeps all of them).
+_Avoid_: Appliance mode, filter mode
+
+**Step plan**:
+The count of prep and cook Steps the current servings and Selection lead to (`StepPlan`), shown on Flow Phase 2.
+_Avoid_: Step count, summary
 
 **Condition**:
 A visibility rule attached to an ingredient or step. Expressed as a string or list of clauses (`key=value`, `key!=value`, `add:id`, `!add:id`) that are AND'd together. Exactly one among steps sharing an id is active for any given selection.

@@ -12,9 +12,9 @@ import com.simmer.app.domain.CookingProgressStore
 import com.simmer.app.domain.Phase1State
 import com.simmer.app.domain.StepPlan
 import com.simmer.app.domain.availableMethods
-import com.simmer.app.domain.changesCookingPlan
 import com.simmer.app.domain.coerceMethodChoices
 import com.simmer.app.domain.model.Method
+import com.simmer.app.domain.model.Recipe
 import com.simmer.app.domain.stepPlan
 import com.simmer.app.domain.PlannedChoice
 import com.simmer.app.domain.stepServings
@@ -50,7 +50,7 @@ sealed interface Phase1Ui {
 sealed interface Phase2Ui {
     data object Loading : Phase2Ui
     data class Content(
-        val recipe: com.simmer.app.domain.model.Recipe,
+        val recipe: Recipe,
         val servings: Int,
         val units: String,
         /** Methods limited to the user's kitchen. */
@@ -97,14 +97,14 @@ class RecipeFlowViewModel @Inject constructor(
     ) { state, units, appliances, mode ->
         if (state == null) Phase2Ui.Loading else {
             val methods = availableMethods(state.recipe, appliances, mode)
-            val selection = coerceMethodChoices(state.selection, methods)
+            // The init collector keeps state.selection coerced to the offered options.
             Phase2Ui.Content(
                 recipe = state.recipe,
                 servings = state.servings,
                 units = units,
                 methods = methods,
-                picks = selection.choice,
-                plan = stepPlan(state.recipe, state.servings, selection),
+                picks = state.selection.choice,
+                plan = stepPlan(state.recipe, state.servings, state.selection),
             )
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Phase2Ui.Loading)
@@ -149,17 +149,19 @@ class RecipeFlowViewModel @Inject constructor(
 
     /** Applies a change to the flow state; cooking progress made on the old plan is dropped. */
     private fun edit(change: (Phase1State) -> Phase1State) {
-        val old = phase1.value ?: return
-        val new = change(old)
-        phase1.value = new
-        if (changesCookingPlan(old, new)) progress.reset(recipeId)
+        phase1.update { old ->
+            if (old == null) return@update null
+            val new = change(old)
+            if (old.changesCookingPlan(new)) progress.reset(recipeId)
+            new
+        }
     }
 
     fun stepServings(delta: Int) = edit { it.withServings(stepServings(it.servings, delta)) }
 
     fun selectSwap(variationId: String, value: String) = edit { it.withSwap(variationId, value) }
 
-    fun selectMethod(methodId: String, value: String) = edit { it.withMethod(methodId, value) }
+    fun selectMethod(methodId: String, value: String) = edit { it.withSwap(methodId, value) }
 
     fun setAddIn(variationId: String, on: Boolean) = edit { it.withAddIn(variationId, on) }
 

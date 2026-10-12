@@ -87,7 +87,8 @@ fun SimmerNavHost(
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
                 onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
-                onPhaseClick = { navController.popBackStack() },
+                // Phase 3 is reached only via Start cooking.
+                onPhaseClick = { phase -> if (phase == 1) navController.popBackStack() },
             )
         }
 
