@@ -17,6 +17,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -72,6 +74,8 @@ import com.simmer.app.ui.theme.SimmerTextStyle_ScreenTitle
 /** The Recipes tab: browse, search and filter recipes, resume Planned ones, open the cooking flow. */
 @Composable
 fun RecipesScreen(
+    recipeSaved: Boolean,
+    onRecipeSavedShown: () -> Unit,
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
     onAddRecipe: () -> Unit,
@@ -83,6 +87,16 @@ fun RecipesScreen(
     val ui by viewModel.ui.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     val content = ui as? RecipesUi.Content
+    val listState = rememberLazyListState()
+
+    // A recipe was just saved: it is listed first, so drop the filters that could hide it and show the top.
+    LaunchedEffect(recipeSaved) {
+        if (recipeSaved) {
+            viewModel.clearFilters()
+            listState.scrollToItem(0)
+            onRecipeSavedShown()
+        }
+    }
 
     Box(
         modifier = modifier
@@ -91,6 +105,7 @@ fun RecipesScreen(
             .windowInsetsPadding(WindowInsets.statusBars),
     ) {
         LazyColumn(
+            state = listState,
             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize(),
@@ -367,4 +382,4 @@ internal val DISPLAY_LABELS: Map<String, Int> = mapOf(
 
 /** Localised category, tag or difficulty; values without a translation (User Recipes) show as written. */
 @Composable
-private fun displayLabel(raw: String): String = DISPLAY_LABELS[raw]?.let { stringResource(it) } ?: raw
+internal fun displayLabel(raw: String): String = DISPLAY_LABELS[raw]?.let { stringResource(it) } ?: raw

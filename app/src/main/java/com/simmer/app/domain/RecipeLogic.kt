@@ -24,6 +24,9 @@ fun cond(c: String?, sel: Selection): Boolean {
     return sel.choice[parts[0]] == parts[1]
 }
 
+/** True for an add-in's condition ("add:id"); false for "!add:id", method picks and null. */
+fun isAddInCondition(c: String?): Boolean = c?.startsWith("add:") == true
+
 /**
  * Evaluates a list of conditions (all must match).
  */

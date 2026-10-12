@@ -163,6 +163,8 @@ fun SimmerTextArea(
     placeholder: String? = null,
     enabled: Boolean = true,
     minLines: Int = 3,
+    /** Applied to the editable field itself, e.g. a focus requester or an accessibility label. */
+    fieldModifier: Modifier = Modifier,
 ) {
     val colors = LocalSimmerColors.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -181,6 +183,7 @@ fun SimmerTextArea(
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
+            modifier = fieldModifier,
             enabled = enabled,
             minLines = minLines,
             textStyle = SimmerTextStyle_BodyMd.copy(color = colors.textPrimary),

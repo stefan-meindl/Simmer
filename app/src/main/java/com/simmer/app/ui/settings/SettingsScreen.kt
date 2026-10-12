@@ -344,7 +344,7 @@ private fun AppliancePill(label: String) {
 
 /** Catalogue appliances have a translation; custom ones ("c:Name") show as the user wrote them. */
 @Composable
-private fun applianceLabel(key: String): String {
+internal fun applianceLabel(key: String): String {
     if (key.startsWith("c:")) return key.removePrefix("c:")
     val res = APPLIANCE_LABELS[key] ?: return key
     return stringResource(res)

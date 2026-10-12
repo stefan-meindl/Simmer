@@ -1,6 +1,8 @@
 package com.simmer.app.ui.nav
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -14,7 +16,7 @@ import com.simmer.app.ui.flow.RecipeFlowPhase2Screen
 import com.simmer.app.ui.flow.RecipeFlowPhase3Screen
 import com.simmer.app.ui.recipes.RecipesScreen
 import com.simmer.app.ui.settings.SettingsScreen
-import com.simmer.app.ui.screens.AddRecipePlaceholder
+import com.simmer.app.ui.add.AddRecipeScreen
 import com.simmer.app.ui.shopping.ShoppingListScreen
 import com.simmer.app.ui.screens.YourKitchenPlaceholder
 
@@ -44,8 +46,12 @@ fun SimmerNavHost(
         // Bottom tab destinations
         // ----------------------------------------------------------------
 
-        composable<RecipesTab> {
+        composable<RecipesTab> { backStackEntry ->
+            val saved by backStackEntry.savedStateHandle
+                .getStateFlow(RECIPE_SAVED_KEY, false).collectAsStateWithLifecycle()
             RecipesScreen(
+                recipeSaved = saved,
+                onRecipeSavedShown = { backStackEntry.savedStateHandle[RECIPE_SAVED_KEY] = false },
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
                 onAddRecipe = { navController.navigate(AddRecipe) },
@@ -124,8 +130,13 @@ fun SimmerNavHost(
         // ----------------------------------------------------------------
 
         composable<AddRecipe> {
-            AddRecipePlaceholder(
+            AddRecipeScreen(
                 onBack = { navController.popBackStack() },
+                // Settings opens on top, so back returns here with the pasted text.
+                onChangeKitchen = { navController.openSettingsOnTop() },
+                onEditDetails = { navController.navigate(EditRecipe()) },
+                // The new recipe is listed first on the Recipes tab, which scrolls there.
+                onSaved = { navController.finishAddRecipe() },
             )
         }
 

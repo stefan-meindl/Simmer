@@ -28,7 +28,7 @@ import com.simmer.app.domain.flowPhaseNumber
 import com.simmer.app.domain.ProgressSegment
 import com.simmer.app.domain.SegmentState
 import com.simmer.app.domain.progressSegments
-import com.simmer.app.ui.components.LinkButton
+import com.simmer.app.ui.components.EditAction
 import com.simmer.app.ui.theme.LocalSimmerColors
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMdMedium
 import com.simmer.app.ui.theme.SimmerTextStyle_Caption
@@ -90,7 +90,7 @@ fun FlowTopBar(
                 color = colors.textTertiary,
             )
         }
-        LinkButton(text = stringResource(R.string.flow_edit), onClick = onEdit)
+        EditAction(text = stringResource(R.string.flow_edit), onClick = onEdit)
     }
 }
 

@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.PrefsRepository
 import com.simmer.app.data.RecipeRepository
 import com.simmer.app.domain.KitchenMode
+import com.simmer.app.domain.orderAppliances
 import com.simmer.app.domain.SettingsPreview
 import com.simmer.app.domain.settingsPreview
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -51,7 +52,7 @@ class SettingsViewModel @Inject constructor(
             lang = lang,
             units = units,
             spices = spices,
-            appliances = appliances.sorted(),
+            appliances = orderAppliances(appliances),
             kitchenMode = KitchenMode.fromKey(mode),
             preview = recipe?.let { settingsPreview(it, units, spices, lang) },
         )

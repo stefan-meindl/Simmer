@@ -38,8 +38,8 @@ data class RecipesOverview(
 }
 
 /**
- * Filters [all] by title or ingredient name ([RecipeFilters.query]), category and tags, which all AND.
- * The Planned section ignores the filters.
+ * Filters [all] (already in display order, see `RecipeDao.observeAll`) by title or ingredient name
+ * ([RecipeFilters.query]), category and tags, which all AND. The Planned section ignores the filters.
  */
 fun recipesOverview(
     all: List<Recipe>,

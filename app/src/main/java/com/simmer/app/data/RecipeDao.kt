@@ -6,16 +6,19 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RecipeDao {
 
-    /** Returns all recipes as a reactive Flow. */
-    @Query("SELECT * FROM recipes")
+    /**
+     * Returns all recipes as a reactive Flow in display order: User Recipes first, newest first, then
+     * built-ins in the order they were seeded. [upsert] keeps a row's `rowid`, so editing never moves a recipe.
+     */
+    @Query("SELECT * FROM recipes ORDER BY mine DESC, CASE WHEN mine = 1 THEN -rowid ELSE rowid END")
     fun observeAll(): Flow<List<RecipeEntity>>
 
     /** Returns a single recipe by ID, or null if not found. */
     @Query("SELECT * FROM recipes WHERE id = :id")
     suspend fun getById(id: String): RecipeEntity?
 
-    /** Inserts or replaces a recipe. */
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    /** Inserts a recipe or updates it in place. */
+    @Upsert
     suspend fun upsert(recipe: RecipeEntity)
 
     /** Deletes a recipe by ID. Only user recipes (mine = true) should be deleted. */

@@ -2,6 +2,7 @@ package com.simmer.app.data
 
 import com.simmer.app.domain.RecipeDraft
 import com.simmer.app.domain.model.Recipe
+import com.simmer.app.domain.stubConvert
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -26,6 +27,35 @@ class RecipeDraftStore @Inject constructor() {
 
     fun set(recipe: Recipe?) {
         state.value = recipe
+    }
+}
+
+/**
+ * The Add recipe flow's writes: Convert puts a new recipe in the [RecipeDraftStore], [discard] takes it
+ * back out (Edit text, leaving the screen), Save recipe stores it as a User Recipe.
+ */
+@Singleton
+class AddRecipeSession @Inject constructor(
+    private val recipes: RecipeWriter,
+    private val drafts: RecipeDraftStore,
+) {
+    /** Replaces the draft with the conversion of [text] as recipe [id]; false (no draft) when it cannot be converted. */
+    fun convert(text: String, id: String): Boolean {
+        val recipe = stubConvert(text, id)
+        drafts.set(recipe)
+        return recipe != null
+    }
+
+    /** Drops the draft; the pasted text is not kept here. */
+    fun discard() = drafts.set(null)
+
+    /** Stores the draft (with any edits) as a User Recipe and clears it; null when there is no draft. */
+    suspend fun save(): Recipe? {
+        val draft = drafts.current.value ?: return null
+        val recipe = draft.copy(mine = true, edited = false)
+        recipes.save(recipe)
+        drafts.set(null)
+        return recipe
     }
 }
 
