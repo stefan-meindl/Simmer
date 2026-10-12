@@ -6,6 +6,7 @@ import com.simmer.app.data.AppDatabase
 import com.simmer.app.data.MIGRATION_1_2
 import com.simmer.app.data.RecipeDao
 import com.simmer.app.data.ShoppingDao
+import com.simmer.app.domain.CookingProgressStore
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -24,6 +25,10 @@ object DatabaseModule {
             .addMigrations(MIGRATION_1_2)
             .fallbackToDestructiveMigration()
             .build()
+
+    @Provides
+    @Singleton
+    fun provideCookingProgress(): CookingProgressStore = CookingProgressStore()
 
     @Provides
     fun provideRecipeDao(db: AppDatabase): RecipeDao = db.recipeDao()

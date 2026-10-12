@@ -38,6 +38,9 @@ data class Phase1State(
     fun withSwap(variationId: String, value: String) =
         copy(selection = selection.copy(choice = selection.choice + (variationId to value)))
 
+    /** A Method pick; stored in the same choice map as swaps. */
+    fun withMethod(methodId: String, value: String) = withSwap(methodId, value)
+
     fun withAddIn(variationId: String, on: Boolean) =
         copy(selection = selection.copy(add = selection.add + (variationId to on)))
 
@@ -66,4 +69,4 @@ data class Phase1State(
     }
 }
 
-private fun Selection.normalised() = copy(add = add.filterValues { it })
+internal fun Selection.normalised() = copy(add = add.filterValues { it })

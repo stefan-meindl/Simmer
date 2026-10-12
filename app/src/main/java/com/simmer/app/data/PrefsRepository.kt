@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
+import com.simmer.app.domain.DEFAULT_APPLIANCES
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -44,8 +45,8 @@ class PrefsRepository @Inject constructor(
     /** Spices display: "spoons" | "grams". Defaults to "spoons". */
     val spices: Flow<String> = store.data.map { it[KEY_SPICES] ?: "spoons" }
 
-    /** Set of appliance keys the user owns. */
-    val appliances: Flow<Set<String>> = store.data.map { it[KEY_APPLIANCES] ?: emptySet() }
+    /** Set of appliance keys the user owns. Defaults to Hob, Oven and Microwave until edited. */
+    val appliances: Flow<Set<String>> = store.data.map { it[KEY_APPLIANCES] ?: DEFAULT_APPLIANCES }
 
     /** Set of custom appliance names added by the user. */
     val customApps: Flow<Set<String>> = store.data.map { it[KEY_CUSTOM_APPS] ?: emptySet() }

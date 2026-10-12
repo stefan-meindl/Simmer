@@ -56,6 +56,10 @@ _Avoid_: Stage, section
 One of the three ordered screens of the cooking flow, shown as the progress indicator (`FLOW_PHASE_COUNT = 3`): 1 Servings, 2 Preparation, 3 Cooking. Code uses `phase` for it too (`Phase1State`, `ProgressSegment.phase`, `flow_phase_*`); it is unrelated to a Step's `prep`/`cook` Phase.
 _Avoid_: Stage, page, screen number
 
+**Cooking Progress**:
+The Steps a user has marked done while cooking a recipe (`CookingProgressStore`). Reset whenever servings or the Selection change, since the Steps themselves change.
+_Avoid_: Done state, checklist
+
 **Link**:
 An ingredient reference embedded in a step's body text, encoded as `{ingredientId:shown text}`. Renders as a tappable underlined span that shows the ingredient's amount and tips.
 _Avoid_: Reference, tag, mention

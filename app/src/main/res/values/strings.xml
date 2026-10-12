@@ -48,4 +48,19 @@
         <item quantity="other">%1$d h</item>
     </plurals>
     <string name="flow_time_h_min">%1$s %2$s</string>
+
+    <!-- Recipe flow: phase 2 (methods) -->
+    <string name="flow_methods_title">How will you cook it?</string>
+    <string name="flow_methods_caption">Your choices set the steps and timers for %1$s.</string>
+    <plurals name="flow_prep_steps_count">
+        <item quantity="one">%1$d preparation step</item>
+        <item quantity="other">%1$d preparation steps</item>
+    </plurals>
+    <plurals name="flow_cook_steps_count">
+        <item quantity="one">%1$d cooking step</item>
+        <item quantity="other">%1$d cooking steps</item>
+    </plurals>
+    <string name="flow_plan">%1$s, then %2$s.</string>
+    <string name="flow_prep_first">Preparation comes first, so everything is ready when the pan is hot.</string>
+    <string name="flow_start_cooking">Start cooking</string>
 </resources>

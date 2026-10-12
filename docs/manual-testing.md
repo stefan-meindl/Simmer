@@ -75,3 +75,15 @@ Open `chilli`:
 - Progress bar: 3 segments, only current is active; "Preparation" goes to Phase 2 placeholder.
 - Back button and Edit button (placeholder).
 - Kill process mid-edit: servings and selection restored.
+
+### Recipe flow, Phase 2 (#6)
+
+Open `chilli`, tap Preparation:
+- Title "How will you cook it?", caption "...for s servings." (en + de, singular at 1).
+- Default kitchen (Hob, Oven, Microwave): chilli offers Pot and Oven only (no Slow cooker); rice offers Pot and Microwave.
+- Radio cards: icon tile, label, description, time; selected has thick orange outline; TalkBack reads radio + selected.
+- Settings units imperial: oven card reads "Covered at 300°F."
+- Cream panel "x preparation steps, then y cooking steps." changes when picking another method.
+- Back returns to Phase 1 with state kept; changing servings or a swap in Phase 1 shows the new counts here.
+- Start cooking opens the Phase 3 placeholder. Rotate and kill the process on this screen: picks restored.
+
