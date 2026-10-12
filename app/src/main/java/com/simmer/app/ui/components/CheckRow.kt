@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.simmer.app.ui.theme.LocalSimmerColors
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
 import com.simmer.app.ui.theme.SimmerTextStyle_BodySm
+import com.simmer.app.ui.theme.SimmerTextStyle_BodySmMedium
 
 /**
  * Check row for lists (e.g. ingredients, tasks).
@@ -31,6 +32,7 @@ import com.simmer.app.ui.theme.SimmerTextStyle_BodySm
  * @param checked Whether the checkbox is checked.
  * @param onCheckedChange Callback when the user toggles the row.
  * @param subtitle Optional secondary line below the label (body-sm, text-secondary color).
+ * @param trailing Optional short text (e.g. an amount) shown before the checkbox.
  */
 @Composable
 fun CheckRow(
@@ -39,6 +41,7 @@ fun CheckRow(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     subtitle: String? = null,
+    trailing: String? = null,
 ) {
     val colors = LocalSimmerColors.current
 
@@ -68,6 +71,14 @@ fun CheckRow(
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
+        }
+        if (trailing != null) {
+            Text(
+                text = trailing,
+                style = SimmerTextStyle_BodySmMedium,
+                color = colors.textSecondary,
+                modifier = Modifier.padding(start = 8.dp),
+            )
         }
         Checkbox(
             checked = checked,
