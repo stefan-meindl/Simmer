@@ -67,6 +67,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simmer.app.R
 import com.simmer.app.domain.CookingStep
 import com.simmer.app.domain.CookingView
+import com.simmer.app.domain.TimerState
 import com.simmer.app.domain.formatDuration
 import com.simmer.app.domain.model.BodySegment
 import com.simmer.app.domain.model.ResolvedIngredient
@@ -75,7 +76,7 @@ import com.simmer.app.ui.components.DarkButton
 import com.simmer.app.ui.components.GradientHeroCard
 import com.simmer.app.ui.components.LinkButton
 import com.simmer.app.ui.components.SecondaryButton
-import com.simmer.app.ui.components.StepTimer
+import com.simmer.app.ui.components.LiveStepTimer
 import com.simmer.app.ui.theme.LocalSimmerColors
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMdMedium
@@ -127,6 +128,16 @@ fun RecipeFlowPhase3Screen(
 ) {
     val colors = LocalSimmerColors.current
     val ui by viewModel.phase3.collectAsStateWithLifecycle()
+    val timerStates by viewModel.timers.collectAsStateWithLifecycle()
+    val askNotificationPermission = rememberNotificationPermissionRequest()
+    val timers = TimerControls(
+        states = timerStates,
+        onToggle = { stepId, title, secs ->
+            viewModel.toggleTimer(stepId, title, secs)
+            askNotificationPermission()
+        },
+        onReset = viewModel::resetTimer,
+    )
 
     Box(
         modifier = modifier
@@ -144,6 +155,7 @@ fun RecipeFlowPhase3Screen(
                     onMarkDone = viewModel::markStepDone,
                     onUndo = viewModel::undoStep,
                     onBackToRecipes = onBackToRecipes,
+                    timers = timers,
                     modifier = Modifier.weight(1f),
                 )
             }
@@ -157,6 +169,7 @@ private fun CookingList(
     onMarkDone: (String) -> Unit,
     onUndo: (String) -> Unit,
     onBackToRecipes: () -> Unit,
+    timers: TimerControls,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalSimmerColors.current
@@ -224,11 +237,20 @@ private fun CookingList(
                     onMarkDone = { onMarkDone(item.cookingStep.step.id) },
                     onUndo = { onUndo(item.cookingStep.step.id) },
                     onJump = ::jumpTo,
+                    timers = timers,
                 )
             }
         }
     }
 }
+
+/** The timers of this recipe by step id, and what tapping them does. */
+@androidx.compose.runtime.Immutable
+private class TimerControls(
+    val states: Map<String, TimerState>,
+    val onToggle: (stepId: String, title: String, durationSecs: Int) -> Unit,
+    val onReset: (stepId: String) -> Unit,
+)
 
 @Composable
 private fun SuccessPanel(title: String, summary: String, onBackToRecipes: () -> Unit) {
@@ -302,8 +324,9 @@ private fun StepRow(
     onMarkDone: () -> Unit,
     onUndo: () -> Unit,
     onJump: (String) -> Unit,
+    timers: TimerControls,
 ) {
-    if (cookingStep.done) DoneStepRow(cookingStep, onUndo) else OpenStepCard(cookingStep, ingredients, onMarkDone, onJump)
+    if (cookingStep.done) DoneStepRow(cookingStep, onUndo) else OpenStepCard(cookingStep, ingredients, onMarkDone, onJump, timers)
 }
 
 @Composable
@@ -351,6 +374,7 @@ private fun OpenStepCard(
     ingredients: Map<String, ResolvedIngredient>,
     onMarkDone: () -> Unit,
     onJump: (String) -> Unit,
+    timers: TimerControls,
 ) {
     val colors = LocalSimmerColors.current
     val shape = RoundedCornerShape(12.dp)
@@ -380,13 +404,11 @@ private fun OpenStepCard(
                 Text(step.title, style = SimmerTextStyle_Heading4, color = colors.textPrimary)
             }
             if (step.durationSecs > 0) {
-                val duration = formatDuration(step.durationSecs)
-                val description = stringResource(R.string.flow_timer_description, duration)
-                // Static idle button: the countdown is a later ticket.
-                StepTimer(
-                    durationText = duration,
-                    onClick = {},
-                    modifier = Modifier.semantics { contentDescription = description },
+                LiveStepTimer(
+                    state = timers.states[step.id],
+                    durationSecs = step.durationSecs,
+                    onToggle = { timers.onToggle(step.id, step.title, step.durationSecs) },
+                    onReset = { timers.onReset(step.id) },
                 )
             }
         }

@@ -74,7 +74,21 @@
     <string name="flow_undo">Rückgängig</string>
     <string name="flow_enjoy">Guten Appetit.</string>
     <string name="flow_back_to_recipes">Zurück zu den Rezepten</string>
-    <string name="flow_timer_description">Timer, %1$s</string>
+
+    <!-- Step timer -->
+    <string name="timer_done">Fertig</string>
+    <string name="timer_start_description">Timer %1$s starten</string>
+    <string name="timer_pause_description">Timer pausieren, noch %1$s</string>
+    <string name="timer_resume_description">Timer fortsetzen, noch %1$s</string>
+    <string name="timer_done_description">Timer abgelaufen, zum Zurücksetzen tippen</string>
+    <string name="timer_reset_description">Timer zurücksetzen</string>
+    <string name="timer_channel_running">Laufende Timer</string>
+    <string name="timer_channel_running_description">Eine dauerhafte Benachrichtigung pro laufendem Schritt-Timer.</string>
+    <string name="timer_channel_done">Abgelaufene Timer</string>
+    <string name="timer_channel_done_description">Ton und Vibration, wenn ein Schritt-Timer abläuft.</string>
+    <string name="timer_notification_running">Timer läuft</string>
+    <string name="timer_notification_done">Timer abgelaufen</string>
+    <string name="timer_notification_fallback_title">Schritt-Timer</string>
 
     <!-- Recipes overview -->
     <string name="recipes_title">Was kochen wir heute?</string>

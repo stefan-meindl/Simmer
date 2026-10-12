@@ -76,7 +76,21 @@
     <string name="flow_undo">Undo</string>
     <string name="flow_enjoy">Enjoy your meal.</string>
     <string name="flow_back_to_recipes">Back to recipes</string>
-    <string name="flow_timer_description">Timer, %1$s</string>
+
+    <!-- Step timer -->
+    <string name="timer_done">Done</string>
+    <string name="timer_start_description">Start %1$s timer</string>
+    <string name="timer_pause_description">Pause timer, %1$s left</string>
+    <string name="timer_resume_description">Resume timer, %1$s left</string>
+    <string name="timer_done_description">Timer finished, tap to reset</string>
+    <string name="timer_reset_description">Reset timer</string>
+    <string name="timer_channel_running">Running timers</string>
+    <string name="timer_channel_running_description">One ongoing notification for each running step timer.</string>
+    <string name="timer_channel_done">Finished timers</string>
+    <string name="timer_channel_done_description">Sound and vibration when a step timer ends.</string>
+    <string name="timer_notification_running">Timer running</string>
+    <string name="timer_notification_done">Timer done</string>
+    <string name="timer_notification_fallback_title">Step timer</string>
 
     <!-- Recipes overview -->
     <string name="recipes_title">What are we cooking?</string>
