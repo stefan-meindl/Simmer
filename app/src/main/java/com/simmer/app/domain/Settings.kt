@@ -17,6 +17,18 @@ enum class KitchenMode(val key: String) {
     }
 }
 
+/** Catalogue appliance keys in display order. Custom ones are stored as "c:Name". */
+val APPLIANCE_CATALOGUE = listOf(
+    "hob", "oven", "microwave", "airfryer", "slowcooker", "pressure", "multicooker", "ricecooker",
+    "steamoven", "grill", "charcoal", "smoker", "pizzaoven", "grillpan", "wok", "dutchoven", "sousvide",
+    "toaster", "kettle", "processor", "mixer", "handmixer", "blender", "stickblender", "breadmaker",
+    "waffle", "icecream", "dehydrator",
+)
+
+/** [keys] in catalogue order, then any other keys (custom appliances) alphabetically. */
+fun orderAppliances(keys: Set<String>): List<String> =
+    APPLIANCE_CATALOGUE.filter { it in keys } + (keys - APPLIANCE_CATALOGUE.toSet()).sorted()
+
 /** One line of the Settings preview: an ingredient name and its amount in the user's units. */
 data class PreviewRow(val name: String, val amount: String)
 

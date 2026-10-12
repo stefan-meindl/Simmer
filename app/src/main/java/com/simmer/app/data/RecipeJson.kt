@@ -137,6 +137,13 @@ fun Recipe.toEntity(): RecipeEntity {
     )
 }
 
+/** The Add recipe draft as text, for saved state. */
+fun Recipe.toDraftJson(): String = toEntity().json
+
+/** Inverse of [toDraftJson]; the draft is always a User Recipe that is not an edited built-in. */
+fun draftFromJson(json: String): Recipe =
+    RecipeEntity(id = "", json = json, mine = true, edited = false).toDomain()
+
 fun RecipeEntity.toDomain(): Recipe {
     val rj = jsonCodec.decodeFromString(RecipeJson.serializer(), this.json)
     return rj.toDomain(mine = this.mine, edited = this.edited)

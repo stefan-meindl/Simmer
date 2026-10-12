@@ -174,7 +174,7 @@ fun addRecipeReview(recipe: Recipe, units: String, spices: String, lang: String)
         ingredients = recipe.ingredients.map {
             ReviewIngredient(
                 name = it.name,
-                optional = it.ifCondition?.startsWith("add:") == true,
+                optional = isAddInCondition(it.ifCondition),
                 note = it.note,
                 aisle = it.aisle,
                 amount = fmtQty(it.quantity, it.unit, it, units, spices, lang),
@@ -204,4 +204,4 @@ sealed interface KitchenLine {
 }
 
 fun kitchenLine(appliances: Set<String>, mode: KitchenMode): KitchenLine =
-    if (mode == KitchenMode.Free) KitchenLine.AnyAppliance else KitchenLine.OnlyYours(appliances.sorted())
+    if (mode == KitchenMode.Free) KitchenLine.AnyAppliance else KitchenLine.OnlyYours(orderAppliances(appliances))

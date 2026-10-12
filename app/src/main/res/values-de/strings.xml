@@ -292,7 +292,6 @@
     <string name="add_convert">Rezept umwandeln</string>
     <string name="add_download">Rezept-Leser laden (2,6 GB)</string>
     <string name="add_reader_note">Läuft auf deinem Handy. Wird einmal über WLAN geladen.</string>
-    <string name="add_reader_note_any">Läuft auf deinem Handy. Wird einmal geladen.</string>
     <string name="add_check_first">Vor dem Speichern prüfen</string>
     <string name="add_choices_found">Gefundene Optionen</string>
     <string name="add_choices_hint">Du wählst sie, bevor du mit dem Kochen beginnst.</string>

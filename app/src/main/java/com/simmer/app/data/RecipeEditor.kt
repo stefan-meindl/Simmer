@@ -31,22 +31,23 @@ class RecipeDraftStore @Inject constructor() {
 }
 
 /**
- * The Add recipe flow's writes: Convert puts a new recipe in the [RecipeDraftStore], Edit text takes it
- * back out, Save recipe stores it as a User Recipe.
+ * The Add recipe flow's writes: Convert puts a new recipe in the [RecipeDraftStore], [discard] takes it
+ * back out (Edit text, leaving the screen), Save recipe stores it as a User Recipe.
  */
 @Singleton
 class AddRecipeSession @Inject constructor(
     private val recipes: RecipeWriter,
     private val drafts: RecipeDraftStore,
 ) {
-    /** Replaces the draft with the conversion of [text] under the id from [newId]; false (no draft) when it cannot be converted. */
-    fun convert(text: String, newId: () -> String): Boolean {
-        val recipe = stubConvert(text, newId())
+    /** Replaces the draft with the conversion of [text] as recipe [id]; false (no draft) when it cannot be converted. */
+    fun convert(text: String, id: String): Boolean {
+        val recipe = stubConvert(text, id)
         drafts.set(recipe)
         return recipe != null
     }
 
-    fun editText() = drafts.set(null)
+    /** Drops the draft; the pasted text is not kept here. */
+    fun discard() = drafts.set(null)
 
     /** Stores the draft (with any edits) as a User Recipe and clears it; null when there is no draft. */
     suspend fun save(): Recipe? {

@@ -35,16 +35,20 @@ The in-progress state of Edit recipe (`RecipeDraft`): fields as typed text, buil
 _Avoid_: Form state, edit state
 
 **Add recipe draft**:
-The unsaved Recipe the Add recipe review shows (`RecipeDraftStore`). Edit recipe opened without a recipe id works on it and writes back to the store, not to Room. Held in memory only; it does not survive process death.
+The unsaved Recipe the Add recipe review shows (`RecipeDraftStore`). Edit recipe opened without a recipe id works on it and writes back to the store, not to Room. Held in memory, and mirrored as JSON into Add recipe's saved state so it survives process death.
 _Avoid_: Pending recipe, import result
 
 **Add recipe**:
-The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe, listed first on the Recipes overview, and opens Flow Phase 1). Convert is offered only for the built-in example (`stubConvert`) until the recipe reader exists; other text shows the Download recipe reader placeholder.
+The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe, listed first on the Recipes overview, and opens Flow Phase 1). Convert is offered only for the built-in example (`stubConvert`) until the RecipeReader exists; other text shows an inactive Download recipe reader button.
 _Avoid_: Import screen, new recipe screen
 
-**Recipe reader**:
-The on-device language model that will convert pasted text into a Recipe (about 2.6 GB, downloaded once). Not built yet: Settings shows its static state and Add recipe shows a Download placeholder.
-_Avoid_: AI, model, converter
+**Kitchen line**:
+The line on Add recipe's paste stage saying which Appliances the generated Methods may use: the user's Appliances in catalogue order (custom ones after) for Strict and Medium, or "any appliance" for Free for all (`KitchenLine`).
+_Avoid_: Kitchen summary, appliance note
+
+**Choices found**:
+The review's list of what the Pipeline found that the user will pick before cooking: each Method and each add-in Variation (`ReviewChoice`).
+_Avoid_: Options found, variations list
 
 **Local override**:
 A built-in Recipe's saved edit, stored in Room with `edited = true`. Restore original removes it and brings the shipped version back.
@@ -59,7 +63,7 @@ The complete set of a user's current choices for a recipe: a map of method picks
 _Avoid_: Options, preferences, config
 
 **Recipes overview**:
-The Recipes tab: search, Category tabs, Tag chips, the Planned section and the list of recipe cards that open the cooking flow. Filters AND together; the Planned section ignores them.
+The Recipes tab: search, Category tabs, Tag chips, the Planned section and the list of recipe cards that open the cooking flow. Filters AND together; the Planned section ignores them. User Recipes are listed first, newest first, then built-ins (the order comes from `RecipeDao.observeAll`).
 _Avoid_: Home, library, browse screen
 
 **Category**:

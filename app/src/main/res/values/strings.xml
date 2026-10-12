@@ -294,7 +294,6 @@
     <string name="add_convert">Convert recipe</string>
     <string name="add_download">Download recipe reader (2.6 GB)</string>
     <string name="add_reader_note">Runs on your phone. Downloads once over Wi-Fi.</string>
-    <string name="add_reader_note_any">Runs on your phone. Downloads once.</string>
     <string name="add_check_first">Check before saving</string>
     <string name="add_choices_found">Choices found</string>
     <string name="add_choices_hint">You pick these before you start cooking.</string>
@@ -312,7 +311,7 @@
         <item quantity="other">%1$d preparation and %2$d cooking steps</item>
     </plurals>
     <string name="add_optional">Optional</string>
-    <string name="add_no_aisle">No shop section</string>
+    <string name="add_no_aisle">No aisle</string>
     <string name="add_default_note">Shown for %1$s. Other choices change these steps.</string>
     <string name="add_and">%1$s and %2$s</string>
     <string name="add_edit_text">Edit text</string>

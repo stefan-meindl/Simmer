@@ -9,17 +9,17 @@ import org.junit.Test
 /** Seam: [kitchenLine], the "What happens next" line about the cook's appliances. */
 class AddRecipeKitchenLineTest {
 
-    @Test fun `strict and medium name the appliances in a stable order`() {
-        val owned = setOf("oven", "hob", "microwave")
+    @Test fun `strict and medium name the appliances in catalogue order`() {
+        val owned = setOf("microwave", "oven", "hob")
 
-        assertEquals(KitchenLine.OnlyYours(listOf("hob", "microwave", "oven")), kitchenLine(owned, KitchenMode.Medium))
-        assertEquals(KitchenLine.OnlyYours(listOf("hob", "microwave", "oven")), kitchenLine(owned, KitchenMode.Strict))
+        assertEquals(KitchenLine.OnlyYours(listOf("hob", "oven", "microwave")), kitchenLine(owned, KitchenMode.Medium))
+        assertEquals(KitchenLine.OnlyYours(listOf("hob", "oven", "microwave")), kitchenLine(owned, KitchenMode.Strict))
     }
 
-    @Test fun `custom appliances are listed too`() {
+    @Test fun `custom appliances follow the catalogue ones alphabetically`() {
         assertEquals(
-            KitchenLine.OnlyYours(listOf("c:Thermomix", "oven")),
-            kitchenLine(setOf("oven", "c:Thermomix"), KitchenMode.Medium),
+            KitchenLine.OnlyYours(listOf("oven", "c:Bamix", "c:Thermomix")),
+            kitchenLine(setOf("c:Thermomix", "oven", "c:Bamix"), KitchenMode.Medium),
         )
     }
 

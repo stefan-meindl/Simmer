@@ -265,9 +265,13 @@ private fun ColumnScope.PasteStage(
                 color = colors.textTertiary,
                 modifier = Modifier.semantics { heading() },
             )
-            NextRow(R.drawable.ic_list_checks) { Text(stringResource(R.string.add_next_1), style = SimmerTextStyle_BodySm, color = colors.textSecondary) }
-            NextRow(R.drawable.ic_utensils) { Text(stringResource(R.string.add_next_2), style = SimmerTextStyle_BodySm, color = colors.textSecondary) }
-            NextRow(R.drawable.ic_timer) { Text(stringResource(R.string.add_next_3), style = SimmerTextStyle_BodySm, color = colors.textSecondary) }
+            listOf(
+                R.drawable.ic_list_checks to R.string.add_next_1,
+                R.drawable.ic_utensils to R.string.add_next_2,
+                R.drawable.ic_timer to R.string.add_next_3,
+            ).forEach { (iconRes, text) ->
+                NextRow(iconRes) { Text(stringResource(text), style = SimmerTextStyle_BodySm, color = colors.textSecondary) }
+            }
             NextRow(R.drawable.ic_chef_hat) {
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -299,16 +303,16 @@ private fun ColumnScope.PasteStage(
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     icon(R.drawable.ic_cpu, 14, colors.textSecondary)
                     Text(
-                        text = stringResource(if (ui.wifiOnly) R.string.add_reader_note else R.string.add_reader_note_any),
+                        text = stringResource(R.string.add_reader_note),
                         style = SimmerTextStyle_Caption,
                         color = colors.textSecondary,
                     )
                 }
-                // Placeholder: the on-device recipe reader and its download come later.
+                // Inactive placeholder: the on-device recipe reader and its download come later.
                 PrimaryButton(
                     text = stringResource(R.string.add_download),
                     onClick = {},
-                    enabled = ui.canConvert,
+                    enabled = false,
                     icon = { icon(R.drawable.ic_download) },
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -325,6 +329,10 @@ private fun NextRow(iconRes: Int, content: @Composable () -> Unit) {
         Box(modifier = Modifier.weight(1f)) { content() }
     }
 }
+
+/** "Prep 2 and Prep 3": the labels joined with the language's "and". */
+@Composable
+private fun joinWithAnd(labels: List<String>): String = labels.reduce { a, b -> stringResource(R.string.add_and, a, b) }
 
 @Composable
 private fun kitchenText(line: KitchenLine): String = when (line) {
@@ -568,12 +576,11 @@ private fun StepsTab(ui: AddRecipeUi.Review) {
     val review = ui.review
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         if (review.defaultMethodLabels.isNotEmpty()) {
-            val joined = review.defaultMethodLabels.reduce { a, b -> stringResource(R.string.add_and, a, b) }
+            val joined = joinWithAnd(review.defaultMethodLabels)
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 icon(R.drawable.ic_info, 16, colors.textTertiary)
                 Text(
-                    // English reads "Shown for oven"; German nouns keep their capital.
-                    text = stringResource(R.string.add_default_note, if (ui.lang == "en") joined.lowercase() else joined),
+                    text = stringResource(R.string.add_default_note, joined),
                     style = SimmerTextStyle_Caption,
                     color = colors.textTertiary,
                 )
@@ -624,7 +631,7 @@ private fun StepCard(step: ResolvedStep, ingredients: Map<String, ResolvedIngred
         }
         Text(step.title, style = SimmerTextStyle_BodyMdMedium, color = colors.textPrimary)
         if (step.needs.isNotEmpty()) {
-            val joined = step.needs.map { it.label }.reduce { a, b -> stringResource(R.string.add_and, a, b) }
+            val joined = joinWithAnd(step.needs.map { it.label })
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
                 icon(R.drawable.ic_circle_alert, 14, colors.textAccent)
                 Text(stringResource(R.string.flow_needs_first, joined), style = SimmerTextStyle_Caption, color = colors.textPrimary)

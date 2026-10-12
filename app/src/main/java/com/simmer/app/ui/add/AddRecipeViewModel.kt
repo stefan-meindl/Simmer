@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.AddRecipeSession
 import com.simmer.app.data.PrefsRepository
 import com.simmer.app.data.RecipeDraftStore
+import com.simmer.app.data.draftFromJson
+import com.simmer.app.data.toDraftJson
 import com.simmer.app.domain.AddRecipeReview
 import com.simmer.app.domain.EXAMPLE_TEXT
 import com.simmer.app.domain.KitchenLine
@@ -25,6 +27,10 @@ import javax.inject.Inject
 
 private const val KEY_TEXT = "text"
 private const val KEY_TAB = "tab"
+private const val KEY_DRAFT = "draft"
+
+/** How the review shows amounts and labels. */
+private data class DisplayPrefs(val units: String, val spices: String, val lang: String)
 
 /** The review's two tabs. */
 enum class ReviewTab { Ingredients, Steps }
@@ -40,17 +46,15 @@ sealed interface AddRecipeUi {
         /** False below the minimum text length: the bottom button is disabled. */
         val canConvert: Boolean,
         val kitchen: KitchenLine,
-        val wifiOnly: Boolean,
     ) : AddRecipeUi
 
     /** The review stage for the unsaved recipe. */
-    data class Review(val review: AddRecipeReview, val tab: ReviewTab, val lang: String) : AddRecipeUi
+    data class Review(val review: AddRecipeReview, val tab: ReviewTab) : AddRecipeUi
 }
 
 /**
- * The pasted text and the review tab live in [SavedStateHandle]. The converted recipe is the
- * [RecipeDraftStore] draft, which is memory only: after process death the screen is back at the
- * paste stage with the text restored.
+ * The pasted text, the review tab and the converted recipe (the [RecipeDraftStore] draft, as JSON)
+ * live in [SavedStateHandle], so the screen comes back at the same stage after process death.
  */
 @HiltViewModel
 class AddRecipeViewModel @Inject constructor(
@@ -65,22 +69,28 @@ class AddRecipeViewModel @Inject constructor(
 
     private val tab = savedState.getStateFlow(KEY_TAB, ReviewTab.Ingredients.name)
 
-    private val display = combine(prefs.units, prefs.spices, prefs.lang) { units, spices, lang ->
-        Triple(units, spices, lang)
-    }
-    private val kitchen = combine(prefs.appliances, prefs.kitchenMode, prefs.readerWifiOnly) { appliances, mode, wifiOnly ->
-        kitchenLine(appliances, KitchenMode.fromKey(mode)) to wifiOnly
+    private val display = combine(prefs.units, prefs.spices, prefs.lang, ::DisplayPrefs)
+    private val kitchen = combine(prefs.appliances, prefs.kitchenMode) { appliances, mode ->
+        kitchenLine(appliances, KitchenMode.fromKey(mode))
     }
 
-    val ui: StateFlow<AddRecipeUi> = combine(text, drafts.current, tab, display, kitchen) { text, draft, tab, (units, spices, lang), (line, wifiOnly) ->
+    val ui: StateFlow<AddRecipeUi> = combine(text, drafts.current, tab, display, kitchen) { text, draft, tab, display, line ->
         if (draft != null) {
-            AddRecipeUi.Review(addRecipeReview(draft, units, spices, lang), ReviewTab.valueOf(tab), lang)
+            AddRecipeUi.Review(addRecipeReview(draft, display.units, display.spices, display.lang), ReviewTab.valueOf(tab))
         } else {
-            AddRecipeUi.Paste(text, readerAction(text), canConvert(text), line, wifiOnly)
+            AddRecipeUi.Paste(text, readerAction(text), canConvert(text), line)
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddRecipeUi.Loading)
 
     private var saving = false
+
+    init {
+        // Back after process death: put the saved draft in the store, then keep the saved copy current.
+        savedState.get<String>(KEY_DRAFT)?.let { if (drafts.current.value == null) drafts.set(draftFromJson(it)) }
+        viewModelScope.launch {
+            drafts.current.collect { savedState[KEY_DRAFT] = it?.toDraftJson() }
+        }
+    }
 
     fun setText(text: String) {
         savedState[KEY_TEXT] = text
@@ -94,10 +104,11 @@ class AddRecipeViewModel @Inject constructor(
     fun convert() {
         val text = text.value
         if (!canConvert(text)) return
-        session.convert(text) { "u" + System.currentTimeMillis().toString(36) }
+        session.convert(text, id = "u" + System.currentTimeMillis().toString(36))
     }
 
-    fun editText() = session.editText()
+    /** Edit text: back to the paste stage, with the text kept. */
+    fun editText() = session.discard()
 
     fun selectTab(tab: ReviewTab) {
         savedState[KEY_TAB] = tab.name
@@ -118,6 +129,6 @@ class AddRecipeViewModel @Inject constructor(
 
     /** Leaving the screen without saving drops the draft. */
     override fun onCleared() {
-        session.editText()
+        session.discard()
     }
 }
