@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.PrefsRepository
 import com.simmer.app.data.RecipeRepository
 import com.simmer.app.data.ShoppingRepository
+import com.simmer.app.data.decodeSelection
+import com.simmer.app.data.encodeSelection
 import com.simmer.app.domain.Phase1State
 import com.simmer.app.domain.PlannedChoice
 import com.simmer.app.domain.stepServings
@@ -14,10 +16,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+private const val KEY_SERVINGS = "servings"
+private const val KEY_SELECTION = "selection"
 
 /** Confirmation shown after "Add to list". */
 data class AddedToast(val items: Int, val servings: Int)
@@ -36,7 +42,7 @@ sealed interface Phase1Ui {
 
 @HiltViewModel
 class RecipeFlowViewModel @Inject constructor(
-    savedState: SavedStateHandle,
+    private val savedState: SavedStateHandle,
     private val recipes: RecipeRepository,
     private val shopping: ShoppingRepository,
     prefs: PrefsRepository,
@@ -64,7 +70,20 @@ class RecipeFlowViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Phase1Ui.Loading)
 
+    /** Servings and selection saved before process death, if any. */
+    private fun savedDraft(): PlannedChoice? {
+        val servings = savedState.get<Int>(KEY_SERVINGS) ?: return null
+        val selection = savedState.get<String>(KEY_SELECTION)?.let(::decodeSelection) ?: return null
+        return PlannedChoice(servings, selection)
+    }
+
     init {
+        viewModelScope.launch {
+            phase1.filterNotNull().collect {
+                savedState[KEY_SERVINGS] = it.servings
+                savedState[KEY_SELECTION] = encodeSelection(it.selection)
+            }
+        }
         viewModelScope.launch {
             val planned = shopping.getPlanned(recipeId)
             recipes.recipes.collect { all ->
@@ -73,7 +92,7 @@ class RecipeFlowViewModel @Inject constructor(
                 phase1.update { current ->
                     when {
                         recipe == null -> null
-                        current == null -> Phase1State.initial(recipe, planned)
+                        current == null -> Phase1State.initial(recipe, planned, draft = savedDraft())
                         else -> current.copy(recipe = recipe)
                     }
                 }

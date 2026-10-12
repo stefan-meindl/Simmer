@@ -4,6 +4,7 @@ import com.simmer.app.domain.addInAmount
 import com.simmer.app.domain.defaults
 import com.simmer.app.domain.isYourPick
 import com.simmer.app.domain.model.Selection
+import com.simmer.app.domain.resolve
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -19,6 +20,16 @@ class Phase1VariationsTest {
         assertEquals("+ 400 ml", addInAmount(chilli, variation("beer"), 8))
         assertEquals("+ 40 g", addInAmount(chilli, variation("choc"), 8))
         assertEquals("+ 200 ml", addInAmount(chilli, variation("beer"), 4))
+    }
+
+    @Test fun `add-in amount matches the ingredient list in every unit system`() {
+        for (units in listOf("metric", "imperial")) for (servings in listOf(1, 3, 7, 12)) {
+            for (v in chilli.variations.filter { it.kind == "add" }) {
+                val sel = defaults(chilli).copy(add = mapOf(v.id to true))
+                val listed = resolve(chilli, servings, sel, units).ingredients.first { it.id == v.ing }.amount
+                assertEquals("+ $listed", addInAmount(chilli, v, servings, units))
+            }
+        }
     }
 
     @Test fun `ingredient of the default swap option is not a pick`() {
