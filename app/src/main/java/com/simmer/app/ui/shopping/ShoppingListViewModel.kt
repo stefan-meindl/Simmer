@@ -25,7 +25,7 @@ class ShoppingListViewModel @Inject constructor(
 ) : ViewModel() {
 
     /** Null until the first read from Room. */
-    val list: StateFlow<ShoppingListView?> = shopping.items
+    val listView: StateFlow<ShoppingListView?> = shopping.items
         .map { shoppingListView(it) }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 

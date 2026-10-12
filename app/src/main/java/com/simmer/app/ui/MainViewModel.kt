@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.PrefsRepository
 import com.simmer.app.data.ShoppingRepository
-import com.simmer.app.domain.shoppingListView
+import com.simmer.app.domain.uncheckedCount
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,7 +25,7 @@ import javax.inject.Inject
 class MainViewModel @Inject constructor(
     private val prefs: PrefsRepository,
     shopping: ShoppingRepository,
-): ViewModel() {
+) : ViewModel() {
 
     /** Raw theme preference: "system" | "light" | "dark". */
     val themePreference: StateFlow<String> = prefs.theme
@@ -47,7 +47,7 @@ class MainViewModel @Inject constructor(
 
     /** Unchecked Shopping list items, for the tab badge. */
     val shoppingListBadgeCount: StateFlow<Int> = shopping.items
-        .map { shoppingListView(it).uncheckedCount }
+        .map(::uncheckedCount)
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     /**

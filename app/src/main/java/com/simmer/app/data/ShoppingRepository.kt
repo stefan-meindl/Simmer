@@ -36,6 +36,18 @@ fun decodeSelection(json: String): Selection {
 
 private fun JsonObject?.orEmpty(): JsonObject = this ?: JsonObject(emptyMap())
 
+private const val MANUAL_ID_PREFIX = "manual-"
+
+private fun ShoppingItemEntity.toDomain() = ShoppingItem(
+    id = id,
+    recipeId = recipeId,
+    name = name,
+    amount = amount,
+    aisle = aisle,
+    note = note,
+    checked = checked,
+)
+
 /** Shopping list and Planned Recipe persistence (Room). */
 @Singleton
 class ShoppingRepository @Inject constructor(
@@ -66,7 +78,7 @@ class ShoppingRepository @Inject constructor(
 
     /** Every Shopping list item, recipe and manual, in the order they were added. */
     val items: Flow<List<ShoppingItem>> = dao.observeItems().map { all ->
-        all.map { ShoppingItem(it.id, it.recipeId, it.name, it.amount, it.aisle, it.note, it.checked) }
+        all.map { it.toDomain() }
     }
 
     /** Adds a manual item by [name]; blank names are ignored. */
@@ -74,7 +86,17 @@ class ShoppingRepository @Inject constructor(
         val trimmed = name.trim()
         if (trimmed.isEmpty()) return
         dao.insertItems(
-            listOf(ShoppingItemEntity("manual-${UUID.randomUUID()}", null, trimmed, "", "", "", false)),
+            listOf(
+                ShoppingItemEntity(
+                    id = "$MANUAL_ID_PREFIX${UUID.randomUUID()}",
+                    recipeId = null,
+                    name = trimmed,
+                    amount = "",
+                    aisle = "",
+                    note = "",
+                    checked = false,
+                ),
+            ),
         )
     }
 

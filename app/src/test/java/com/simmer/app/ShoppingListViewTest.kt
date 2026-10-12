@@ -2,6 +2,7 @@ package com.simmer.app
 
 import com.simmer.app.domain.ShoppingItem
 import com.simmer.app.domain.shoppingListView
+import com.simmer.app.domain.uncheckedCount
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -12,13 +13,31 @@ class ShoppingListViewTest {
     private fun manual(name: String, checked: Boolean = false) =
         ShoppingItem("manual-$name", null, name, "", "", "", checked)
 
-    @Test fun `recipe items group by aisle in first-seen order`() {
+    @Test fun `recipe items group by aisle keeping their order within an aisle`() {
         val view = shoppingListView(
             listOf(recipeItem("onions", "Produce"), recipeItem("rice", "Pantry"), recipeItem("garlic", "Produce")),
         )
 
-        assertEquals(listOf("Produce", "Pantry"), view.aisles.map { it.aisle })
-        assertEquals(listOf("Onions", "Garlic"), view.aisles[0].items.map { it.name })
+        assertEquals(listOf("Onions", "Garlic"), view.aisles.first { it.aisle == "Produce" }.items.map { it.name })
+    }
+
+    @Test fun `aisles follow the shop walk order whatever order recipes were added in`() {
+        val items = listOf(
+            recipeItem("cumin", "Spices"), recipeItem("rice", "Pantry"), recipeItem("onions", "Produce"),
+            recipeItem("mince", "Meat"), recipeItem("beer", "Drinks"),
+        )
+
+        val expected = listOf("Produce", "Meat", "Pantry", "Spices", "Drinks")
+        assertEquals(expected, shoppingListView(items).aisles.map { it.aisle })
+        assertEquals(expected, shoppingListView(items.reversed()).aisles.map { it.aisle })
+    }
+
+    @Test fun `unknown aisles come after known ones in alphabetical order`() {
+        val view = shoppingListView(
+            listOf(recipeItem("a", "Zebra"), recipeItem("b", "Pantry"), recipeItem("c", "apples")),
+        )
+
+        assertEquals(listOf("Pantry", "apples", "Zebra"), view.aisles.map { it.aisle })
     }
 
     @Test fun `manual items sit in their own section apart from aisle groups`() {
@@ -51,5 +70,11 @@ class ShoppingListViewTest {
 
         assertEquals(2, view.uncheckedCount)
         assertEquals(0, shoppingListView(emptyList()).uncheckedCount)
+    }
+
+    @Test fun `unchecked count of the raw items matches the view`() {
+        val items = listOf(recipeItem("onions", "Produce"), recipeItem("rice", "Pantry", checked = true), manual("Batteries"))
+
+        assertEquals(shoppingListView(items).uncheckedCount, uncheckedCount(items))
     }
 }

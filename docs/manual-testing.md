@@ -138,6 +138,7 @@ Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to li
 - Fresh install (`adb shell pm clear com.simmer.app`): title "Shopping list." (de: "Einkaufsliste."), "Add an item" field, empty-state text, no badge on the tab icon.
 - Open `chilli`, Add to list, tap View list in the toast: items grouped under aisle headings (Produce, Spices, ...), each row with ingredient name, amount on the right, "Chilli con carne" as the note under the name. Tab badge shows the item count.
 - Type "Batteries", tap Add (or the keyboard Done): it appears under "Other items" (de: "Weitere Artikel"), apart from the aisle groups; field clears. Add is disabled while the field is blank or spaces.
+- Aisle order is fixed (Produce, Meat, Chilled, ... Spices, Drinks) whichever recipe you add first: add `curry` then `chilli` and compare with the reverse after `pm clear`.
 - Tick an item: it leaves its group, badge drops by 1. "In your basket" (de: "Im Einkaufskorb") row appears collapsed with "1 item"; tap it to expand (chevron turns), tap the item to return it to its aisle. Tick every item: badge disappears (not "0").
 - Re-add: open `chilli`, change servings to 2, Add to list again: aisle amounts change, no duplicate rows; manual items stay; items you had ticked and that remain stay ticked. Add `curry` too: both recipes' items show, notes differ.
 - `adb shell am kill com.simmer.app`, reopen: list, ticks, badge kept. Typed-but-unsent text and the open basket survive rotation.

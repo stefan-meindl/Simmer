@@ -53,7 +53,7 @@ A single item used in a recipe, with a quantity, unit, and optional aisle and ti
 _Avoid_: Item, component
 
 **Aisle**:
-The shopping-list category an ingredient belongs to (e.g. Produce, Dairy, Spices). Used to group shopping list entries.
+The shopping-list category an ingredient belongs to (e.g. Produce, Dairy, Spices). Used to group shopping list entries. Aisle groups on the Shopping List follow a fixed shop-walk order (Produce, Meat, Chilled, Dairy, Baking, Pantry, Tins & jars, World foods, Spices, Drinks); unknown aisles follow alphabetically. Aisle names are recipe data and stay English.
 _Avoid_: Section, category, shop section
 
 **Step**:
@@ -138,11 +138,15 @@ _Avoid_: AI engine, model, backend
 
 **Shopping List**:
 The persisted list of ingredients the user intends to buy. Has two distinct sections: recipe items (grouped by aisle, each carrying the source recipe's title as a note) and a separate manual section for items the user adds by hand. Populated from Planned Recipes via "Add to list"; checked-off items move to an "In your basket" section.
-_Avoid_: Grocery list, basket, cart
+_Avoid_: Grocery list, cart
 
 **Shopping Item**:
-One entry on the Shopping List, either sourced from a recipe ingredient (id `<recipeId>-<ingredientId>`, with the recipe title as note) or a Manual Item. Persisted as `ShoppingItemEntity`; `ShoppingEntry` is the not-yet-persisted form derived from a recipe's resolved ingredients. Re-adding a recipe keeps the `checked` state of items that remain.
+One entry on the Shopping List, either sourced from a recipe ingredient (id `<recipeId>-<ingredientId>`, with the recipe title as note) or a Manual Item (id `manual-<uuid>`, no recipe, aisle or note). Persisted as `ShoppingItemEntity`; `ShoppingEntry` is the not-yet-persisted form derived from a recipe's resolved ingredients. Re-adding a recipe keeps the `checked` state of items that remain.
 _Avoid_: Grocery item, product
+
+**Aisle group**:
+The unchecked recipe items of one Aisle on the Shopping List, shown under the aisle name (`AisleGroup`). `ShoppingListView` is the arrangement of the whole tab: Aisle groups, Manual Items and In your basket.
+_Avoid_: Section (reserved for Manual Items and the basket)
 
 **In your basket**:
 The collapsed Shopping List section holding every checked Shopping Item, recipe or manual. Unchecking an item returns it to its aisle or the manual section. Only unchecked items count toward the Shopping list tab badge, which is hidden at 0.

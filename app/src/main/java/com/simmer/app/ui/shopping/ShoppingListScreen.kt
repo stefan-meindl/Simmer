@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
@@ -53,7 +54,7 @@ fun ShoppingListScreen(
     viewModel: ShoppingListViewModel = hiltViewModel(),
 ) {
     val colors = LocalSimmerColors.current
-    val list by viewModel.list.collectAsStateWithLifecycle()
+    val listView by viewModel.listView.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val basketOpen by viewModel.basketOpen.collectAsStateWithLifecycle()
 
@@ -63,9 +64,9 @@ fun ShoppingListScreen(
             .background(colors.surfacePage)
             .windowInsetsPadding(WindowInsets.statusBars),
     ) {
-        val view = list ?: return@Box
+        val view = listView ?: return@Box
         LazyColumn(
-            contentPadding = androidx.compose.foundation.layout.PaddingValues(vertical = 12.dp),
+            contentPadding = PaddingValues(vertical = 12.dp),
             modifier = Modifier.fillMaxSize(),
         ) {
             item(key = "title") {
