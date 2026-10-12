@@ -61,17 +61,17 @@ class ReaderController @Inject constructor(
 
     private val work get() = WorkManager.getInstance(context)
 
-    /** Bumped when the files change outside WorkManager's knowledge (remove, cancel). */
-    private val filesChanged = MutableStateFlow(0)
+    /** Bumped when the files change outside WorkManager's knowledge (remove, worker finished). */
+    private val filesVersion = MutableStateFlow(0)
 
     val status: Flow<ReaderStatus> = combine(
         work.getWorkInfosForUniqueWorkFlow(WORK_NAME).map { it.firstOrNull().toDownloadWork() },
-        filesChanged,
+        filesVersion,
     ) { downloadWork, _ ->
         readerStatus(
             supported = isSupported(),
             installed = downloader.isInstalled(),
-            work = downloadWork,
+            work = downloadWork.keepingPartialProgress(),
             freeBytes = freeBytes(),
         )
     }
@@ -96,11 +96,22 @@ class ReaderController @Inject constructor(
         if (info != null && !info.state.isFinished) download()
     }
 
-    /** Stops the task and deletes the partial file. */
+    /** Stops the task. The partial file stays, so a later Download resumes where it stopped. */
     fun cancel() {
         work.cancelUniqueWork(WORK_NAME)
-        downloader.discardPartial()
-        filesChanged.value++
+    }
+
+    /**
+     * A re-queued task (e.g. after the Wi-Fi toggle) starts with no progress; show at least what the
+     * partial file already holds, so the visible percentage does not jump back to 0.
+     */
+    private fun DownloadWork.keepingPartialProgress(): DownloadWork {
+        val onDisk = (downloader.partialBytes() * 100 / ReaderModel.SIZE_BYTES).toInt().coerceIn(0, 99)
+        return when (this) {
+            is DownloadWork.Running -> copy(percent = maxOf(percent, onDisk))
+            is DownloadWork.Queued -> copy(percent = maxOf(percent, onDisk))
+            else -> this
+        }
     }
 
     /** Deletes the model; the status goes back to Not downloaded. */
@@ -108,12 +119,12 @@ class ReaderController @Inject constructor(
         work.cancelUniqueWork(WORK_NAME)
         work.pruneWork()
         downloader.remove()
-        filesChanged.value++
+        filesVersion.value++
     }
 
     /** Called by the worker when it wrote or deleted files. */
     fun filesChanged() {
-        filesChanged.value++
+        filesVersion.value++
     }
 
     private fun freeBytes(): Long {
@@ -139,18 +150,19 @@ class ReaderController @Inject constructor(
     }
 }
 
-private fun WorkInfo?.toDownloadWork(): DownloadWork {
-    if (this == null) return DownloadWork.Idle
-    val percent = progress.getInt(ReaderController.KEY_PERCENT, 0)
-    return when (state) {
-        WorkInfo.State.RUNNING -> DownloadWork.Running(percent)
-        WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> DownloadWork.Queued(percent)
-        WorkInfo.State.FAILED -> {
-            val name = outputData.getString(ReaderController.KEY_FAILURE)
-            DownloadWork.Failed(DownloadFailure.entries.firstOrNull { it.name == name } ?: DownloadFailure.ChecksumMismatch)
-        }
-        WorkInfo.State.SUCCEEDED, WorkInfo.State.CANCELLED -> DownloadWork.Idle
-    }
+private fun WorkInfo?.toDownloadWork(): DownloadWork = toDownloadWork(
+    this?.state,
+    this?.progress?.getInt(ReaderController.KEY_PERCENT, 0) ?: 0,
+    this?.outputData?.getString(ReaderController.KEY_FAILURE),
+)
+
+/** Maps the task's WorkManager [state], reported [percent] and stored failure name to a [DownloadWork]. */
+internal fun toDownloadWork(state: WorkInfo.State?, percent: Int, failureName: String?): DownloadWork = when (state) {
+    null, WorkInfo.State.SUCCEEDED, WorkInfo.State.CANCELLED -> DownloadWork.Idle
+    WorkInfo.State.RUNNING -> DownloadWork.Running(percent)
+    WorkInfo.State.ENQUEUED, WorkInfo.State.BLOCKED -> DownloadWork.Queued(percent)
+    WorkInfo.State.FAILED ->
+        DownloadWork.Failed(DownloadFailure.entries.firstOrNull { it.name == failureName } ?: DownloadFailure.Unknown)
 }
 
 internal fun failureData(reason: DownloadFailure): Data =

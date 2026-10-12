@@ -7,6 +7,7 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
+import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -19,7 +20,7 @@ import dagger.hilt.android.EntryPointAccessors
 
 /**
  * Downloads the Recipe reader model in the background, with an ongoing progress notification that
- * opens Settings. A dropped connection returns `retry()`; the partial file is kept, so the next
+ * opens Settings. A dropped connection (or a 5xx / 408 / 429) returns `retry()`; permanent errors and a full disk end as a failure; the partial file is kept, so the next
  * run resumes at its last byte.
  */
 class ModelDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
@@ -36,6 +37,7 @@ class ModelDownloadWorker(context: Context, params: WorkerParameters) : Coroutin
             DownloadOutcome.Completed -> Result.success()
             is DownloadOutcome.Interrupted -> Result.retry()
             DownloadOutcome.ChecksumMismatch -> Result.failure(failureData(DownloadFailure.ChecksumMismatch))
+            is DownloadOutcome.ServerError -> Result.failure(failureData(DownloadFailure.ServerError))
             DownloadOutcome.NotEnoughStorage -> Result.failure(failureData(DownloadFailure.NotEnoughStorage))
         }
     }
@@ -46,7 +48,8 @@ class ModelDownloadWorker(context: Context, params: WorkerParameters) : Coroutin
     private suspend fun showForeground(percent: Int) {
         try {
             setForeground(foregroundInfo(percent))
-        } catch (_: IllegalStateException) {
+        } catch (e: IllegalStateException) {
+            Log.w(TAG, "Foreground start refused; downloading without a notification", e)
         }
     }
 
@@ -80,6 +83,7 @@ class ModelDownloadWorker(context: Context, params: WorkerParameters) : Coroutin
     )
 
     private companion object {
+        const val TAG = "ModelDownloadWorker"
         const val CHANNEL = "reader_download"
         const val NOTIFICATION_ID = 2
     }

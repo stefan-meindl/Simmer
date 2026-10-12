@@ -1,10 +1,12 @@
 package com.simmer.app.data
 
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import java.io.Closeable
 import java.io.File
+import java.io.FileNotFoundException
 import java.io.IOException
 import java.io.InputStream
 import java.io.RandomAccessFile
@@ -32,7 +34,11 @@ sealed interface DownloadOutcome {
     /** The bytes did not match the expected SHA-256; all files were deleted. */
     data object ChecksumMismatch : DownloadOutcome
 
+    /** Free space was short before the download, or the disk filled up while writing. The partial file is kept. */
     data object NotEnoughStorage : DownloadOutcome
+
+    /** The server refused for good (HTTP 4xx other than 408 and 429); retrying would not help. */
+    data class ServerError(val code: Int) : DownloadOutcome
 
     /** The connection failed. The partial file is kept so the next attempt resumes at its last byte. */
     data class Interrupted(val cause: IOException) : DownloadOutcome
@@ -53,6 +59,11 @@ class ModelDownloader(
     private val target get() = File(dir, fileName)
     private val part get() = File(dir, "$fileName.part")
 
+    private companion object {
+        /** HTTP 408 and 429 are worth retrying; so is every 5xx. */
+        val RETRYABLE_CODES = setOf(408, 429)
+    }
+
     fun isInstalled(): Boolean = target.isFile
 
     /** Deletes the model and any partial download. */
@@ -61,10 +72,8 @@ class ModelDownloader(
         part.delete()
     }
 
-    /** Deletes only the partial download (the user cancelled). */
-    fun discardPartial() {
-        part.delete()
-    }
+    /** Bytes of the partial download so far (0 when there is none). */
+    fun partialBytes(): Long = if (part.isFile) part.length() else 0L
 
     /** [onProgress] (suspending, so a worker can publish it) gets whole percents 0..100, each at most once and never going down. */
     suspend fun download(onProgress: suspend (Int) -> Unit): DownloadOutcome = withContext(Dispatchers.IO) {
@@ -75,12 +84,20 @@ class ModelDownloader(
 
         try {
             fetch(have, onProgress)
+        } catch (e: HttpStatusException) {
+            return@withContext if (e.code in RETRYABLE_CODES || e.code >= 500) DownloadOutcome.Interrupted(e) else DownloadOutcome.ServerError(e.code)
         } catch (e: IOException) {
-            return@withContext DownloadOutcome.Interrupted(e)
+            return@withContext if (e.isDiskFull()) DownloadOutcome.NotEnoughStorage else DownloadOutcome.Interrupted(e)
         }
 
         onProgress(100)
-        if (sha256Of(part).equals(sha256, ignoreCase = true)) {
+        val matches = try {
+            sha256Of(part).equals(sha256, ignoreCase = true)
+        } catch (e: FileNotFoundException) {
+            // The partial file vanished while hashing: the model was removed, so this run is cancelled.
+            throw CancellationException("The partial download was removed")
+        }
+        if (matches) {
             target.delete()
             if (!part.renameTo(target)) {
                 return@withContext DownloadOutcome.Interrupted(IOException("Could not move the model into place"))
@@ -118,6 +135,9 @@ class ModelDownloader(
             }
         }
     }
+
+    private fun IOException.isDiskFull() = message?.contains("No space left", ignoreCase = true) == true ||
+        message?.contains("ENOSPC") == true
 
     private fun sha256Of(file: File): String {
         val digest = MessageDigest.getInstance("SHA-256")

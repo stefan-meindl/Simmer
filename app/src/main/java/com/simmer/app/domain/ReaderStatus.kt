@@ -2,7 +2,6 @@ package com.simmer.app.domain
 
 /** The Gemma 4 E2B model file the Recipe reader runs on, as published on Hugging Face. */
 object ReaderModel {
-    const val NAME = "Gemma 4 E2B"
     const val FILE_NAME = "gemma-4-E2B-it-web.litertlm"
 
     /** Pinned to a commit of litert-community/gemma-4-E2B-it-litert-lm so [SHA256] always matches the bytes. */
@@ -13,7 +12,7 @@ object ReaderModel {
     /** The file's LFS object id (X-Linked-ETag on Hugging Face). */
     const val SHA256 = "3a08e8d94e23b814ae5414469c370c503813949acb8ceaa17e4ebf8a35af35b5"
 
-    /** Size in bytes, used for the percentage when the server does not report one. */
+    /** Size in bytes: the download size shown in the UI and the base for the percentage of a partial file. */
     const val SIZE_BYTES = 2_008_432_640L
 }
 
@@ -21,7 +20,22 @@ object ReaderModel {
 const val READER_REQUIRED_FREE_BYTES = 3_500_000_000L
 
 /** Why a download ended without a usable model. */
-enum class DownloadFailure { ChecksumMismatch, NotEnoughStorage }
+enum class DownloadFailure {
+    ChecksumMismatch,
+
+    /** Free space was short before the download or the disk filled up during it. */
+    NotEnoughStorage,
+
+    /** The server refused the request for good (HTTP 4xx other than 408 and 429). */
+    ServerError,
+
+    /** A failure the app does not recognise (e.g. written by another app version). */
+    Unknown,
+}
+
+/** Decimal gigabytes with one digit in [locale] ("2.0 GB" / "2,0 GB"), so UI texts never hardcode a size. */
+fun formatGigabytes(bytes: Long, locale: java.util.Locale): String =
+    String.format(locale, "%.1f GB", bytes / 1_000_000_000.0)
 
 /** What WorkManager says about the download task, as far as the status cares. */
 sealed interface DownloadWork {

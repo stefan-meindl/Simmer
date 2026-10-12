@@ -4,13 +4,18 @@ import java.io.IOException
 import java.net.HttpURLConnection
 import java.net.URL
 
+/** The server answered with an HTTP error [code]. */
+class HttpStatusException(val code: Int) : IOException("Unexpected HTTP $code")
+
+private const val HTTP_RANGE_NOT_SATISFIABLE = 416
+
 /** [ModelSource] over HTTPS with `Range` requests; redirects (Hugging Face sends one to its CDN) are followed. */
 class HttpModelSource(private val url: String) : ModelSource {
 
     override fun open(offset: Long): ModelStream {
         var connection = connect(offset)
         var code = connection.responseCode
-        if (code == HttpURLConnection.HTTP_BAD_REQUEST + 16) { // 416: the partial file is not usable, start over
+        if (code == HTTP_RANGE_NOT_SATISFIABLE) { // 416: the partial file is not usable, start over
             connection.disconnect()
             connection = connect(0)
             code = connection.responseCode
@@ -20,7 +25,7 @@ class HttpModelSource(private val url: String) : ModelSource {
             HttpURLConnection.HTTP_OK -> ModelStream(false, connection.contentLengthLong, connection.inputStream)
             else -> {
                 connection.disconnect()
-                throw IOException("Unexpected HTTP $code")
+                throw HttpStatusException(code)
             }
         }
     }

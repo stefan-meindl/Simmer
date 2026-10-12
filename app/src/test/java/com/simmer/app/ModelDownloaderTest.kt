@@ -1,6 +1,7 @@
 package com.simmer.app
 
 import com.simmer.app.data.DownloadOutcome
+import com.simmer.app.data.HttpStatusException
 import com.simmer.app.data.ModelDownloader
 import com.simmer.app.data.ModelSource
 import com.simmer.app.data.ModelStream
@@ -146,6 +147,52 @@ class ModelDownloaderTest {
 
         assertEquals(DownloadOutcome.Completed, downloader(source).download { })
         assertTrue(source.offsets.isEmpty())
+    }
+
+    private class FailingOpen(private val error: IOException) : ModelSource {
+        var opens = 0
+        override fun open(offset: Long): ModelStream {
+            opens++
+            throw error
+        }
+    }
+
+    @Test fun `a permanent HTTP error fails instead of retrying`() = runBlocking {
+        for (code in listOf(400, 401, 403, 404)) {
+            assertEquals(DownloadOutcome.ServerError(code), downloader(FailingOpen(HttpStatusException(code))).download { })
+        }
+    }
+
+    @Test fun `server errors, request timeout and rate limiting are retried`() = runBlocking {
+        for (code in listOf(408, 429, 500, 503)) {
+            assertTrue(downloader(FailingOpen(HttpStatusException(code))).download { } is DownloadOutcome.Interrupted)
+        }
+    }
+
+    @Test fun `a full disk while writing reports not enough storage and keeps the partial file`() = runBlocking {
+        val source = ModelSource { _ ->
+            ModelStream(false, content.size.toLong(), object : InputStream() {
+                private var pos = 0
+                override fun read(): Int {
+                    if (pos >= 2_000) throw IOException("write failed: ENOSPC (No space left on device)")
+                    return content[pos++].toInt() and 0xff
+                }
+            })
+        }
+
+        assertEquals(DownloadOutcome.NotEnoughStorage, downloader(source).download { })
+        assertFalse(finalFile.exists())
+    }
+
+    @Test fun `a partial file removed while hashing counts as cancellation`() {
+        val dl = downloader(FakeSource())
+        var cancelled = false
+        try {
+            runBlocking { dl.download { if (it == 100) partFile.delete() } }
+        } catch (e: kotlinx.coroutines.CancellationException) {
+            cancelled = true
+        }
+        assertTrue(cancelled)
     }
 
     @Test fun `remove deletes the model and any partial download`() {
