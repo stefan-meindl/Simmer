@@ -1,4 +1,4 @@
-package com.example.recipe_app_v2.ui.theme
+package com.simmer.app.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
