@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.simmer.app.R
+import com.simmer.app.domain.FLOW_PHASE_COUNT
 import com.simmer.app.domain.ProgressSegment
 import com.simmer.app.domain.SegmentState
 import com.simmer.app.domain.progressSegments
@@ -81,7 +83,7 @@ fun FlowTopBar(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                text = stringResource(R.string.flow_step_caption, phase, phaseLabel(phase)),
+                text = stringResource(R.string.flow_step_caption, phase, phaseLabel(phase), FLOW_PHASE_COUNT),
                 style = SimmerTextStyle_Caption,
                 color = colors.textTertiary,
             )
@@ -105,7 +107,7 @@ fun FlowProgress(
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(horizontal = 16.dp),
     ) {
         progressSegments(current).forEach { seg ->
             Segment(seg, onClick = { onSegmentClick(seg.phase) }, modifier = Modifier.weight(1f))
@@ -122,11 +124,14 @@ private fun Segment(seg: ProgressSegment, onClick: () -> Unit, modifier: Modifie
         SegmentState.Current -> colors.textAccent
         SegmentState.Todo -> colors.textMuted
     }
+    // The 8dp top padding sits inside the 44dp touch target, so the bar and label
+    // keep their look while the whole cell is tappable.
     Column(
         verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = modifier.then(
-            if (seg.tappable) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier,
-        ),
+        modifier = modifier
+            .defaultMinSize(minHeight = 44.dp)
+            .then(if (seg.tappable) Modifier.clickable(role = Role.Button, onClick = onClick) else Modifier)
+            .padding(top = 8.dp),
     ) {
         Box(
             modifier = Modifier

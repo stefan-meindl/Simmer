@@ -17,6 +17,9 @@ private class FakeShoppingDao : ShoppingDao() {
     val items = mutableListOf<ShoppingItemEntity>()
     val planned = mutableMapOf<String, PlannedRecipeEntity>()
 
+    override suspend fun getForRecipe(recipeId: String): List<ShoppingItemEntity> =
+        items.filter { it.recipeId == recipeId }
+
     override suspend fun deleteForRecipe(recipeId: String) {
         items.removeAll { it.recipeId == recipeId }
     }
@@ -68,6 +71,18 @@ class ShoppingRepositoryTest {
         assertEquals("6", chilli.single().amount)
         assertEquals(listOf("Ginger"), dao.items.filter { it.recipeId == "curry" }.map { it.name })
         assertEquals(1, dao.items.count { it.recipeId == null })
+    }
+
+    @Test fun `adding again keeps checked state of ingredients that remain`() = runBlocking {
+        repo.addRecipeToList("chilli", listOf(entry("onions"), entry("garlic")), choice)
+        dao.items.replaceAll { it.copy(checked = true) }
+
+        repo.addRecipeToList("chilli", listOf(entry("onions", amount = "6"), entry("rice")), choice)
+
+        val byName = dao.items.associateBy { it.name }
+        assertEquals(true, byName.getValue("Onions").checked)
+        assertEquals("6", byName.getValue("Onions").amount)
+        assertEquals(false, byName.getValue("Rice").checked)
     }
 
     @Test fun `adding marks the recipe as planned with servings and selection`() = runBlocking {

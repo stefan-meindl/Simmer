@@ -12,6 +12,9 @@ abstract class ShoppingDao {
     @Query("DELETE FROM shopping_items WHERE recipeId = :recipeId")
     abstract suspend fun deleteForRecipe(recipeId: String)
 
+    @Query("SELECT * FROM shopping_items WHERE recipeId = :recipeId")
+    abstract suspend fun getForRecipe(recipeId: String): List<ShoppingItemEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun insertItems(items: List<ShoppingItemEntity>)
 
@@ -21,15 +24,19 @@ abstract class ShoppingDao {
     @Query("SELECT * FROM planned_recipes WHERE recipeId = :recipeId")
     abstract suspend fun getPlanned(recipeId: String): PlannedRecipeEntity?
 
-    /** Replaces all of a recipe's items and records it as planned, atomically. */
+    /**
+     * Replaces all of a recipe's items and records it as planned, atomically.
+     * Items that remain keep their `checked` state.
+     */
     @Transaction
     open suspend fun replaceRecipeItems(
         recipeId: String,
         items: List<ShoppingItemEntity>,
         planned: PlannedRecipeEntity,
     ) {
+        val checked = getForRecipe(recipeId).filter { it.checked }.map { it.id }.toSet()
         deleteForRecipe(recipeId)
-        insertItems(items)
+        insertItems(items.map { it.copy(checked = it.id in checked) })
         upsertPlanned(planned)
     }
 }

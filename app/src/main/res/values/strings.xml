@@ -10,7 +10,7 @@
     <string name="flow_phase_servings">Servings</string>
     <string name="flow_phase_preparation">Preparation</string>
     <string name="flow_phase_cooking">Cooking</string>
-    <string name="flow_step_caption">Step %1$d of 3 · %2$s</string>
+    <string name="flow_step_caption">Step %1$d of %3$d · %2$s</string>
     <string name="flow_edit">Edit</string>
     <string name="flow_back">Back</string>
     <string name="flow_recipe_not_found">Recipe not found.</string>
@@ -24,14 +24,28 @@
     <string name="flow_your_way_hint">Optional swaps and additions. They change the ingredients and steps.</string>
     <string name="flow_your_pick">Your pick</string>
     <string name="flow_ingredients">Ingredients</string>
-    <string name="flow_ingredients_caption">%1$d items · %2$d servings</string>
+    <plurals name="flow_items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="flow_servings_count">
+        <item quantity="one">%1$d serving</item>
+        <item quantity="other">%1$d servings</item>
+    </plurals>
+    <string name="flow_ingredients_caption">%1$s · %2$s</string>
     <string name="flow_add_to_list">Add to list</string>
     <string name="flow_on_your_list">On your list</string>
     <string name="flow_preparation_next">Preparation</string>
-    <string name="flow_toast_added">Added %1$d items for %2$d servings.</string>
+    <string name="flow_toast_added">Added %1$s for %2$s.</string>
     <string name="flow_toast_find">Find it under Planned on Recipes.</string>
     <string name="flow_view_list">View list</string>
-    <string name="flow_time_min">%1$d min</string>
-    <string name="flow_time_h">%1$d h</string>
-    <string name="flow_time_h_min">%1$d h %2$d min</string>
+    <plurals name="flow_time_min">
+        <item quantity="one">%1$d min</item>
+        <item quantity="other">%1$d min</item>
+    </plurals>
+    <plurals name="flow_time_h">
+        <item quantity="one">%1$d h</item>
+        <item quantity="other">%1$d h</item>
+    </plurals>
+    <string name="flow_time_h_min">%1$s %2$s</string>
 </resources>

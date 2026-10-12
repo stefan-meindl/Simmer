@@ -13,6 +13,7 @@ import org.junit.Test
 class Phase1AddToListTest {
     private val chilli = BuiltInRecipes.chilli()
     private fun fresh() = Phase1State.initial(chilli, planned = null)
+    private fun Phase1State.asAdded() = copy(added = PlannedChoice(servings, selection))
 
     // --- initial state -----------------------------------------------------
 
@@ -60,29 +61,40 @@ class Phase1AddToListTest {
     // --- on-list tracking --------------------------------------------------
 
     @Test fun `adding to the list marks the state as on-list`() {
-        assertTrue(fresh().markAdded().isOnList)
+        assertTrue(fresh().asAdded().isOnList)
     }
 
     @Test fun `changing servings after adding reverts to add-to-list`() {
-        assertFalse(fresh().markAdded().withServings(5).isOnList)
+        assertFalse(fresh().asAdded().withServings(5).isOnList)
     }
 
     @Test fun `changing a swap after adding reverts to add-to-list`() {
-        assertFalse(fresh().markAdded().withSwap("mince", "plant").isOnList)
+        assertFalse(fresh().asAdded().withSwap("mince", "plant").isOnList)
     }
 
     @Test fun `toggling an add-in after adding reverts to add-to-list`() {
-        assertFalse(fresh().markAdded().withAddIn("choc", true).isOnList)
+        assertFalse(fresh().asAdded().withAddIn("choc", true).isOnList)
     }
 
     @Test fun `restoring the added choices flips back to on-list`() {
-        val s = fresh().markAdded().withServings(5).withServings(4)
+        val s = fresh().asAdded().withServings(5).withServings(4)
         assertTrue(s.isOnList)
     }
 
-    @Test fun `servings are clamped between 1 and 12`() {
-        assertEquals(12, fresh().withServings(40).servings)
-        assertEquals(1, fresh().withServings(0).servings)
+    @Test fun `an add-in toggled off counts the same as one never toggled`() {
+        val added = fresh().asAdded().added
+        val toggledOff = fresh().withAddIn("beer", true).withAddIn("beer", false)
+        assertTrue(toggledOff.copy(added = added).isOnList)
+    }
+
+    @Test fun `a restored draft overrides the planned choice`() {
+        val planned = PlannedChoice(6, defaults(chilli))
+        val draftSel = Selection(defaults(chilli).choice, mapOf("beer" to true))
+        val s = Phase1State.initial(chilli, planned, draft = PlannedChoice(9, draftSel))
+        assertEquals(9, s.servings)
+        assertEquals(draftSel, s.selection)
+        assertFalse(s.isOnList)
+        assertEquals(planned, s.added)
     }
 
     // --- resolved view -----------------------------------------------------

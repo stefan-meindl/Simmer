@@ -31,8 +31,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -200,9 +204,9 @@ private fun Phase1Content(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun Hero(s: Phase1State) {
+private fun Hero(state: Phase1State) {
     val colors = LocalSimmerColors.current
-    val r = s.recipe
+    val r = state.recipe
     GradientHeroCard(modifier = Modifier.fillMaxWidth()) {
         Column(
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -232,9 +236,13 @@ private fun MetaItem(icon: Int, text: String) {
 
 @Composable
 private fun formatMinutes(min: Int): String = when {
-    min < 60 -> stringResource(R.string.flow_time_min, min)
-    min % 60 == 0 -> stringResource(R.string.flow_time_h, min / 60)
-    else -> stringResource(R.string.flow_time_h_min, min / 60, min % 60)
+    min < 60 -> pluralStringResource(R.plurals.flow_time_min, min, min)
+    min % 60 == 0 -> pluralStringResource(R.plurals.flow_time_h, min / 60, min / 60)
+    else -> stringResource(
+        R.string.flow_time_h_min,
+        pluralStringResource(R.plurals.flow_time_h, min / 60, min / 60),
+        pluralStringResource(R.plurals.flow_time_min, min % 60, min % 60),
+    )
 }
 
 // ---------------------------------------------------------------------------
@@ -273,7 +281,9 @@ private fun ServingsStepper(servings: Int, onStep: (Int) -> Unit) {
                 style = SimmerTextStyle_ServingsNumber,
                 color = colors.textPrimary,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.widthIn(min = 52.dp),
+                modifier = Modifier
+                    .widthIn(min = 52.dp)
+                    .semantics { liveRegion = LiveRegionMode.Polite },
             )
             StepperButton(
                 icon = R.drawable.ic_plus,
@@ -381,7 +391,7 @@ private fun Variations(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
                     CheckRow(
                         label = v.label,
                         subtitle = v.d.ifBlank { null },
-                        trailing = addInAmount(r, v, s.servings, ui.units, ui.spices),
+                        trailing = addInAmount(r, v, s.servings, ui.units, ui.spices, s.selection),
                         checked = s.selection.add[v.id] == true,
                         onCheckedChange = { viewModel.setAddIn(v.id, it) },
                         modifier = Modifier.background(colors.surfaceCard),
@@ -415,7 +425,11 @@ private fun IngredientList(ui: Phase1Ui.Content) {
                 color = colors.textPrimary,
             )
             Text(
-                text = stringResource(R.string.flow_ingredients_caption, resolved.size, s.servings),
+                text = stringResource(
+                    R.string.flow_ingredients_caption,
+                    pluralStringResource(R.plurals.flow_items_count, resolved.size, resolved.size),
+                    pluralStringResource(R.plurals.flow_servings_count, s.servings, s.servings),
+                ),
                 style = SimmerTextStyle_Caption,
                 color = colors.textTertiary,
             )
@@ -435,7 +449,7 @@ private fun IngredientList(ui: Phase1Ui.Content) {
                     horizontalArrangement = Arrangement.spacedBy(12.dp),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .defaultMinSize(minHeight = 52.dp)
+                        .defaultMinSize(minHeight = 56.dp)
                         .padding(horizontal = 16.dp, vertical = 10.dp),
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
@@ -491,7 +505,11 @@ private fun AddedToastCard(items: Int, servings: Int, onViewList: () -> Unit, mo
     ) {
         Column(modifier = Modifier.weight(1f)) {
             Text(
-                text = stringResource(R.string.flow_toast_added, items, servings),
+                text = stringResource(
+                    R.string.flow_toast_added,
+                    pluralStringResource(R.plurals.flow_items_count, items, items),
+                    pluralStringResource(R.plurals.flow_servings_count, servings, servings),
+                ),
                 style = SimmerTextStyle_BodySmMedium,
                 color = colors.textPrimary,
             )

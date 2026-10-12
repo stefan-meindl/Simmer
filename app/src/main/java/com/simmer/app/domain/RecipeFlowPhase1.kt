@@ -14,27 +14,30 @@ import com.simmer.app.domain.model.Variation
  * The amount is that of the add-in's ingredient at the recipe's base.
  */
 fun addInAmount(
-    r: Recipe,
-    v: Variation,
+    recipe: Recipe,
+    variation: Variation,
     servings: Int,
     units: String = "metric",
     spices: String = "spoons",
+    selection: Selection = defaults(recipe),
 ): String {
-    val ing = r.ingredients.first { it.id == v.ing }
-    val scaled = ing.quantity * servings / r.base
-    return "+ " + fmtQty(scaled, ing.unit, ing, units, spices)
+    // Resolve with the add-in on so rounding and units match the ingredient list.
+    val on = selection.copy(add = selection.add + (variation.id to true))
+    val ingredient = resolve(recipe, servings, on, units, spices).ingredients.first { it.id == variation.ing }
+    return "+ " + ingredient.amount
 }
 
 /**
  * True when [ing] is only shown because the user picked a non-default swap
  * option or switched an add-in on ("Your pick" tag).
  */
-fun isYourPick(r: Recipe, ing: Ingredient, sel: Selection): Boolean {
-    val c = ing.ifCondition ?: return false
-    if (c.contains('!')) return false
-    return r.variations.any { v ->
-        if (v.kind == "add") c == "add:${v.id}"
-        else sel.choice[v.id] != v.def && c == "${v.id}=${sel.choice[v.id]}"
+fun isYourPick(recipe: Recipe, ingredient: Ingredient, selection: Selection): Boolean {
+    val condition = ingredient.ifCondition ?: return false
+    if (condition.contains('!')) return false
+    return recipe.variations.any { variation ->
+        if (variation.kind == "add") condition == "add:${variation.id}"
+        else selection.choice[variation.id] != variation.def &&
+            condition == "${variation.id}=${selection.choice[variation.id]}"
     }
 }
 
