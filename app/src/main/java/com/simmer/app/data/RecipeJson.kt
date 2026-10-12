@@ -81,8 +81,6 @@ data class RecipeJson(
     val methods: List<MethodJson> = emptyList(),
     val ingredients: List<IngredientJson> = emptyList(),
     val steps: List<StepJson> = emptyList(),
-    val mine: Boolean = false,
-    val edited: Boolean = false,
     val notes: List<String> = emptyList(),
 )
 
@@ -104,19 +102,19 @@ fun Recipe.toEntity(): RecipeEntity {
         icon = icon,
         summary = summary,
         variations = variations.map { v ->
-            VariationJson(v.id, v.kind, v.label, v.options.map { OptionJson(it.v, it.l) }, v.def, v.d, v.ing)
+            VariationJson(v.id, v.kind, v.label, v.options.map { OptionJson(it.value, it.label) }, v.def, v.d, v.ing)
         },
         methods = methods.map { m ->
             MethodJson(m.id, m.label, m.q, m.options.map { o ->
-                MethodOptionJson(o.v, o.l, o.icon, o.time, o.d)
+                MethodOptionJson(o.value, o.label, o.icon, o.time, o.d)
             })
         },
         ingredients = ingredients.map { i ->
             IngredientJson(
                 id = i.id,
                 name = i.name,
-                q = i.q,
-                u = i.u,
+                q = i.quantity,
+                u = i.unit,
                 uPlural = i.uPlural,
                 note = i.note,
                 aisle = i.aisle,
@@ -127,10 +125,8 @@ fun Recipe.toEntity(): RecipeEntity {
             )
         },
         steps = steps.map { s ->
-            StepJson(s.id, s.ph, s.t, s.d, s.b, s.needs, s.ifCondition)
+            StepJson(s.id, s.phase, s.title, s.durationSecs, s.body, s.needs, s.ifCondition)
         },
-        mine = mine,
-        edited = edited,
         notes = notes,
     )
     return RecipeEntity(
@@ -143,30 +139,34 @@ fun Recipe.toEntity(): RecipeEntity {
 
 fun RecipeEntity.toDomain(): Recipe {
     val rj = jsonCodec.decodeFromString(RecipeJson.serializer(), this.json)
+    return rj.toDomain(mine = this.mine, edited = this.edited)
+}
+
+fun RecipeJson.toDomain(mine: Boolean = false, edited: Boolean = false): Recipe {
     return Recipe(
-        id = rj.id,
-        title = rj.title,
-        category = rj.category,
-        tags = rj.tags,
-        time = rj.time,
-        difficulty = rj.difficulty,
-        base = rj.base,
-        icon = rj.icon,
-        summary = rj.summary,
-        variations = rj.variations.map { v ->
+        id = id,
+        title = title,
+        category = category,
+        tags = tags,
+        time = time,
+        difficulty = difficulty,
+        base = base,
+        icon = icon,
+        summary = summary,
+        variations = variations.map { v ->
             Variation(v.id, v.kind, v.label, v.options.map { Option(it.v, it.l) }, v.def, v.d, v.ing)
         },
-        methods = rj.methods.map { m ->
+        methods = methods.map { m ->
             Method(m.id, m.label, m.q, m.options.map { o ->
                 MethodOption(o.v, o.l, o.icon, o.time, o.d)
             })
         },
-        ingredients = rj.ingredients.map { i ->
+        ingredients = ingredients.map { i ->
             Ingredient(
                 id = i.id,
                 name = i.name,
-                q = i.q,
-                u = i.u,
+                quantity = i.q,
+                unit = i.u,
                 uPlural = i.uPlural,
                 note = i.note,
                 aisle = i.aisle,
@@ -175,11 +175,11 @@ fun RecipeEntity.toDomain(): Recipe {
                 alt = i.altConditions.zip(i.altValues),
             )
         },
-        steps = rj.steps.map { s ->
+        steps = steps.map { s ->
             Step(s.id, s.ph, s.t, s.d, s.b, s.needs, s.ifCondition)
         },
-        mine = rj.mine,
-        edited = rj.edited,
-        notes = rj.notes,
+        mine = mine,
+        edited = edited,
+        notes = notes,
     )
 }

@@ -41,7 +41,7 @@ fun condList(conditions: List<String>, sel: Selection): Boolean =
 fun defaults(r: Recipe): Selection {
     val choice = mutableMapOf<String, String>()
     r.variations.forEach { v -> if (v.kind == "swap" && v.def.isNotBlank()) choice[v.id] = v.def }
-    r.methods.forEach { m -> if (m.options.isNotEmpty()) choice[m.id] = m.options[0].v }
+    r.methods.forEach { m -> if (m.options.isNotEmpty()) choice[m.id] = m.options[0].value }
     return Selection(choice = choice, add = emptyMap())
 }
 
@@ -49,10 +49,10 @@ fun defaults(r: Recipe): Selection {
 // Quantity formatting
 // ---------------------------------------------------------------------------
 
-private val FR = mapOf(0.25 to "¼", 0.5 to "½", 0.75 to "¾")
+private val FRACTION_GLYPHS = mapOf(0.25 to "¼", 0.5 to "½", 0.75 to "¾")
 
 /** Approximate grams per teaspoon for common spice categories. */
-private val DENS: List<Pair<Regex, Double>> = listOf(
+private val SPICE_DENSITIES: List<Pair<Regex, Double>> = listOf(
     Regex("oregano|thyme|basil|parsley|rosemary|herb", RegexOption.IGNORE_CASE) to 1.0,
     Regex("flake", RegexOption.IGNORE_CASE) to 1.5,
     Regex("seed", RegexOption.IGNORE_CASE) to 2.2,
@@ -63,14 +63,14 @@ private val DENS: List<Pair<Regex, Double>> = listOf(
 private const val DENS_DEFAULT = 2.5
 
 private fun spiceDensity(name: String): Double =
-    DENS.firstOrNull { (re, _) -> re.containsMatchIn(name) }?.second ?: DENS_DEFAULT
+    SPICE_DENSITIES.firstOrNull { (re, _) -> re.containsMatchIn(name) }?.second ?: DENS_DEFAULT
 
 private fun quarter(q: Double): Pair<Double, String> {
     var r = Math.round(q * 4).toDouble() / 4.0
     if (r == 0.0) r = 0.25
     val whole = r.toInt()
     val frac = r - whole
-    val s = (if (whole > 0) whole.toString() else "") + (FR[frac] ?: "")
+    val s = (if (whole > 0) whole.toString() else "") + (FRACTION_GLYPHS[frac] ?: "")
     return r to (s.ifEmpty { "0" })
 }
 
@@ -100,7 +100,7 @@ private fun imperialMl(q: Double): String {
  *
  * @param q        The quantity value
  * @param u        The unit string (e.g. "g", "ml", "tsp", "tbsp", "")
- * @param ing      The ingredient (used for spice density lookup)
+ * @param ing      The ingredient (used for spice density lookup and plural unit)
  * @param units    "metric" or "imperial"
  * @param spices   "spoons" or "grams"
  */
@@ -137,8 +137,14 @@ fun fmtQty(q: Double, u: String, ing: Ingredient?, units: String, spices: String
     if (r == 0.0) r = 0.25
     val whole = r.toInt()
     val frac = r - whole
-    val num = (if (whole > 0) whole.toString() else "") + (FR[frac] ?: "")
+    val num = (if (whole > 0) whole.toString() else "") + (FRACTION_GLYPHS[frac] ?: "")
     val numStr = num.ifEmpty { "0" }
+
+    // Use plural unit when quantity rounds to >= 2 and ingredient has a plural form
+    if (u.isNotBlank() && r >= 2.0 && ing != null && ing.uPlural.isNotBlank()) {
+        return "$numStr ${ing.uPlural}"
+    }
+
     return if (u.isNotBlank()) "$numStr $u" else numStr
 }
 
@@ -206,8 +212,11 @@ fun parseBody(b: String, byId: Map<String, ResolvedIngredient>, units: String): 
  * - Scales quantities by servings/base
  * - Sorts steps: prep first, then cook
  * - Labels steps: "Prep 1", "Prep 2", ... / "Step 1", "Step 2", ...
+ *   (or German equivalents when lang = "de": "Vorb. 1" / "Schritt 1")
  * - Resolves needs references
  * - Parses body segments
+ *
+ * @param lang  Language for step labels: "en" (default) or "de"
  */
 fun resolve(
     r: Recipe,
@@ -215,21 +224,25 @@ fun resolve(
     sel: Selection,
     units: String = "metric",
     spices: String = "spoons",
+    lang: String = "en",
 ): ResolvedRecipe {
     val k = servings.toDouble() / r.base.toDouble()
 
+    val prepPrefix = if (lang == "de") "Vorb." else "Prep"
+    val cookPrefix = if (lang == "de") "Schritt" else "Step"
+
     // Resolve ingredients
     val ingredients = r.ingredients.filter { cond(it.ifCondition, sel) }.map { ing ->
-        var q = ing.q
+        var q = ing.quantity
         ing.alt.forEach { (c, v) -> if (cond(c, sel)) q = v }
         val scaled = q * k
-        val amount = fmtQty(scaled, ing.u, ing, units, spices)
+        val amount = fmtQty(scaled, ing.unit, ing, units, spices)
         ResolvedIngredient(
             id = ing.id,
             name = ing.name,
             qty = scaled,
             amount = amount,
-            u = ing.u,
+            unit = ing.unit,
             uPlural = ing.uPlural,
             note = ing.note,
             aisle = ing.aisle,
@@ -241,13 +254,13 @@ fun resolve(
 
     // Filter and order steps: prep before cook
     val raw = r.steps.filter { cond(it.ifCondition, sel) }
-    val ordered = raw.filter { it.ph == "prep" } + raw.filter { it.ph == "cook" }
+    val ordered = raw.filter { it.phase == "prep" } + raw.filter { it.phase == "cook" }
 
     // Assign labels
     var prepCount = 0
     var cookCount = 0
     val labeled = ordered.map { s ->
-        val label = if (s.ph == "prep") "Prep ${++prepCount}" else "Step ${++cookCount}"
+        val label = if (s.phase == "prep") "$prepPrefix ${++prepCount}" else "$cookPrefix ${++cookCount}"
         s to label
     }
 
@@ -261,13 +274,13 @@ fun resolve(
     val resolvedNoNeeds = labeled.map { (s, label) ->
         ResolvedStep(
             id = s.id,
-            ph = s.ph,
-            t = s.t,
-            d = s.d,
-            b = s.b,
+            phase = s.phase,
+            title = s.title,
+            durationSecs = s.durationSecs,
+            body = s.body,
             label = label,
             needs = emptyList(),
-            segs = parseBody(s.b, byId, units),
+            segs = parseBody(s.body, byId, units),
         )
     }
     val resolvedById = resolvedNoNeeds.associateBy { it.id }
@@ -400,8 +413,8 @@ fun normalize(j: Map<String, Any?>): Recipe {
             Ingredient(
                 id = i["id"]?.toString() ?: "i${k + 1}",
                 name = i["name"]?.toString() ?: "Ingredient",
-                q = (i["q"] as? Number)?.toDouble()?.takeIf { it > 0 } ?: 1.0,
-                u = u,
+                quantity = (i["q"] as? Number)?.toDouble()?.takeIf { it > 0 } ?: 1.0,
+                unit = u,
                 uPlural = uPlural,
                 note = i["note"]?.toString() ?: "",
                 aisle = i["aisle"]?.toString() ?: "",
@@ -421,8 +434,8 @@ fun normalize(j: Map<String, Any?>): Recipe {
         ?.map { m ->
             val options = (m["options"] as List<*>).filterIsInstance<Map<*, *>>().mapIndexed { k, o ->
                 MethodOption(
-                    v = o["v"]?.toString() ?: "o$k",
-                    l = o["l"]?.toString() ?: "Option ${k + 1}",
+                    value = o["v"]?.toString() ?: "o$k",
+                    label = o["l"]?.toString() ?: "Option ${k + 1}",
                     icon = o["icon"]?.toString()?.takeIf { it in VALID_ICONS_OPTION } ?: "flame",
                     time = o["time"]?.toString() ?: "",
                     d = o["d"]?.toString() ?: "",
@@ -436,19 +449,37 @@ fun normalize(j: Map<String, Any?>): Recipe {
             )
         } ?: emptyList()
 
-    val mset = methods.associate { m -> m.id to m.options.map { it.v }.toSet() }
+    val mset = methods.associate { m -> m.id to m.options.map { it.value }.toSet() }
 
     val variations = (j["variations"] as? List<*>)
         ?.filterIsInstance<Map<*, *>>()
         ?.filter { v -> v["id"] != null && ingIds.contains(v["ing"]?.toString()) }
         ?.map { v ->
-            Variation(
-                id = v["id"].toString(),
-                kind = "add",
-                label = v["label"]?.toString() ?: "Add-in",
-                d = v["d"]?.toString() ?: "",
-                ing = v["ing"]?.toString() ?: "",
-            )
+            val kind = v["kind"]?.toString() ?: "add"
+            if (kind == "swap") {
+                val options = (v["options"] as? List<*>)?.filterIsInstance<Map<*, *>>()?.mapIndexed { k, o ->
+                    Option(
+                        value = o["v"]?.toString() ?: "o$k",
+                        label = o["l"]?.toString() ?: "Option ${k + 1}",
+                    )
+                } ?: emptyList()
+                Variation(
+                    id = v["id"].toString(),
+                    kind = "swap",
+                    label = v["label"]?.toString() ?: "Swap",
+                    options = options,
+                    def = v["def"]?.toString() ?: "",
+                    ing = v["ing"]?.toString() ?: "",
+                )
+            } else {
+                Variation(
+                    id = v["id"].toString(),
+                    kind = "add",
+                    label = v["label"]?.toString() ?: "Add-in",
+                    d = v["d"]?.toString() ?: "",
+                    ing = v["ing"]?.toString() ?: "",
+                )
+            }
         } ?: emptyList()
 
     val vset = variations.map { it.id }.toSet()
@@ -484,10 +515,10 @@ fun normalize(j: Map<String, Any?>): Recipe {
             }
             Step(
                 id = s["id"]?.toString() ?: "s${k + 1}",
-                ph = if (s["ph"]?.toString() == "prep") "prep" else "cook",
-                t = s["t"]?.toString() ?: "Step ${k + 1}",
-                d = d,
-                b = body,
+                phase = if (s["ph"]?.toString() == "prep") "prep" else "cook",
+                title = s["t"]?.toString() ?: "Step ${k + 1}",
+                durationSecs = d,
+                body = body,
                 needs = (s["needs"] as? List<*>)?.map { it.toString() } ?: emptyList(),
                 ifCondition = cleanIf,
             )

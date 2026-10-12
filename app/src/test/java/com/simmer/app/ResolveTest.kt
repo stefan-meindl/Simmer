@@ -46,7 +46,7 @@ class ResolveTest {
     @Test fun `chilli prep steps come before cook steps`() {
         val sel = defaults(chilli)
         val result = resolve(chilli, 4, sel)
-        val phases = result.steps.map { it.ph }
+        val phases = result.steps.map { it.phase }
         val lastPrep = phases.lastIndexOf("prep")
         val firstCook = phases.indexOfFirst { it == "cook" }
         if (lastPrep >= 0 && firstCook >= 0) {
@@ -57,7 +57,7 @@ class ResolveTest {
     @Test fun `chilli prep steps labeled Prep n`() {
         val sel = defaults(chilli)
         val result = resolve(chilli, 4, sel)
-        val prepSteps = result.steps.filter { it.ph == "prep" }
+        val prepSteps = result.steps.filter { it.phase == "prep" }
         prepSteps.forEachIndexed { idx, step ->
             assertEquals("Prep ${idx + 1}", step.label)
         }
@@ -66,7 +66,7 @@ class ResolveTest {
     @Test fun `chilli cook steps labeled Step n`() {
         val sel = defaults(chilli)
         val result = resolve(chilli, 4, sel)
-        val cookSteps = result.steps.filter { it.ph == "cook" }
+        val cookSteps = result.steps.filter { it.phase == "cook" }
         cookSteps.forEachIndexed { idx, step ->
             assertEquals("Step ${idx + 1}", step.label)
         }
@@ -171,6 +171,211 @@ class ResolveTest {
         val result = resolve(carrots, 4, sel)
         val roastStep = result.steps.find { it.id == "c-roa" }
         assertNotNull(roastStep)
-        assertTrue("Should show air fry step body", roastStep!!.b.contains("Air-fry"))
+        assertTrue("Should show air fry step body", roastStep!!.body.contains("Air-fry"))
+    }
+
+    // =========================================================================
+    // Comprehensive tests — all five built-in recipes
+    // =========================================================================
+
+    // --- Chilli: comprehensive ---
+
+    @Test fun `chilli resolves without error at base servings with default selection`() {
+        val result = resolve(chilli, chilli.base, defaults(chilli))
+        assertTrue("Should have ingredients", result.ingredients.isNotEmpty())
+        assertTrue("Should have steps", result.steps.isNotEmpty())
+    }
+
+    @Test fun `chilli has correct number of prep and cook steps`() {
+        val sel = defaults(chilli)
+        val result = resolve(chilli, 4, sel)
+        val prepCount = result.steps.count { it.phase == "prep" }
+        val cookCount = result.steps.count { it.phase == "cook" }
+        assertTrue("Should have prep steps", prepCount > 0)
+        assertTrue("Should have cook steps", cookCount > 0)
+    }
+
+    @Test fun `chilli first prep step is labeled Prep 1`() {
+        val result = resolve(chilli, chilli.base, defaults(chilli))
+        val firstPrep = result.steps.first { it.phase == "prep" }
+        assertEquals("Prep 1", firstPrep.label)
+    }
+
+    @Test fun `chilli first cook step is labeled Step 1`() {
+        val result = resolve(chilli, chilli.base, defaults(chilli))
+        val firstCook = result.steps.first { it.phase == "cook" }
+        assertEquals("Step 1", firstCook.label)
+    }
+
+    @Test fun `chilli onion scales correctly with servings`() {
+        val sel = defaults(chilli)
+        val result = resolve(chilli, chilli.base, sel)
+        val onion = result.ingredients.find { it.id == "on" }
+        assertNotNull(onion)
+        // base is 4, onion quantity is 2.0 => at base servings qty == 2.0
+        assertEquals(2.0, onion!!.qty, 0.001)
+    }
+
+    // --- Curry: comprehensive ---
+
+    @Test fun `curry resolves without error at base servings with default selection`() {
+        val result = resolve(curry, curry.base, defaults(curry))
+        assertTrue("Should have ingredients", result.ingredients.isNotEmpty())
+        assertTrue("Should have steps", result.steps.isNotEmpty())
+    }
+
+    @Test fun `curry has correct number of prep and cook steps`() {
+        val sel = defaults(curry)
+        val result = resolve(curry, 2, sel)
+        val prepCount = result.steps.count { it.phase == "prep" }
+        val cookCount = result.steps.count { it.phase == "cook" }
+        assertTrue("Should have prep steps", prepCount > 0)
+        assertTrue("Should have cook steps", cookCount > 0)
+    }
+
+    @Test fun `curry first prep step is labeled Prep 1`() {
+        val result = resolve(curry, curry.base, defaults(curry))
+        val firstPrep = result.steps.first { it.phase == "prep" }
+        assertEquals("Prep 1", firstPrep.label)
+    }
+
+    @Test fun `curry first cook step is labeled Step 1`() {
+        val result = resolve(curry, curry.base, defaults(curry))
+        val firstCook = result.steps.first { it.phase == "cook" }
+        assertEquals("Step 1", firstCook.label)
+    }
+
+    @Test fun `curry coconut milk scales correctly with servings`() {
+        val sel = defaults(curry)
+        val result2 = resolve(curry, 2, sel)
+        val result4 = resolve(curry, 4, sel)
+        val cm2 = result2.ingredients.find { it.id == "cm" }!!.qty
+        val cm4 = result4.ingredients.find { it.id == "cm" }!!.qty
+        assertEquals(cm2 * 2, cm4, 0.001)
+    }
+
+    // --- Tagliatelle: comprehensive ---
+
+    @Test fun `tagliatelle resolves without error at base servings with default selection`() {
+        val result = resolve(tagliatelle, tagliatelle.base, defaults(tagliatelle))
+        assertTrue("Should have ingredients", result.ingredients.isNotEmpty())
+        assertTrue("Should have steps", result.steps.isNotEmpty())
+    }
+
+    @Test fun `tagliatelle has correct number of prep and cook steps`() {
+        val result = resolve(tagliatelle, 2, defaults(tagliatelle))
+        val prepCount = result.steps.count { it.phase == "prep" }
+        val cookCount = result.steps.count { it.phase == "cook" }
+        assertTrue("Should have prep steps", prepCount > 0)
+        assertTrue("Should have cook steps", cookCount > 0)
+    }
+
+    @Test fun `tagliatelle first prep step is labeled Prep 1`() {
+        val result = resolve(tagliatelle, tagliatelle.base, defaults(tagliatelle))
+        val firstPrep = result.steps.first { it.phase == "prep" }
+        assertEquals("Prep 1", firstPrep.label)
+    }
+
+    @Test fun `tagliatelle first cook step is labeled Step 1`() {
+        val result = resolve(tagliatelle, tagliatelle.base, defaults(tagliatelle))
+        val firstCook = result.steps.first { it.phase == "cook" }
+        assertEquals("Step 1", firstCook.label)
+    }
+
+    @Test fun `tagliatelle butter scales correctly with servings`() {
+        val sel = defaults(tagliatelle)
+        val result2 = resolve(tagliatelle, 2, sel)
+        val result4 = resolve(tagliatelle, 4, sel)
+        val butter2 = result2.ingredients.find { it.id == "t2" }!!.qty
+        val butter4 = result4.ingredients.find { it.id == "t2" }!!.qty
+        assertEquals(butter2 * 2, butter4, 0.001)
+    }
+
+    // --- Shakshuka: comprehensive ---
+
+    @Test fun `shakshuka resolves without error at base servings with default selection`() {
+        val result = resolve(shakshuka, shakshuka.base, defaults(shakshuka))
+        assertTrue("Should have ingredients", result.ingredients.isNotEmpty())
+        assertTrue("Should have steps", result.steps.isNotEmpty())
+    }
+
+    @Test fun `shakshuka has correct number of prep and cook steps`() {
+        val result = resolve(shakshuka, 2, defaults(shakshuka))
+        val prepCount = result.steps.count { it.phase == "prep" }
+        val cookCount = result.steps.count { it.phase == "cook" }
+        assertTrue("Should have prep steps", prepCount > 0)
+        assertTrue("Should have cook steps", cookCount > 0)
+    }
+
+    @Test fun `shakshuka first prep step is labeled Prep 1`() {
+        val result = resolve(shakshuka, shakshuka.base, defaults(shakshuka))
+        val firstPrep = result.steps.first { it.phase == "prep" }
+        assertEquals("Prep 1", firstPrep.label)
+    }
+
+    @Test fun `shakshuka first cook step is labeled Step 1`() {
+        val result = resolve(shakshuka, shakshuka.base, defaults(shakshuka))
+        val firstCook = result.steps.first { it.phase == "cook" }
+        assertEquals("Step 1", firstCook.label)
+    }
+
+    @Test fun `shakshuka eggs scale correctly with servings`() {
+        val sel = defaults(shakshuka)
+        val result2 = resolve(shakshuka, 2, sel)
+        val result4 = resolve(shakshuka, 4, sel)
+        val eggs2 = result2.ingredients.find { it.id == "s6" }!!.qty
+        val eggs4 = result4.ingredients.find { it.id == "s6" }!!.qty
+        assertEquals(eggs2 * 2, eggs4, 0.001)
+    }
+
+    // --- Carrots: comprehensive ---
+
+    @Test fun `carrots resolves without error at base servings with default selection`() {
+        val result = resolve(carrots, carrots.base, defaults(carrots))
+        assertTrue("Should have ingredients", result.ingredients.isNotEmpty())
+        assertTrue("Should have steps", result.steps.isNotEmpty())
+    }
+
+    @Test fun `carrots has correct number of prep and cook steps`() {
+        val result = resolve(carrots, 4, defaults(carrots))
+        val prepCount = result.steps.count { it.phase == "prep" }
+        val cookCount = result.steps.count { it.phase == "cook" }
+        assertTrue("Should have prep steps", prepCount > 0)
+        assertTrue("Should have cook steps", cookCount > 0)
+    }
+
+    @Test fun `carrots first prep step is labeled Prep 1`() {
+        val result = resolve(carrots, carrots.base, defaults(carrots))
+        val firstPrep = result.steps.first { it.phase == "prep" }
+        assertEquals("Prep 1", firstPrep.label)
+    }
+
+    @Test fun `carrots first cook step is labeled Step 1`() {
+        val result = resolve(carrots, carrots.base, defaults(carrots))
+        val firstCook = result.steps.first { it.phase == "cook" }
+        assertEquals("Step 1", firstCook.label)
+    }
+
+    @Test fun `carrots scale correctly with servings`() {
+        val sel = defaults(carrots)
+        val result4 = resolve(carrots, 4, sel)
+        val result8 = resolve(carrots, 8, sel)
+        val carrots4 = result4.ingredients.find { it.id == "c1" }!!.qty
+        val carrots8 = result8.ingredients.find { it.id == "c1" }!!.qty
+        assertEquals(carrots4 * 2, carrots8, 0.001)
+    }
+
+    // --- German labels (lang = "de") ---
+
+    @Test fun `resolve with lang de uses German prep label`() {
+        val result = resolve(chilli, chilli.base, defaults(chilli), lang = "de")
+        val firstPrep = result.steps.first { it.phase == "prep" }
+        assertEquals("Vorb. 1", firstPrep.label)
+    }
+
+    @Test fun `resolve with lang de uses German cook label`() {
+        val result = resolve(chilli, chilli.base, defaults(chilli), lang = "de")
+        val firstCook = result.steps.first { it.phase == "cook" }
+        assertEquals("Schritt 1", firstCook.label)
     }
 }
