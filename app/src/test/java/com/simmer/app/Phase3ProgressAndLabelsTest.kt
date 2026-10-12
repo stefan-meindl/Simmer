@@ -29,11 +29,18 @@ class Phase3ProgressAndLabelsTest {
         assertEquals(setOf("p-veg", "p-rice"), store.doneSteps("chilli"))
     }
 
-    @Test fun `restore never overwrites progress already in memory`() {
+    @Test fun `saved state wins over stale progress in memory`() {
         val store = CookingProgressStore()
         store.markDone("chilli", "p-beans")
         store.restore("chilli", listOf("p-veg"))
-        assertEquals(setOf("p-beans"), store.doneSteps("chilli"))
+        assertEquals(setOf("p-veg"), store.doneSteps("chilli"))
+    }
+
+    @Test fun `restoring saved state leaves other recipes alone`() {
+        val store = CookingProgressStore()
+        store.markDone("curry", "p-rice")
+        store.restore("chilli", listOf("p-veg"))
+        assertEquals(setOf("p-rice"), store.doneSteps("curry"))
     }
 
     @Test fun `observe emits the current done set of that recipe`() = runBlocking {

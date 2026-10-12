@@ -145,8 +145,8 @@ class RecipeFlowViewModel @Inject constructor(
     }
 
     init {
-        // Done steps saved before process death (the store is empty after a restart).
-        progress.restore(recipeId, savedState.get<ArrayList<String>>(KEY_DONE).orEmpty())
+        // Done steps saved with this flow's servings and Selection; they win over stale memory.
+        savedState.get<ArrayList<String>>(KEY_DONE)?.let { progress.restore(recipeId, it) }
         viewModelScope.launch {
             progress.observe(recipeId).collect { savedState[KEY_DONE] = ArrayList(it) }
         }

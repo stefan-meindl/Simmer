@@ -57,8 +57,12 @@ One of the three ordered screens of the cooking flow, shown as the progress indi
 _Avoid_: Stage, page, screen number
 
 **Cooking Progress**:
-The Steps a user has marked done while cooking a recipe (`CookingProgressStore`). Reset on any change to servings or the Selection, since the Steps themselves change. Persistence is owned by issue #7.
+The Steps a user has marked done while cooking a recipe (`CookingProgressStore`). Kept in memory per recipe and mirrored into the flow's saved state so it survives process death (saved state wins over stale memory on restore). Reset on any change to servings or the Selection, since the Steps themselves change.
 _Avoid_: Done state, checklist
+
+**Active Step**:
+The first Step in display order that is not yet done (`CookingView.activeId`). It gets the highlighted card and the dark Mark as done button on Flow Phase 3; when none is left, the success panel shows.
+_Avoid_: Current step, next step
 
 **Link**:
 An ingredient reference embedded in a step's body text, encoded as `{ingredientId:shown text}`. Renders as a tappable underlined span that shows the ingredient's amount and tips.

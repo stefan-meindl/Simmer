@@ -22,15 +22,18 @@ class CookingProgressStore @Inject constructor() {
     fun observe(recipeId: String): Flow<Set<String>> =
         done.map { it[recipeId].orEmpty() }.distinctUntilChanged()
 
-    fun markDone(recipeId: String, stepId: String) =
-        done.update { it + (recipeId to it[recipeId].orEmpty() + stepId) }
+    fun markDone(recipeId: String, stepId: String) = change(recipeId) { it + stepId }
 
-    fun undo(recipeId: String, stepId: String) =
-        done.update { it + (recipeId to it[recipeId].orEmpty() - stepId) }
+    fun undo(recipeId: String, stepId: String) = change(recipeId) { it - stepId }
 
-    /** Loads [stepIds] saved before process death, unless this recipe already has progress in memory. */
-    fun restore(recipeId: String, stepIds: Collection<String>) =
-        done.update { if (it[recipeId].isNullOrEmpty() && stepIds.isNotEmpty()) it + (recipeId to stepIds.toSet()) else it }
+    /**
+     * Replaces this recipe's progress with [stepIds] saved by the flow. Saved state belongs to the
+     * same servings and Selection the flow restored with it, so it wins over whatever is in memory.
+     */
+    fun restore(recipeId: String, stepIds: Collection<String>) = change(recipeId) { stepIds.toSet() }
 
     fun reset(recipeId: String) = done.update { it - recipeId }
+
+    private fun change(recipeId: String, transform: (Set<String>) -> Set<String>) =
+        done.update { it + (recipeId to transform(it[recipeId].orEmpty())) }
 }
