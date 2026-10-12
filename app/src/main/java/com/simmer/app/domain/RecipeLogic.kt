@@ -103,8 +103,14 @@ private fun imperialMl(q: Double): String {
  * @param ing      The ingredient (used for spice density lookup and plural unit)
  * @param units    "metric" or "imperial"
  * @param spices   "spoons" or "grams"
+ * @param lang     "en" or "de"; German uses a decimal comma (1,5 g)
  */
-fun fmtQty(q: Double, u: String, ing: Ingredient?, units: String, spices: String): String {
+fun fmtQty(q: Double, u: String, ing: Ingredient?, units: String, spices: String, lang: String = "en"): String {
+    val formatted = fmtQtyDotted(q, u, ing, units, spices)
+    return if (lang == "de") formatted.replace(Regex("(\\d)\\.(\\d)"), "$1,$2") else formatted
+}
+
+private fun fmtQtyDotted(q: Double, u: String, ing: Ingredient?, units: String, spices: String): String {
     // Spices-in-grams mode
     if (ing != null && spices == "grams" && ing.aisle == "Spices" && (u == "tsp" || u == "tbsp")) {
         val per = spiceDensity(ing.name)
@@ -236,7 +242,7 @@ fun resolve(
         var q = ing.quantity
         ing.alt.forEach { (c, v) -> if (cond(c, sel)) q = v }
         val scaled = q * k
-        val amount = fmtQty(scaled, ing.unit, ing, units, spices)
+        val amount = fmtQty(scaled, ing.unit, ing, units, spices, lang)
         ResolvedIngredient(
             id = ing.id,
             name = ing.name,

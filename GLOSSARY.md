@@ -112,6 +112,14 @@ _Avoid_: Tool, gadget, equipment
 Strict, Medium or Free for all: a setting that instructs recipe creation (the Pipeline) how tightly to limit the Methods it generates to the user's Appliances. Has no effect on cooking an existing Recipe.
 _Avoid_: Appliance mode, filter mode
 
+**Settings preview**:
+The cream panel at the bottom of Settings: Chilli con carne at 4 servings with beef mince, stock, ground cumin, dried oregano and the oven temperature, formatted live with the current Units and Spices settings (`settingsPreview`).
+_Avoid_: Sample, demo
+
+**Spices display**:
+The Settings choice of showing spice and dried-herb amounts as Spoons (tsp/tbsp) or Grams (converted with per-spice densities, 1 tbsp = 3 tsp). Applies only to ingredients in the Spices Aisle; German shows a decimal comma.
+_Avoid_: Spice mode, spice units
+
 ### AI Import
 
 **Pipeline**:

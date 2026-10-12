@@ -1,0 +1,497 @@
+package com.simmer.app.ui.settings
+
+import androidx.annotation.StringRes
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.simmer.app.R
+import com.simmer.app.domain.KitchenMode
+import com.simmer.app.domain.SettingsPreview
+import com.simmer.app.ui.components.OptionCard
+import com.simmer.app.ui.components.SecondaryButton
+import com.simmer.app.ui.theme.LocalSimmerColors
+import com.simmer.app.ui.theme.SimmerTextStyle_BodyMdMedium
+import com.simmer.app.ui.theme.SimmerTextStyle_BodySm
+import com.simmer.app.ui.theme.SimmerTextStyle_BodySmMedium
+import com.simmer.app.ui.theme.SimmerTextStyle_Caption
+import com.simmer.app.ui.theme.SimmerTextStyle_MicroUppercase
+import com.simmer.app.ui.theme.SimmerTextStyle_ScreenTitle
+
+/** The Settings tab: language, units, spices, kitchen, kitchen mode, recipe reader and a live preview. */
+@Composable
+fun SettingsScreen(
+    onEditKitchen: () -> Unit,
+    modifier: Modifier = Modifier,
+    viewModel: SettingsViewModel = hiltViewModel(),
+) {
+    val colors = LocalSimmerColors.current
+    val ui by viewModel.ui.collectAsStateWithLifecycle()
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colors.surfacePage)
+            .windowInsetsPadding(WindowInsets.statusBars),
+    ) {
+        val state = ui ?: return@Box
+        Column(
+            verticalArrangement = Arrangement.spacedBy(28.dp),
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+        ) {
+            Text(
+                text = stringResource(R.string.settings_title),
+                style = SimmerTextStyle_ScreenTitle,
+                color = colors.textPrimary,
+                modifier = Modifier.semantics { heading() },
+            )
+            OptionGroup(
+                title = R.string.settings_language,
+                hint = R.string.settings_language_hint,
+                options = listOf(
+                    Choice("en", R.string.settings_language_en, R.string.settings_language_en_desc),
+                    Choice("de", R.string.settings_language_de, R.string.settings_language_de_desc),
+                ),
+                selected = state.lang,
+                onSelect = viewModel::setLang,
+            )
+            OptionGroup(
+                title = R.string.settings_units,
+                hint = R.string.settings_units_hint,
+                options = listOf(
+                    Choice("metric", R.string.settings_units_metric, R.string.settings_units_metric_desc),
+                    Choice("imperial", R.string.settings_units_imperial, R.string.settings_units_imperial_desc),
+                ),
+                selected = state.units,
+                onSelect = viewModel::setUnits,
+            )
+            OptionGroup(
+                title = R.string.settings_spices,
+                hint = R.string.settings_spices_hint,
+                options = listOf(
+                    Choice("spoons", R.string.settings_spices_spoons, R.string.settings_spices_spoons_desc),
+                    Choice("grams", R.string.settings_spices_grams, R.string.settings_spices_grams_desc),
+                ),
+                selected = state.spices,
+                onSelect = viewModel::setSpices,
+            )
+            KitchenSection(
+                appliances = state.appliances,
+                mode = state.kitchenMode,
+                onEditKitchen = onEditKitchen,
+                onModeSelect = viewModel::setKitchenMode,
+            )
+            ReaderSection()
+            state.preview?.let { PreviewPanel(it) }
+        }
+    }
+}
+
+private data class Choice(val key: String, @StringRes val label: Int, @StringRes val description: Int)
+
+@Composable
+private fun SectionHeader(@StringRes title: Int, @StringRes hint: Int) {
+    val colors = LocalSimmerColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = stringResource(title),
+            style = SimmerTextStyle_BodyMdMedium,
+            color = colors.textPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(text = stringResource(hint), style = SimmerTextStyle_Caption, color = colors.textTertiary)
+    }
+}
+
+/** Two option cards side by side (radio group). */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun OptionGroup(
+    @StringRes title: Int,
+    @StringRes hint: Int,
+    options: List<Choice>,
+    selected: String,
+    onSelect: (String) -> Unit,
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(title, hint)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(IntrinsicSize.Max),
+        ) {
+            options.forEach { choice ->
+                val on = choice.key == selected
+                OptionCard(
+                    selected = on,
+                    onClick = { onSelect(choice.key) },
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .semantics(mergeDescendants = true) {
+                            role = Role.RadioButton
+                            this.selected = on
+                        },
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(4.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 76.dp)
+                            .padding(14.dp),
+                    ) {
+                        CardTitleRow(stringResource(choice.label), on)
+                        Text(
+                            text = stringResource(choice.description),
+                            style = SimmerTextStyle_Caption,
+                            color = LocalSimmerColors.current.textTertiary,
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun CardTitleRow(label: String, selected: Boolean) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 22.dp),
+    ) {
+        Text(
+            text = label,
+            style = SimmerTextStyle_BodyMdMedium,
+            color = LocalSimmerColors.current.textPrimary,
+            modifier = Modifier.weight(1f),
+        )
+        if (selected) SelectedDot()
+    }
+}
+
+@Composable
+private fun SelectedDot() {
+    val colors = LocalSimmerColors.current
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = Modifier
+            .size(22.dp)
+            .background(colors.accent, CircleShape),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_check),
+            contentDescription = null,
+            tint = colors.accentFg,
+            modifier = Modifier.size(14.dp),
+        )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun KitchenSection(
+    appliances: List<String>,
+    mode: KitchenMode,
+    onEditKitchen: () -> Unit,
+    onModeSelect: (KitchenMode) -> Unit,
+) {
+    val colors = LocalSimmerColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(R.string.settings_kitchen, R.string.settings_kitchen_hint)
+        if (appliances.isEmpty()) {
+            Text(
+                text = stringResource(R.string.settings_kitchen_empty),
+                style = SimmerTextStyle_BodySm,
+                color = colors.textSecondary,
+            )
+        } else {
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                appliances.forEach { key -> AppliancePill(applianceLabel(key)) }
+            }
+        }
+        SecondaryButton(
+            text = stringResource(R.string.settings_kitchen_edit),
+            onClick = onEditKitchen,
+            modifier = Modifier.fillMaxWidth(),
+            icon = {
+                Icon(
+                    painter = painterResource(R.drawable.ic_chevron_right),
+                    contentDescription = null,
+                    modifier = Modifier.size(18.dp),
+                )
+            },
+        )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+            Text(
+                text = stringResource(R.string.settings_kitchen_mode),
+                style = SimmerTextStyle_BodySmMedium,
+                color = colors.textPrimary,
+            )
+            KitchenMode.entries.forEach { option ->
+                val on = option == mode
+                OptionCard(
+                    selected = on,
+                    onClick = { onModeSelect(option) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .semantics(mergeDescendants = true) {
+                            role = Role.RadioButton
+                            this.selected = on
+                        },
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 64.dp)
+                            .padding(14.dp),
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(modeLabel(option)),
+                                style = SimmerTextStyle_BodyMdMedium,
+                                color = colors.textPrimary,
+                            )
+                            Text(
+                                text = stringResource(modeDescription(option)),
+                                style = SimmerTextStyle_Caption,
+                                color = colors.textTertiary,
+                            )
+                        }
+                        if (on) SelectedDot()
+                    }
+                }
+            }
+        }
+    }
+}
+
+@StringRes
+private fun modeLabel(mode: KitchenMode): Int = when (mode) {
+    KitchenMode.Strict -> R.string.settings_mode_strict
+    KitchenMode.Medium -> R.string.settings_mode_medium
+    KitchenMode.Free -> R.string.settings_mode_free
+}
+
+@StringRes
+private fun modeDescription(mode: KitchenMode): Int = when (mode) {
+    KitchenMode.Strict -> R.string.settings_mode_strict_desc
+    KitchenMode.Medium -> R.string.settings_mode_medium_desc
+    KitchenMode.Free -> R.string.settings_mode_free_desc
+}
+
+@Composable
+private fun AppliancePill(label: String) {
+    val colors = LocalSimmerColors.current
+    Text(
+        text = label,
+        style = SimmerTextStyle_BodySmMedium,
+        color = colors.textPrimary,
+        modifier = Modifier
+            .defaultMinSize(minHeight = 36.dp)
+            .background(colors.surfaceWarm, CircleShape)
+            .border(BorderStroke(2.dp, colors.borderWarm), CircleShape)
+            .padding(horizontal = 12.dp, vertical = 8.dp),
+    )
+}
+
+/** Catalogue appliances have a translation; custom ones ("c:Name") show as the user wrote them. */
+@Composable
+private fun applianceLabel(key: String): String {
+    if (key.startsWith("c:")) return key.removePrefix("c:")
+    val res = APPLIANCE_LABELS[key] ?: return key
+    return stringResource(res)
+}
+
+private val APPLIANCE_LABELS: Map<String, Int> = mapOf(
+    "hob" to R.string.appliance_hob,
+    "oven" to R.string.appliance_oven,
+    "microwave" to R.string.appliance_microwave,
+    "airfryer" to R.string.appliance_airfryer,
+    "slowcooker" to R.string.appliance_slowcooker,
+    "pressure" to R.string.appliance_pressure,
+    "multicooker" to R.string.appliance_multicooker,
+    "ricecooker" to R.string.appliance_ricecooker,
+    "steamoven" to R.string.appliance_steamoven,
+    "grill" to R.string.appliance_grill,
+    "charcoal" to R.string.appliance_charcoal,
+    "smoker" to R.string.appliance_smoker,
+    "pizzaoven" to R.string.appliance_pizzaoven,
+    "grillpan" to R.string.appliance_grillpan,
+    "wok" to R.string.appliance_wok,
+    "dutchoven" to R.string.appliance_dutchoven,
+    "sousvide" to R.string.appliance_sousvide,
+    "toaster" to R.string.appliance_toaster,
+    "kettle" to R.string.appliance_kettle,
+    "processor" to R.string.appliance_processor,
+    "mixer" to R.string.appliance_mixer,
+    "handmixer" to R.string.appliance_handmixer,
+    "blender" to R.string.appliance_blender,
+    "stickblender" to R.string.appliance_stickblender,
+    "breadmaker" to R.string.appliance_breadmaker,
+    "waffle" to R.string.appliance_waffle,
+    "icecream" to R.string.appliance_icecream,
+    "dehydrator" to R.string.appliance_dehydrator,
+)
+
+/** Static in this phase: the model is not downloadable yet. */
+@Composable
+private fun ReaderSection() {
+    val colors = LocalSimmerColors.current
+    val shape = RoundedCornerShape(12.dp)
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SectionHeader(R.string.settings_reader, R.string.settings_reader_hint)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(colors.surfaceCard, shape)
+                .border(BorderStroke(2.dp, colors.borderDefault), shape)
+                .padding(16.dp),
+        ) {
+            val tile = RoundedCornerShape(8.dp)
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(colors.surfaceWarm, tile)
+                    .border(BorderStroke(2.dp, colors.borderWarm), tile),
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.ic_cpu),
+                    contentDescription = null,
+                    tint = colors.textPrimary,
+                    modifier = Modifier.size(20.dp),
+                )
+            }
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.settings_reader_where),
+                    style = SimmerTextStyle_BodyMdMedium,
+                    color = colors.textPrimary,
+                )
+                Text(
+                    text = stringResource(R.string.settings_reader_state),
+                    style = SimmerTextStyle_Caption,
+                    color = colors.textTertiary,
+                )
+            }
+        }
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.ic_lock),
+                contentDescription = null,
+                tint = colors.textSecondary,
+                modifier = Modifier.size(14.dp),
+            )
+            Text(
+                text = stringResource(R.string.settings_reader_private),
+                style = SimmerTextStyle_Caption,
+                color = colors.textSecondary,
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreviewPanel(preview: SettingsPreview) {
+    val colors = LocalSimmerColors.current
+    val shape = RoundedCornerShape(12.dp)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surfaceWarm, shape)
+            .border(BorderStroke(2.dp, colors.borderWarm), shape)
+            .padding(16.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(
+                text = stringResource(R.string.settings_preview).uppercase(),
+                style = SimmerTextStyle_MicroUppercase,
+                color = colors.textSecondary,
+            )
+            Text(
+                text = stringResource(R.string.settings_preview_caption),
+                style = SimmerTextStyle_BodySmMedium,
+                color = colors.textPrimary,
+            )
+        }
+        Column {
+            preview.ingredients.forEach { PreviewLine(it.name, it.amount) }
+            preview.ovenTemperature?.let { PreviewLine(stringResource(R.string.settings_preview_oven), it) }
+        }
+    }
+}
+
+@Composable
+private fun PreviewLine(name: String, amount: String) {
+    val colors = LocalSimmerColors.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 40.dp)
+            .semantics(mergeDescendants = true) {},
+    ) {
+        Text(
+            text = name,
+            style = SimmerTextStyle_BodySm,
+            color = colors.textPrimary,
+            modifier = Modifier.weight(1f),
+        )
+        Text(text = amount, style = SimmerTextStyle_BodySmMedium, color = colors.textPrimary)
+    }
+}
