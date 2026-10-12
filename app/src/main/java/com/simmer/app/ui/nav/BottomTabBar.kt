@@ -1,10 +1,7 @@
 package com.simmer.app.ui.nav
 
+import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.RestaurantMenu
-import androidx.compose.material.icons.outlined.Settings
-import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
@@ -14,7 +11,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -27,15 +24,15 @@ import com.simmer.app.ui.theme.LocalSimmerColors
 
 private data class TabItem(
     @StringRes val labelRes: Int,
-    val icon: ImageVector,
+    @DrawableRes val iconRes: Int,
     val route: Any,
     val routePrefix: String?,
 )
 
 private val TAB_ITEMS = listOf(
-    TabItem(R.string.tab_recipes, Icons.Outlined.RestaurantMenu, RecipesTab, RecipesTab::class.qualifiedName),
-    TabItem(R.string.tab_shopping_list, Icons.Outlined.ShoppingCart, ShoppingListTab, ShoppingListTab::class.qualifiedName),
-    TabItem(R.string.tab_settings, Icons.Outlined.Settings, SettingsTab, SettingsTab::class.qualifiedName),
+    TabItem(R.string.tab_recipes, R.drawable.ic_utensils, RecipesTab, RecipesTab::class.qualifiedName),
+    TabItem(R.string.tab_shopping_list, R.drawable.ic_shopping_cart, ShoppingListTab, ShoppingListTab::class.qualifiedName),
+    TabItem(R.string.tab_settings, R.drawable.ic_settings, SettingsTab, SettingsTab::class.qualifiedName),
 )
 
 /**
@@ -84,13 +81,13 @@ fun BottomTabBar(
                             },
                         ) {
                             Icon(
-                                imageVector = tab.icon,
+                                painter = painterResource(tab.iconRes),
                                 contentDescription = label,
                             )
                         }
                     } else {
                         Icon(
-                            imageVector = tab.icon,
+                            painter = painterResource(tab.iconRes),
                             contentDescription = label,
                         )
                     }
