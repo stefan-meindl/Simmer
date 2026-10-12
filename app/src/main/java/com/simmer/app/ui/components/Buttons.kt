@@ -187,7 +187,7 @@ fun LinkButton(
             contentColor = colors.textLink,
             disabledContentColor = colors.disabledFg,
         ),
-        modifier = modifier,
+        modifier = modifier.defaultMinSize(minHeight = ButtonMinHeight),
     ) {
         Text(
             text = text,

@@ -19,8 +19,8 @@ val InstrumentSerifFontFamily = FontFamily(
 
 val InterFontFamily = FontFamily(
     Font(resId = R.font.inter, weight = FontWeight.Normal),
-    Font(resId = R.font.inter, weight = FontWeight.Medium),
-    Font(resId = R.font.inter, weight = FontWeight.SemiBold),
+    Font(resId = R.font.inter_medium, weight = FontWeight.Medium),
+    Font(resId = R.font.inter_semibold, weight = FontWeight.SemiBold),
 )
 
 // ---------------------------------------------------------------------------

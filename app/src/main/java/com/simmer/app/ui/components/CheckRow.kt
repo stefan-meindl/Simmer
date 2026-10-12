@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CheckboxDefaults
@@ -78,9 +77,7 @@ fun CheckRow(
                 uncheckedColor = colors.borderStrong,
                 checkmarkColor = colors.accentFg,
             ),
-            modifier = Modifier
-                .size(24.dp)
-                .padding(start = 16.dp),
+            modifier = Modifier.padding(start = 8.dp),
         )
     }
 }

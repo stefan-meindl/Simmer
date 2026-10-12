@@ -3,7 +3,6 @@ package com.simmer.app.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -17,6 +16,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
+import com.simmer.app.ui.theme.DarkSimmerColors
 import com.simmer.app.ui.theme.LocalSimmerColors
 
 private val CardShape = RoundedCornerShape(12.dp)
@@ -126,7 +126,8 @@ fun GradientHeroCard(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
-    val isDark = isSystemInDarkTheme()
+    val colors = LocalSimmerColors.current
+    val isDark = colors === DarkSimmerColors
     val gradientColors = if (isDark) DarkGradientColors else LightGradientColors
     val gradientStops = if (isDark) DarkGradientStops else LightGradientStops
 
