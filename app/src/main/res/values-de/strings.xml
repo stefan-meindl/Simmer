@@ -1,4 +1,6 @@
 <resources>
+    <string name="app_name">Simmer</string>
+
     <!-- Bottom tab bar -->
     <string name="tab_recipes">Rezepte</string>
     <string name="tab_shopping_list">Einkaufsliste</string>

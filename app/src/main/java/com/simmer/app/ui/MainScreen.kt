@@ -1,6 +1,7 @@
 package com.simmer.app.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -62,12 +63,12 @@ fun MainScreen(
                     )
                 }
             },
-        ) { _ ->
+        ) { innerPadding ->
             SimmerNavHost(
                 navController = navController,
                 isDarkTheme = effectiveDark,
                 onThemeToggle = { viewModel.setTheme(!effectiveDark) },
-                modifier = Modifier,
+                modifier = Modifier.padding(innerPadding),
             )
         }
     }
