@@ -1,0 +1,6 @@
+<resources>
+    <!-- Bottom tab bar -->
+    <string name="tab_recipes">Rezepte</string>
+    <string name="tab_shopping_list">Einkaufsliste</string>
+    <string name="tab_settings">Einstellungen</string>
+</resources>
