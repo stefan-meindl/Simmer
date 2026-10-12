@@ -519,7 +519,7 @@ private fun linkLines(layout: TextLayoutResult, range: LinkRange): List<LinkLine
  * Tapping one opens a popover with the ingredient's amount, note and tips; tapping outside closes it.
  */
 @Composable
-private fun StepBody(segs: List<BodySegment>, ingredients: Map<String, ResolvedIngredient>) {
+internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, ResolvedIngredient>) {
     val colors = LocalSimmerColors.current
     val density = LocalDensity.current
     val (text, ranges) = remember(segs) { bodyText(segs) }

@@ -38,6 +38,14 @@ _Avoid_: Form state, edit state
 The unsaved Recipe the Add recipe review shows (`RecipeDraftStore`). Edit recipe opened without a recipe id works on it and writes back to the store, not to Room. Held in memory only; it does not survive process death.
 _Avoid_: Pending recipe, import result
 
+**Add recipe**:
+The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe, listed first on the Recipes overview, and opens Flow Phase 1). Convert is offered only for the built-in example (`stubConvert`) until the recipe reader exists; other text shows the Download recipe reader placeholder.
+_Avoid_: Import screen, new recipe screen
+
+**Recipe reader**:
+The on-device language model that will convert pasted text into a Recipe (about 2.6 GB, downloaded once). Not built yet: Settings shows its static state and Add recipe shows a Download placeholder.
+_Avoid_: AI, model, converter
+
 **Local override**:
 A built-in Recipe's saved edit, stored in Room with `edited = true`. Restore original removes it and brings the shipped version back.
 _Avoid_: Customised recipe, fork

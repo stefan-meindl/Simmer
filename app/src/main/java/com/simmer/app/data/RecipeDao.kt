@@ -6,8 +6,8 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface RecipeDao {
 
-    /** Returns all recipes as a reactive Flow. */
-    @Query("SELECT * FROM recipes")
+    /** Returns all recipes as a reactive Flow, oldest saved first. */
+    @Query("SELECT * FROM recipes ORDER BY rowid")
     fun observeAll(): Flow<List<RecipeEntity>>
 
     /** Returns a single recipe by ID, or null if not found. */

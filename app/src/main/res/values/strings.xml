@@ -271,4 +271,50 @@
     <string name="edit_delete">Delete recipe</string>
     <string name="edit_expand">Show details</string>
     <string name="edit_collapse">Hide details</string>
+
+    <!-- Add recipe -->
+    <string name="add_caption_paste">New recipe</string>
+    <string name="add_caption_review">New recipe · not saved yet</string>
+    <string name="add_title">Add a recipe.</string>
+    <string name="add_intro">Paste it from a website, a message or your notes. We turn it into steps, timers and a shopping list.</string>
+    <string name="add_recipe_text">Recipe text</string>
+    <string name="add_paste">Paste</string>
+    <string name="add_clear">Clear</string>
+    <string name="add_placeholder">Ingredients and method, as written.</string>
+    <string name="add_helper">Include the ingredients and the method.</string>
+    <string name="add_try_example">Try an example</string>
+    <string name="add_next_title">What happens next</string>
+    <string name="add_next_1">Preparation is split from cooking and comes first.</string>
+    <string name="add_next_2">Ingredients are linked to the steps that use them.</string>
+    <string name="add_next_3">Each step gets a timer. Missing times are estimated and flagged for you to check.</string>
+    <string name="add_next_kitchen_only">Methods only use your appliances: %1$s.</string>
+    <string name="add_next_kitchen_none">no appliances selected</string>
+    <string name="add_next_kitchen_any">Methods can use any appliance.</string>
+    <string name="add_change">Change</string>
+    <string name="add_convert">Convert recipe</string>
+    <string name="add_download">Download recipe reader (2.6 GB)</string>
+    <string name="add_reader_note">Runs on your phone. Downloads once over Wi-Fi.</string>
+    <string name="add_reader_note_any">Runs on your phone. Downloads once.</string>
+    <string name="add_check_first">Check before saving</string>
+    <string name="add_choices_found">Choices found</string>
+    <string name="add_choices_hint">You pick these before you start cooking.</string>
+    <string name="add_add_in">Optional add-in</string>
+    <string name="add_edit_details">Edit details</string>
+    <string name="add_tab_ingredients">Ingredients</string>
+    <string name="add_tab_steps">Steps</string>
+    <string name="add_counts">%1$s · %2$s</string>
+    <plurals name="add_ingredients_count">
+        <item quantity="one">%1$d ingredient</item>
+        <item quantity="other">%1$d ingredients</item>
+    </plurals>
+    <plurals name="add_steps_count">
+        <item quantity="one">%1$d preparation and %2$d cooking step</item>
+        <item quantity="other">%1$d preparation and %2$d cooking steps</item>
+    </plurals>
+    <string name="add_optional">Optional</string>
+    <string name="add_no_aisle">No shop section</string>
+    <string name="add_default_note">Shown for %1$s. Other choices change these steps.</string>
+    <string name="add_and">%1$s and %2$s</string>
+    <string name="add_edit_text">Edit text</string>
+    <string name="add_save">Save recipe</string>
 </resources>

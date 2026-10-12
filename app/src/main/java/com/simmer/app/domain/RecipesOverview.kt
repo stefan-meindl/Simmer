@@ -38,7 +38,8 @@ data class RecipesOverview(
 }
 
 /**
- * Filters [all] by title or ingredient name ([RecipeFilters.query]), category and tags, which all AND.
+ * Filters [all] (storage order, oldest first) by title or ingredient name ([RecipeFilters.query]),
+ * category and tags, which all AND. User Recipes are listed first, newest first.
  * The Planned section ignores the filters.
  */
 fun recipesOverview(
@@ -49,7 +50,9 @@ fun recipesOverview(
     val categories = all.map { it.category }.distinct()
     val category = filters.category?.takeIf { it in categories }
     val query = filters.query.trim()
-    val visible = all.filter { r ->
+    // [all] is oldest first; recipes the user added come first, newest first.
+    val listed = all.filter { it.mine }.asReversed() + all.filterNot { it.mine }
+    val visible = listed.filter { r ->
         (category == null || r.category == category) &&
             r.tags.containsAll(filters.tags) &&
             (query.isEmpty() ||

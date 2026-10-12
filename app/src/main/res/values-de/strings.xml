@@ -269,4 +269,50 @@
     <string name="edit_delete">Rezept löschen</string>
     <string name="edit_expand">Details anzeigen</string>
     <string name="edit_collapse">Details ausblenden</string>
+
+    <!-- Add recipe -->
+    <string name="add_caption_paste">Neues Rezept</string>
+    <string name="add_caption_review">Neues Rezept · noch nicht gespeichert</string>
+    <string name="add_title">Rezept hinzufügen.</string>
+    <string name="add_intro">Füge es aus einer Website, einer Nachricht oder deinen Notizen ein. Wir machen daraus Schritte, Timer und eine Einkaufsliste.</string>
+    <string name="add_recipe_text">Rezepttext</string>
+    <string name="add_paste">Einfügen</string>
+    <string name="add_clear">Löschen</string>
+    <string name="add_placeholder">Zutaten und Zubereitung, so wie sie dastehen.</string>
+    <string name="add_helper">Mit Zutaten und Zubereitung.</string>
+    <string name="add_try_example">Beispiel testen</string>
+    <string name="add_next_title">Was dann passiert</string>
+    <string name="add_next_1">Die Vorbereitung wird vom Kochen getrennt und kommt zuerst.</string>
+    <string name="add_next_2">Zutaten werden mit den Schritten verknüpft, in denen sie vorkommen.</string>
+    <string name="add_next_3">Jeder Schritt bekommt einen Timer. Fehlende Zeiten werden geschätzt und zur Prüfung markiert.</string>
+    <string name="add_next_kitchen_only">Zubereitungen nutzen nur deine Geräte: %1$s.</string>
+    <string name="add_next_kitchen_none">keine Geräte ausgewählt</string>
+    <string name="add_next_kitchen_any">Zubereitungen dürfen jedes Gerät nutzen.</string>
+    <string name="add_change">Ändern</string>
+    <string name="add_convert">Rezept umwandeln</string>
+    <string name="add_download">Rezept-Leser laden (2,6 GB)</string>
+    <string name="add_reader_note">Läuft auf deinem Handy. Wird einmal über WLAN geladen.</string>
+    <string name="add_reader_note_any">Läuft auf deinem Handy. Wird einmal geladen.</string>
+    <string name="add_check_first">Vor dem Speichern prüfen</string>
+    <string name="add_choices_found">Gefundene Optionen</string>
+    <string name="add_choices_hint">Du wählst sie, bevor du mit dem Kochen beginnst.</string>
+    <string name="add_add_in">Optionales Extra</string>
+    <string name="add_edit_details">Details bearbeiten</string>
+    <string name="add_tab_ingredients">Zutaten</string>
+    <string name="add_tab_steps">Schritte</string>
+    <string name="add_counts">%1$s · %2$s</string>
+    <plurals name="add_ingredients_count">
+        <item quantity="one">%1$d Zutat</item>
+        <item quantity="other">%1$d Zutaten</item>
+    </plurals>
+    <plurals name="add_steps_count">
+        <item quantity="one">%1$d Vorbereitungs- und %2$d Kochschritt</item>
+        <item quantity="other">%1$d Vorbereitungs- und %2$d Kochschritte</item>
+    </plurals>
+    <string name="add_optional">Optional</string>
+    <string name="add_no_aisle">Keine Abteilung</string>
+    <string name="add_default_note">Gezeigt für %1$s. Andere Optionen ändern diese Schritte.</string>
+    <string name="add_and">%1$s und %2$s</string>
+    <string name="add_edit_text">Text bearbeiten</string>
+    <string name="add_save">Rezept speichern</string>
 </resources>

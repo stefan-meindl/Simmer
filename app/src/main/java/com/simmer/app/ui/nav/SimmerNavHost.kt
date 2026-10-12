@@ -14,7 +14,7 @@ import com.simmer.app.ui.flow.RecipeFlowPhase2Screen
 import com.simmer.app.ui.flow.RecipeFlowPhase3Screen
 import com.simmer.app.ui.recipes.RecipesScreen
 import com.simmer.app.ui.settings.SettingsScreen
-import com.simmer.app.ui.screens.AddRecipePlaceholder
+import com.simmer.app.ui.add.AddRecipeScreen
 import com.simmer.app.ui.shopping.ShoppingListScreen
 import com.simmer.app.ui.screens.YourKitchenPlaceholder
 
@@ -124,8 +124,16 @@ fun SimmerNavHost(
         // ----------------------------------------------------------------
 
         composable<AddRecipe> {
-            AddRecipePlaceholder(
+            AddRecipeScreen(
                 onBack = { navController.popBackStack() },
+                // Settings opens on top, so back returns here with the pasted text.
+                onChangeKitchen = { navController.navigate(SettingsTab) { launchSingleTop = true } },
+                onEditDetails = { navController.navigate(EditRecipe()) },
+                onSaved = { id ->
+                    navController.navigate(RecipeFlow(id)) {
+                        popUpTo<AddRecipe> { inclusive = true }
+                    }
+                },
             )
         }
 

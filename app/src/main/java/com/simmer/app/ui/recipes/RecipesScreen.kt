@@ -367,4 +367,4 @@ internal val DISPLAY_LABELS: Map<String, Int> = mapOf(
 
 /** Localised category, tag or difficulty; values without a translation (User Recipes) show as written. */
 @Composable
-private fun displayLabel(raw: String): String = DISPLAY_LABELS[raw]?.let { stringResource(it) } ?: raw
+internal fun displayLabel(raw: String): String = DISPLAY_LABELS[raw]?.let { stringResource(it) } ?: raw

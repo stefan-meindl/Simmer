@@ -108,7 +108,7 @@ Open `chilli`, Preparation, Start cooking (Phase 3 has no entry button yet; use 
 ### Recipes overview (#9)
 
 The Recipes tab is the start screen. "Added by you" and "Edited" tags need a User Recipe or edited built-in, which no UI creates yet (see the throwaway branch in the PR).
-- Title "What are we cooking?" (de: "Was kochen wir heute?"). Top right: + (opens the Add recipe placeholder) and moon/sun (toggles theme, icon flips).
+- Title "What are we cooking?" (de: "Was kochen wir heute?"). Top right: + (opens Add recipe, see below) and moon/sun (toggles theme, icon flips).
 - Search: type "feta" shows only Shakshuka (ingredient match); "chilli" matches by title; list filters per keystroke, no submit.
 - Category tabs: All, Mains, Pasta, Breakfast, Sides (de: Alle, Hauptgerichte, Pasta, Frühstück, Beilagen); the row scrolls sideways when it does not fit. Active tab has a 3dp orange underline.
 - Tag chips Vegetarian, Quick, Spicy, One-pot, Make-ahead (de: Vegetarisch, Schnell, Scharf, Eintopf, Vorkochen): multi-select, selected chip is dark with a check. Quick + Vegetarian shows only Tagliatelle; adding category Mains shows the empty state.
@@ -167,7 +167,7 @@ Open `chilli`, Preparation, Start cooking (no throwaway branch needed). Prep 2 "
 
 ### Edit recipe (#13)
 
-Open `chilli`, tap Edit (top right of any flow phase). The Add recipe review does not exist yet, so editing its draft (route `EditRecipe(null)`) and a User Recipe (Delete recipe) need the throwaway branch (section 3).
+Open `chilli`, tap Edit (top right of any flow phase). Editing the Add recipe draft is under Add recipe (#14) below; Delete recipe needs a User Recipe (save the Add recipe example first).
 - Top bar: x, recipe title, "Edit recipe" (de: "Rezept bearbeiten"); bottom bar Cancel and Save changes. x and Cancel discard and return to the same flow phase.
 - Save changes is disabled when the title is blank, every ingredient name is blank, or no step has text; re-enabled as you fix it.
 - Details: title, 3-line summary, Servings and Total time side by side (digits only), Easy/Medium/Hard option group, wrapping Category options. Selected option has the orange outline; TalkBack reads radio + selected.
@@ -178,7 +178,7 @@ Open `chilli`, tap Edit (top right of any flow phase). The Add recipe review doe
 - Built-in recipe: after Save the Recipes card shows the "Edited" badge; reopen Edit: "Restore original" shows. Restore original: title, ingredients and steps are back, badge gone, link gone.
 - After Save or Restore you land on the flow phase you came from (try Phase 1, 2 and 3), showing the new content; servings and picks are kept.
 - User recipe (throwaway branch): Save replaces it in place (no new card, no "Edited" badge). Delete recipe: back on the Recipes tab, the card and its Planned card are gone, and its items are gone from the Shopping list (manual items stay).
-- Add recipe draft (throwaway branch): Edit, change the title, Save: the placeholder review shows the new title; nothing is stored in Room (no new card on Recipes).
+- Add recipe draft: see Add recipe (#14), "Edit details".
 - Ingredients caption: "1 ingredient" (de: "1 Zutat") with one row, "N ingredients" otherwise.
 - Optional timer: clear the Timer field (or type `0`) on a step and Save: the step has no timer chip in the editor, and in Phase 3 it shows no timer button. Add preparation step: the new step's Timer field is empty with the hint "Optional". Typing `0.1` is accepted (6 s, no 30 s minimum). Reopen Edit on a step without a timer: the field is empty.
 - Amount or Timer typed as text such as "lots": the field shows the error outline and Save changes is disabled; a number, "1,5" or "1 1/2" enables it again. A nameless ingredient or textless step with a bad value does not block Save (it is dropped).
@@ -187,3 +187,23 @@ Open `chilli`, tap Edit (top right of any flow phase). The Add recipe review doe
 - Rotate and `adb shell am kill com.simmer.app` with edits and an open row: edits and open rows are restored.
 - German: all labels translate; categories Suppen, Salate, Backen etc. Light and dark theme. Large font: nothing clipped, accordion rows grow. Touch targets >= 44dp, rows >= 56dp. The keyboard does not cover the focused field or the bottom bar.
 - Compare against Design/ (Edit recipe screen in `Recipe App.dc.html`).
+
+### Add recipe (#14)
+
+Recipes tab, tap + (no throwaway branch needed). There is no on-device recipe reader yet: only the built-in example converts.
+- Paste stage: back button, caption "New recipe", title "Add a recipe." (de: "Rezept hinzufügen."), label "Recipe text", helper "Include the ingredients and the method.", text area about 13 lines tall.
+- Paste / Clear: empty field shows Paste (copy something in another app first; it fills the field; with an empty clipboard it focuses the field). Once there is text the button becomes Clear and empties it.
+- "What happens next": four rows. Kitchen line reads "Methods only use your appliances: ..." with the Settings appliances (Strict or Medium), "no appliances selected" when none, "Methods can use any appliance." in Free for all. Change opens Settings; Back returns to Add recipe with the text kept.
+- Bottom bar for text that is not the example (type "Pancakes: flour, milk, egg"): cpu icon line "Runs on your phone. Downloads once over Wi-Fi." (Settings > Recipe reader Wi-Fi only off: "Downloads once.") and "Download recipe reader (2.6 GB)"; it is a placeholder and does nothing. Both it and Convert are grey below 30 characters (type 29 letters, then one more).
+- Try an example fills the text and the bar changes to Convert recipe (sparkles). Edit one word of the example: it becomes Download again.
+- Convert recipe goes straight to Review (no Working screen). Caption "New recipe · not saved yet". Hero: MAINS, "Sheet-pan lemon chicken", summary, "1 h", "Easy", "4 servings".
+- "Check before saving" cream note with orange outline lists the three notes. "Choices found": "The chicken" (Oven · Air fryer) and "Chilli flakes" (Optional add-in · ...).
+- Underline tabs Ingredients / Steps and caption "9 ingredients · 3 preparation and 3 cooking steps". Ingredients: 9 rows with note · aisle and amount; Chilli flakes has the orange "Optional" tag. Settings units imperial: potatoes read "1¾ lb".
+- Steps: "Shown for oven. Other choices change these steps." Groups Preparation (3) and Cooking (3: roast potatoes, roast chicken, finish). Cards show Prep 1.. / Step 1.. labels, timer icon and duration, title, "Needs Prep 2 and Prep 3 first" on "Roast the chicken", and body text with underlined ingredients; tap one for the popover (amount, note, tips).
+- Edit details opens Edit recipe on the draft: change the title, Save: back on Review with the new title, nothing on Recipes yet. Cancel returns unchanged.
+- Edit text returns to the paste stage with the text kept; Convert again works.
+- Save recipe: Flow Phase 1 opens for the new recipe (Chilli flakes add-in, 4 servings). Back goes to Recipes, where the card is first in the list with "Added by you". Save a second recipe: it is above the first. Opening it, editing it, and Delete recipe (Edit recipe) work.
+- Back from Review without saving drops the draft and the text: + again starts on an empty paste stage.
+- Rotate on both stages: text, tab and review stay. `adb shell am kill com.simmer.app` on Review: the app returns to the paste stage with the text kept (the draft is memory only); on the paste stage text is kept.
+- German: all strings translate ("Rezept umwandeln", "Vor dem Speichern prüfen", "Gefundene Optionen", "Gezeigt für Ofen. Andere Optionen ändern diese Schritte."). Light and dark, large font, TalkBack (text area reads "Recipe text"). The keyboard does not cover the bottom bar.
+- Compare against Design/ (Add recipe screens in `Recipe App.dc.html`; the design uses segmented tabs, this app uses underline tabs per the ticket).
