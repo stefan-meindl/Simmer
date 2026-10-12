@@ -45,6 +45,7 @@ import com.simmer.app.R
 import com.simmer.app.domain.MAX_SERVINGS
 import com.simmer.app.domain.MIN_SERVINGS
 import com.simmer.app.domain.Phase1State
+import com.simmer.app.domain.hasSelectableMethod
 import com.simmer.app.domain.addInAmount
 import com.simmer.app.domain.isYourPick
 import com.simmer.app.ui.components.Badge
@@ -77,6 +78,7 @@ fun RecipeFlowPhase1Screen(
     onEdit: () -> Unit,
     onViewList: () -> Unit,
     onPreparation: () -> Unit,
+    onStartCooking: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RecipeFlowViewModel = hiltViewModel(),
 ) {
@@ -107,6 +109,7 @@ fun RecipeFlowPhase1Screen(
                 onEdit = onEdit,
                 onViewList = onViewList,
                 onPreparation = onPreparation,
+                onStartCooking = onStartCooking,
             )
         }
     }
@@ -120,6 +123,7 @@ private fun Phase1Content(
     onEdit: () -> Unit,
     onViewList: () -> Unit,
     onPreparation: () -> Unit,
+    onStartCooking: () -> Unit,
 ) {
     val colors = LocalSimmerColors.current
     val s = ui.state
@@ -191,9 +195,11 @@ private fun Phase1Content(
                     modifier = Modifier.weight(1f),
                 )
             }
+            // Nothing to pick on Flow Phase 2, so this button goes straight to Flow Phase 3.
+            val skipsMethods = !hasSelectableMethod(recipe)
             PrimaryButton(
-                text = stringResource(R.string.flow_preparation_next),
-                onClick = onPreparation,
+                text = stringResource(if (skipsMethods) R.string.flow_start_cooking else R.string.flow_preparation_next),
+                onClick = if (skipsMethods) onStartCooking else onPreparation,
                 icon = { Icon(painterResource(R.drawable.ic_arrow_right), null, Modifier.size(20.dp)) },
                 modifier = Modifier.weight(1f),
             )

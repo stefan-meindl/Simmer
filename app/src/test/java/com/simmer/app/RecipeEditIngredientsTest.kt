@@ -121,4 +121,18 @@ class RecipeEditIngredientsTest {
         assertEquals("Dark beer added", d.conditionLabel("add:beer", words))
         assertEquals("Cinnamon not added", d.conditionLabel("!add:cin", words))
     }
+
+    @Test fun `unparsable amount blocks save and a valid one does not`() {
+        val d = RecipeDraft.from(BuiltInRecipes.chilli())
+        val key = d.ingredients.first().key
+        assertTrue(d.canSave)
+        assertFalse(d.updateIngredient(key) { it.copy(qty = "lots") }.canSave)
+        assertFalse(d.updateIngredient(key) { it.copy(qty = "") }.canSave)
+        assertTrue(d.updateIngredient(key) { it.copy(qty = "1 1/2") }.canSave)
+    }
+
+    @Test fun `an invalid amount on a nameless ingredient that is dropped does not block save`() {
+        val d = RecipeDraft.from(BuiltInRecipes.chilli()).addIngredient()
+        assertTrue(d.updateIngredient(d.ingredients.last().key) { it.copy(qty = "lots") }.canSave)
+    }
 }

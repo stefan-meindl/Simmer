@@ -130,7 +130,7 @@ class RecipeRepository @Inject constructor(
                 id = sObj["id"]!!.jsonPrimitive.content,
                 phase = sObj["ph"]!!.jsonPrimitive.content,
                 title = sObj["t"]!!.jsonPrimitive.content,
-                durationSecs = sObj["d"]!!.jsonPrimitive.int,
+                durationSecs = sObj["d"]?.jsonPrimitive?.int ?: 0,
                 body = sObj["b"]!!.jsonPrimitive.content,
                 needs = sObj["needs"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
                 ifCondition = sObj["if"]?.jsonPrimitive?.content,
@@ -156,14 +156,15 @@ class RecipeRepository @Inject constructor(
         )
     }
 
-    /**
-     * Saves a User Recipe or persists an edit to a built-in recipe.
-     * If the recipe is a built-in, marks it as edited = true.
-     */
+    /** The stored recipe with [id], or null. */
     override suspend fun get(id: String): Recipe? = withContext(Dispatchers.IO) {
         dao.getById(id)?.toDomain()
     }
 
+    /**
+     * Saves a User Recipe or persists an edit to a built-in recipe. The caller marks a built-in
+     * `edited = true` (see [RecipeEditor.save]).
+     */
     override suspend fun save(recipe: Recipe) = withContext(Dispatchers.IO) {
         dao.upsert(recipe.toEntity())
     }

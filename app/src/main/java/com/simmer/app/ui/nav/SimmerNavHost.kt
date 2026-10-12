@@ -77,6 +77,8 @@ fun SimmerNavHost(
                     }
                 },
                 onPreparation = { navController.navigate(RecipeFlowPhase2(route.recipeId)) },
+                // No Method to pick: Phase 3 sits directly on Phase 1, so Back returns here.
+                onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
             )
         }
 
@@ -89,6 +91,7 @@ fun SimmerNavHost(
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
                 onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
+                onNothingToPick = { navController.popBackStack() },
                 // Phase 3 is reached only via Start cooking.
                 onPhaseClick = { phase -> if (phase == 1) navController.popBackStack() },
             )
