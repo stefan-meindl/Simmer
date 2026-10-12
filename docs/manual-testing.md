@@ -124,7 +124,7 @@ Settings tab. "Your kitchen" has no editor yet (#12), so pills need the throwawa
 - Option cards are radios (TalkBack: radio, selected); selected has a 3dp orange outline and a check dot, no layout shift.
 - Language: tap Deutsch: whole UI switches at once (tabs, Recipes title, flow strings) with no manual restart; tap English to go back. Kill the process and reopen: language kept. Caption mentions that built-in recipes stay in English.
 - Units: Imperial (US): Preview reads 1 lb, 1¼ cups, oven 300°F. Open `chilli` Phase 1 and 3: amounts in oz/lb/cups; Phase 2 oven card "Covered at 300°F."; ingredient popovers and step text temperatures in °F. Back to Metric restores.
-- Spices: Grams: Preview cumin 5 g, oregano 1 g; the same in the flow ingredient list and popovers. In German, fractional gram amounts use a comma (cinnamon add-in on `chilli`: "1,5 g" for 4 servings is not reached, check 2 servings "0,5 g" / `curry` as relevant).
+- Spices: Grams: Preview cumin 5 g, oregano 1 g; the same in the flow ingredient list and popovers. In German, fractional gram amounts use a comma: `chilli`, add the Cinnamon add-in at 4 servings, add-in row reads "+ 1,5 g" (en: "+ 1.5 g").
 - Your kitchen: "No appliances selected yet." when empty; Edit your kitchen opens the Your kitchen screen (placeholder until #12), back returns to Settings.
 - Kitchen follow-it mode: Strict / Medium (default) / Free for all, radio list; choice survives process death. It only stores a preference; cooking an existing recipe is unaffected.
 - Recipe reader: static row "On this phone · Gemma 4 E2B", "Not downloaded · 2.6 GB", lock caption; no buttons.
