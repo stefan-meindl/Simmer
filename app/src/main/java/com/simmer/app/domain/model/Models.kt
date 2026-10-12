@@ -1,11 +1,17 @@
 package com.simmer.app.domain.model
 
 /**
+ * A named wrapper for a condition string (e.g. "key=value", "add:id").
+ * Storage remains a plain String; this type exists to name the concept.
+ */
+data class Condition(val raw: String)
+
+/**
  * A cooking-technique choice option (e.g. "pot", "microwave", "rice cooker").
  */
 data class MethodOption(
-    val v: String,
-    val l: String,
+    val value: String,
+    val label: String,
     val icon: String = "flame",
     val time: String = "",
     val d: String = "",
@@ -26,8 +32,8 @@ data class Method(
  * A variation option value (used inside swap variations).
  */
 data class Option(
-    val v: String,
-    val l: String,
+    val value: String,
+    val label: String,
 )
 
 /**
@@ -52,8 +58,8 @@ data class Variation(
 data class Ingredient(
     val id: String,
     val name: String,
-    val q: Double,
-    val u: String,          // unit string or empty for countable
+    val quantity: Double,
+    val unit: String,          // unit string or empty for countable
     val uPlural: String = "",  // plural form (if applicable)
     val note: String = "",
     val aisle: String = "",
@@ -72,14 +78,14 @@ sealed class BodySegment {
 
 /**
  * A single instruction in a recipe belonging to exactly one phase.
- * ph = "prep" (preparation) always comes before ph = "cook".
+ * phase = "prep" (preparation) always comes before phase = "cook".
  */
 data class Step(
     val id: String,
-    val ph: String,  // "prep" | "cook"
-    val t: String,
-    val d: Int,      // duration in seconds
-    val b: String,   // body text with {id:text} links
+    val phase: String,  // "prep" | "cook"
+    val title: String,
+    val durationSecs: Int,      // duration in seconds
+    val body: String,   // body text with {id:text} links
     val needs: List<String> = emptyList(),
     val ifCondition: String? = null,
 )
@@ -89,10 +95,10 @@ data class Step(
  */
 data class ResolvedStep(
     val id: String,
-    val ph: String,
-    val t: String,
-    val d: Int,
-    val b: String,
+    val phase: String,
+    val title: String,
+    val durationSecs: Int,
+    val body: String,
     val label: String,
     val needs: List<ResolvedStep>,
     val segs: List<BodySegment>,
@@ -106,7 +112,7 @@ data class ResolvedIngredient(
     val name: String,
     val qty: Double,
     val amount: String,
-    val u: String,
+    val unit: String,
     val uPlural: String,
     val note: String,
     val aisle: String,

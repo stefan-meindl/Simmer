@@ -26,7 +26,7 @@ class RecipeRepository @Inject constructor(
     }
 
     /**
-     * Returns only user-created recipes (mine = true).
+     * Returns only User Recipes (mine = true).
      */
     val userRecipes: Flow<List<Recipe>> = dao.observeMine().map { entities ->
         entities.map { it.toDomain() }
@@ -36,17 +36,16 @@ class RecipeRepository @Inject constructor(
      * Seeds the database from the built-in recipes asset if it is empty.
      * Should be called once at startup.
      */
-    suspend fun seedBuiltInsIfEmpty() = withContext(Dispatchers.IO) {
-        val existing = dao.observeAll()
+    suspend fun seedBuiltInsIfEmpty(assets: android.content.res.AssetManager) = withContext(Dispatchers.IO) {
         // Check if there are any built-in recipes
         val hasBuiltIns = dao.getById("chilli") != null
         if (!hasBuiltIns) {
-            loadBuiltIns()
+            loadBuiltIns(assets)
         }
     }
 
-    private suspend fun loadBuiltIns() = withContext(Dispatchers.IO) {
-        val json = context.assets.open("recipes.json").bufferedReader().readText()
+    private suspend fun loadBuiltIns(assets: android.content.res.AssetManager) = withContext(Dispatchers.IO) {
+        val json = assets.open("recipes.json").bufferedReader().readText()
         val arr = Json { ignoreUnknownKeys = true }.parseToJsonElement(json).jsonArray
         arr.forEach { elem ->
             val recipe = parseBuiltInRecipe(elem.jsonObject)
@@ -71,8 +70,8 @@ class RecipeRepository @Inject constructor(
             com.simmer.app.domain.model.Ingredient(
                 id = i["id"]!!.jsonPrimitive.content,
                 name = i["name"]!!.jsonPrimitive.content,
-                q = i["q"]!!.jsonPrimitive.double,
-                u = u,
+                quantity = i["q"]!!.jsonPrimitive.double,
+                unit = u,
                 uPlural = uPlural,
                 note = i["note"]?.jsonPrimitive?.content ?: "",
                 aisle = i["aisle"]?.jsonPrimitive?.content ?: "",
@@ -88,8 +87,8 @@ class RecipeRepository @Inject constructor(
             val options = vObj["options"]?.jsonArray?.map { o ->
                 val oObj = o.jsonObject
                 com.simmer.app.domain.model.Option(
-                    v = oObj["v"]!!.jsonPrimitive.content,
-                    l = oObj["l"]!!.jsonPrimitive.content,
+                    value = oObj["v"]!!.jsonPrimitive.content,
+                    label = oObj["l"]!!.jsonPrimitive.content,
                 )
             } ?: emptyList()
             com.simmer.app.domain.model.Variation(
@@ -109,8 +108,8 @@ class RecipeRepository @Inject constructor(
             val options = mObj["options"]!!.jsonArray.map { o ->
                 val oObj = o.jsonObject
                 com.simmer.app.domain.model.MethodOption(
-                    v = oObj["v"]!!.jsonPrimitive.content,
-                    l = oObj["l"]!!.jsonPrimitive.content,
+                    value = oObj["v"]!!.jsonPrimitive.content,
+                    label = oObj["l"]!!.jsonPrimitive.content,
                     icon = oObj["icon"]?.jsonPrimitive?.content ?: "flame",
                     time = oObj["time"]?.jsonPrimitive?.content ?: "",
                     d = oObj["d"]?.jsonPrimitive?.content ?: "",
@@ -129,10 +128,10 @@ class RecipeRepository @Inject constructor(
             val sObj = s.jsonObject
             com.simmer.app.domain.model.Step(
                 id = sObj["id"]!!.jsonPrimitive.content,
-                ph = sObj["ph"]!!.jsonPrimitive.content,
-                t = sObj["t"]!!.jsonPrimitive.content,
-                d = sObj["d"]!!.jsonPrimitive.int,
-                b = sObj["b"]!!.jsonPrimitive.content,
+                phase = sObj["ph"]!!.jsonPrimitive.content,
+                title = sObj["t"]!!.jsonPrimitive.content,
+                durationSecs = sObj["d"]!!.jsonPrimitive.int,
+                body = sObj["b"]!!.jsonPrimitive.content,
                 needs = sObj["needs"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
                 ifCondition = sObj["if"]?.jsonPrimitive?.content,
             )
@@ -158,7 +157,7 @@ class RecipeRepository @Inject constructor(
     }
 
     /**
-     * Saves a user recipe or persists an edit to a built-in recipe.
+     * Saves a User Recipe or persists an edit to a built-in recipe.
      * If the recipe is a built-in, marks it as edited = true.
      */
     suspend fun save(recipe: Recipe) = withContext(Dispatchers.IO) {
@@ -166,7 +165,7 @@ class RecipeRepository @Inject constructor(
     }
 
     /**
-     * Deletes a user recipe by ID. Only user recipes (mine = true) can be deleted.
+     * Deletes a User Recipe by ID. Only User Recipes (mine = true) can be deleted.
      */
     suspend fun delete(id: String) = withContext(Dispatchers.IO) {
         dao.deleteById(id)

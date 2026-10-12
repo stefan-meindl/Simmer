@@ -83,7 +83,7 @@ class NormalizeTest {
         val recipe = normalize(input)
         val step = recipe.steps.find { it.id == "p99" }
         assertNotNull(step)
-        assertTrue("Duration should be at least 30", (step?.d ?: 0) >= 30)
+        assertTrue("Duration should be at least 30", (step?.durationSecs ?: 0) >= 30)
     }
 
     @Test fun `normalize clamps step duration to 24h maximum`() {
@@ -95,7 +95,7 @@ class NormalizeTest {
         val recipe = normalize(input)
         val step = recipe.steps.find { it.id == "p98" }
         assertNotNull(step)
-        assertTrue("Duration should be at most 86400", (step?.d ?: 0) <= 86400)
+        assertTrue("Duration should be at most 86400", (step?.durationSecs ?: 0) <= 86400)
     }
 
     @Test fun `normalize rejects method with fewer than 2 options`() {
@@ -129,7 +129,7 @@ class NormalizeTest {
         val recipe = normalize(input)
         val step = recipe.steps.find { it.id == "px" }
         assertNotNull(step)
-        assertEquals("Add something unknown.", step?.b)
+        assertEquals("Add something unknown.", step?.body)
     }
 
     @Test fun `normalize uses 'Mains' for unknown category`() {
