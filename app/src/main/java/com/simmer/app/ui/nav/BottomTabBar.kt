@@ -1,5 +1,6 @@
 package com.simmer.app.ui.nav
 
+import androidx.annotation.StringRes
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material.icons.outlined.Settings
@@ -14,8 +15,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.simmer.app.R
 import com.simmer.app.ui.theme.LocalSimmerColors
 
 // ---------------------------------------------------------------------------
@@ -23,16 +26,16 @@ import com.simmer.app.ui.theme.LocalSimmerColors
 // ---------------------------------------------------------------------------
 
 private data class TabItem(
-    val label: String,
+    @StringRes val labelRes: Int,
     val icon: ImageVector,
     val route: Any,
     val routePrefix: String?,
 )
 
 private val TAB_ITEMS = listOf(
-    TabItem("Recipes", Icons.Outlined.RestaurantMenu, RecipesTab, RecipesTab::class.qualifiedName),
-    TabItem("Shopping", Icons.Outlined.ShoppingCart, ShoppingListTab, ShoppingListTab::class.qualifiedName),
-    TabItem("Settings", Icons.Outlined.Settings, SettingsTab, SettingsTab::class.qualifiedName),
+    TabItem(R.string.tab_recipes, Icons.Outlined.RestaurantMenu, RecipesTab, RecipesTab::class.qualifiedName),
+    TabItem(R.string.tab_shopping_list, Icons.Outlined.ShoppingCart, ShoppingListTab, ShoppingListTab::class.qualifiedName),
+    TabItem(R.string.tab_settings, Icons.Outlined.Settings, SettingsTab, SettingsTab::class.qualifiedName),
 )
 
 /**
@@ -40,7 +43,7 @@ private val TAB_ITEMS = listOf(
  *
  * - Active tab: [SimmerColors.accent] (orange) icon + label color
  * - Inactive tabs: [SimmerColors.textTertiary] icon + label color
- * - Shopping list tab shows a [BadgedBox]; badge is hidden when [badgeCount] == 0
+ * - Shopping list tab shows a [BadgedBox]; badge always renders, showing "0" when [badgeCount] == 0
  */
 @Composable
 fun BottomTabBar(
@@ -55,6 +58,7 @@ fun BottomTabBar(
         containerColor = colors.surfacePage,
     ) {
         TAB_ITEMS.forEach { tab ->
+            val label = stringResource(tab.labelRes)
             val isSelected = tab.routePrefix != null &&
                 currentRoute != null &&
                 currentRoute.startsWith(tab.routePrefix)
@@ -76,24 +80,22 @@ fun BottomTabBar(
                     if (tab.route == ShoppingListTab) {
                         BadgedBox(
                             badge = {
-                                if (badgeCount > 0) {
-                                    Badge { Text(badgeCount.toString()) }
-                                }
+                                Badge { Text(badgeCount.toString()) }
                             },
                         ) {
                             Icon(
                                 imageVector = tab.icon,
-                                contentDescription = tab.label,
+                                contentDescription = label,
                             )
                         }
                     } else {
                         Icon(
                             imageVector = tab.icon,
-                            contentDescription = tab.label,
+                            contentDescription = label,
                         )
                     }
                 },
-                label = { Text(tab.label) },
+                label = { Text(label) },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = colors.accent,
                     selectedTextColor = colors.accent,
