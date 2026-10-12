@@ -38,3 +38,9 @@ Communication to and from subagents should be sparse. Communicate primarily thro
 8. If a draft PR exists, mark it ready for review. Otherwise, resolve each ticket the way the issue tracker closes work, and report the integration branch.
 
 9. Clean up all **implementer subagent** worktrees.
+
+## Testing instructions
+
+Every PR this skill opens (draft or leaf) must include a **How to test** section: concrete steps a human can follow on a device, per acceptance criterion that needs eyes on it. Follow `docs/manual-testing.md` for how to run the app, and add or update that doc's checklist for the feature.
+
+If some of the feature cannot be exercised on the feature branch because the UI that reaches it is missing (e.g. a screen whose entry point lands in a later ticket), create a **throwaway branch** (e.g. `throwaway/issue-<n>-manual-test`) off the feature or integration branch that adds the minimal temporary wiring (entry buttons, stub routes, seed data) so the user can test everything end to end. Never merge it and never open a PR from it. Push it, and in the PR body and final report give its name and what it fakes. Clean it up only when the user says so.
