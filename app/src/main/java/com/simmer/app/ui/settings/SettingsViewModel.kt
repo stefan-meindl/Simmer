@@ -5,7 +5,9 @@ import androidx.core.os.LocaleListCompat
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.PrefsRepository
+import com.simmer.app.data.ReaderController
 import com.simmer.app.data.RecipeRepository
+import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.orderAppliances
 import com.simmer.app.domain.SettingsPreview
@@ -31,6 +33,8 @@ data class SettingsUi(
     val kitchenMode: KitchenMode,
     /** Null until the built-in recipes are seeded. */
     val preview: SettingsPreview?,
+    val reader: ReaderStatus,
+    val readerWifiOnly: Boolean,
 )
 
 /** Every Settings choice is written to DataStore; the language is also applied to the running app. */
@@ -38,6 +42,7 @@ data class SettingsUi(
 class SettingsViewModel @Inject constructor(
     private val prefs: PrefsRepository,
     recipes: RecipeRepository,
+    private val reader: ReaderController,
 ) : ViewModel() {
 
     private val previewRecipe = recipes.recipes.map { list -> list.firstOrNull { it.id == PREVIEW_RECIPE_ID } }
@@ -47,7 +52,9 @@ class SettingsViewModel @Inject constructor(
     }
     private val kitchen = combine(prefs.appliances, prefs.kitchenMode) { appliances, mode -> appliances to mode }
 
-    val ui: StateFlow<SettingsUi?> = combine(display, kitchen, previewRecipe) { (lang, units, spices), (appliances, mode), recipe ->
+    private val readerUi = combine(reader.status, prefs.readerWifiOnly) { status, wifiOnly -> status to wifiOnly }
+
+    val ui: StateFlow<SettingsUi?> = combine(display, kitchen, previewRecipe, readerUi) { (lang, units, spices), (appliances, mode), recipe, (readerStatus, wifiOnly) ->
         SettingsUi(
             lang = lang,
             units = units,
@@ -55,6 +62,8 @@ class SettingsViewModel @Inject constructor(
             appliances = orderAppliances(appliances),
             kitchenMode = KitchenMode.fromKey(mode),
             preview = recipe?.let { settingsPreview(it, units, spices, lang) },
+            reader = readerStatus,
+            readerWifiOnly = wifiOnly,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -77,4 +86,19 @@ class SettingsViewModel @Inject constructor(
     fun setKitchenMode(mode: KitchenMode) {
         viewModelScope.launch { prefs.setKitchenMode(mode.key) }
     }
+
+    fun setReaderWifiOnly(wifiOnly: Boolean) {
+        viewModelScope.launch {
+            prefs.setReaderWifiOnly(wifiOnly)
+            reader.networkRuleChanged()
+        }
+    }
+
+    fun downloadReader() {
+        viewModelScope.launch { reader.download() }
+    }
+
+    fun cancelReaderDownload() = reader.cancel()
+
+    fun removeReader() = reader.remove()
 }

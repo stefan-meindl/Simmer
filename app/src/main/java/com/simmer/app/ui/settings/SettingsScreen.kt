@@ -25,8 +25,23 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
+import com.simmer.app.domain.DownloadFailure
+import com.simmer.app.domain.READER_REQUIRED_FREE_BYTES
+import com.simmer.app.domain.ReaderModel
+import com.simmer.app.domain.ReaderStatus
+import com.simmer.app.domain.formatGigabytes
+import androidx.compose.ui.platform.LocalConfiguration
+import com.simmer.app.ui.components.PrimaryButton
+import com.simmer.app.ui.flow.rememberNotificationPermissionRequest
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -120,7 +135,14 @@ fun SettingsScreen(
                 onEditKitchen = onEditKitchen,
                 onModeSelect = viewModel::setKitchenMode,
             )
-            ReaderSection()
+            ReaderSection(
+                status = state.reader,
+                wifiOnly = state.readerWifiOnly,
+                onWifiOnly = viewModel::setReaderWifiOnly,
+                onDownload = viewModel::downloadReader,
+                onCancel = viewModel::cancelReaderDownload,
+                onRemove = viewModel::removeReader,
+            )
             state.preview?.let { PreviewPanel(it) }
         }
     }
@@ -381,11 +403,46 @@ private val APPLIANCE_LABELS: Map<String, Int> = mapOf(
     "dehydrator" to R.string.appliance_dehydrator,
 )
 
-/** Static in this phase: the model is not downloadable yet. */
 @Composable
-private fun ReaderSection() {
+private fun readerModelSize(): String =
+    formatGigabytes(ReaderModel.SIZE_BYTES, LocalConfiguration.current.locales[0])
+
+@Composable
+private fun readerFreeSpaceNeeded(): String =
+    formatGigabytes(READER_REQUIRED_FREE_BYTES, LocalConfiguration.current.locales[0])
+
+/** The state line under "On this phone": one string per [ReaderStatus]. */
+@Composable
+private fun readerStateText(status: ReaderStatus): String = when (status) {
+    ReaderStatus.NotDownloaded -> stringResource(R.string.settings_reader_state, readerModelSize())
+    is ReaderStatus.Downloading -> stringResource(
+        if (status.waiting) R.string.settings_reader_state_waiting else R.string.settings_reader_state_downloading,
+        status.percent,
+    )
+    ReaderStatus.Ready -> stringResource(R.string.settings_reader_state_ready)
+    ReaderStatus.NotEnoughStorage -> stringResource(R.string.settings_reader_state_no_space, readerFreeSpaceNeeded())
+    ReaderStatus.NotSupported -> stringResource(R.string.settings_reader_state_unsupported)
+    is ReaderStatus.Failed -> when (status.reason) {
+        DownloadFailure.ChecksumMismatch -> stringResource(R.string.settings_reader_state_corrupt)
+        DownloadFailure.NotEnoughStorage -> stringResource(R.string.settings_reader_state_no_space, readerFreeSpaceNeeded())
+        DownloadFailure.ServerError -> stringResource(R.string.settings_reader_state_server)
+        DownloadFailure.Unknown -> stringResource(R.string.settings_reader_state_failed)
+    }
+}
+
+/** Status of the on-device model, its actions (Download, Cancel, Remove) and the Wi-Fi-only switch. */
+@Composable
+private fun ReaderSection(
+    status: ReaderStatus,
+    wifiOnly: Boolean,
+    onWifiOnly: (Boolean) -> Unit,
+    onDownload: () -> Unit,
+    onCancel: () -> Unit,
+    onRemove: () -> Unit,
+) {
     val colors = LocalSimmerColors.current
     val shape = RoundedCornerShape(12.dp)
+    val requestNotifications = rememberNotificationPermissionRequest()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(R.string.settings_reader, R.string.settings_reader_hint)
         Row(
@@ -419,12 +476,54 @@ private fun ReaderSection() {
                     color = colors.textPrimary,
                 )
                 Text(
-                    text = stringResource(R.string.settings_reader_state),
+                    text = readerStateText(status),
                     style = SimmerTextStyle_Caption,
                     color = colors.textTertiary,
+                    modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
+                if (status is ReaderStatus.Downloading) {
+                    LinearProgressIndicator(
+                        progress = { status.percent / 100f },
+                        color = colors.accent,
+                        trackColor = colors.borderSubtle,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp)
+                            .height(6.dp)
+                            .clip(CircleShape),
+                    )
+                }
             }
         }
+        when (status) {
+            ReaderStatus.NotDownloaded, ReaderStatus.NotEnoughStorage, is ReaderStatus.Failed ->
+                PrimaryButton(
+                    text = stringResource(R.string.settings_reader_download),
+                    onClick = {
+                        requestNotifications()
+                        onDownload()
+                    },
+                    enabled = status != ReaderStatus.NotEnoughStorage,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = { Icon(painterResource(R.drawable.ic_download), null, Modifier.size(18.dp)) },
+                )
+            is ReaderStatus.Downloading ->
+                SecondaryButton(
+                    text = stringResource(R.string.settings_reader_cancel),
+                    onClick = onCancel,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = { Icon(painterResource(R.drawable.ic_x), null, Modifier.size(18.dp)) },
+                )
+            ReaderStatus.Ready ->
+                SecondaryButton(
+                    text = stringResource(R.string.settings_reader_remove),
+                    onClick = onRemove,
+                    modifier = Modifier.fillMaxWidth(),
+                    icon = { Icon(painterResource(R.drawable.ic_trash), null, Modifier.size(18.dp)) },
+                )
+            ReaderStatus.NotSupported -> Unit
+        }
+        if (status != ReaderStatus.NotSupported) WifiOnlyRow(wifiOnly, onWifiOnly)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -441,6 +540,45 @@ private fun ReaderSection() {
                 color = colors.textSecondary,
             )
         }
+    }
+}
+
+/** "Download on Wi-Fi only": the whole row toggles; a switch with a switch role for TalkBack. */
+@Composable
+private fun WifiOnlyRow(checked: Boolean, onChange: (Boolean) -> Unit) {
+    val colors = LocalSimmerColors.current
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 56.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onChange),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
+            Text(
+                text = stringResource(R.string.settings_reader_wifi_only),
+                style = SimmerTextStyle_BodyMdMedium,
+                color = colors.textPrimary,
+            )
+            Text(
+                text = stringResource(R.string.settings_reader_wifi_only_desc, readerModelSize()),
+                style = SimmerTextStyle_Caption,
+                color = colors.textTertiary,
+            )
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = null,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = colors.accentFg,
+                checkedTrackColor = colors.accent,
+                checkedBorderColor = colors.accent,
+                uncheckedThumbColor = colors.textSecondary,
+                uncheckedTrackColor = colors.surfaceCard,
+                uncheckedBorderColor = colors.borderDefault,
+            ),
+        )
     }
 }
 

@@ -51,7 +51,10 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simmer.app.R
 import com.simmer.app.domain.KitchenLine
+import androidx.compose.ui.platform.LocalConfiguration
 import com.simmer.app.domain.ReaderAction
+import com.simmer.app.domain.ReaderModel
+import com.simmer.app.domain.formatGigabytes
 import com.simmer.app.domain.ReviewChoice
 import com.simmer.app.domain.ReviewIngredient
 import com.simmer.app.domain.formatDuration
@@ -317,7 +320,7 @@ private fun ColumnScope.PasteStage(
                 }
                 // Inactive placeholder: the on-device recipe reader and its download come later.
                 PrimaryButton(
-                    text = stringResource(R.string.add_download),
+                    text = stringResource(R.string.add_download, formatGigabytes(ReaderModel.SIZE_BYTES, LocalConfiguration.current.locales[0])),
                     onClick = {},
                     enabled = false,
                     icon = { icon(R.drawable.ic_download) },

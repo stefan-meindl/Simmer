@@ -4,6 +4,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -17,7 +18,9 @@ import com.simmer.app.ui.nav.EditRecipe
 import com.simmer.app.ui.nav.RecipeFlow
 import com.simmer.app.ui.nav.RecipeFlowPhase2
 import com.simmer.app.ui.nav.RecipeFlowPhase3
+import com.simmer.app.ui.nav.SettingsTab
 import com.simmer.app.ui.nav.SimmerNavHost
+import com.simmer.app.ui.nav.navigateToTab
 import com.simmer.app.ui.nav.YourKitchen
 import com.simmer.app.ui.theme.SimmerTheme
 
@@ -33,6 +36,8 @@ import com.simmer.app.ui.theme.SimmerTheme
  */
 @Composable
 fun MainScreen(
+    openSettings: Boolean = false,
+    onSettingsOpened: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val themePreference by viewModel.themePreference.collectAsStateWithLifecycle()
@@ -48,6 +53,13 @@ fun MainScreen(
 
     SimmerTheme(darkTheme = effectiveDark) {
         val navController = rememberNavController()
+        // A notification (the model download) asked for Settings.
+        LaunchedEffect(openSettings) {
+            if (openSettings) {
+                navController.navigateToTab(SettingsTab)
+                onSettingsOpened()
+            }
+        }
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentDestination = navBackStackEntry?.destination
 
