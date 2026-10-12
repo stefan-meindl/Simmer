@@ -87,3 +87,17 @@ Open `chilli`, tap Preparation:
 - Tapping the Servings segment or Back returns to Phase 1 with state kept; changing servings or a swap in Phase 1 shows the new counts here.
 - Start cooking opens the Phase 3 placeholder. Rotate and kill the process on this screen: picks restored.
 
+
+### Recipe flow, Phase 3 (#7)
+
+Open `chilli`, Preparation, Start cooking (Phase 3 has no entry button yet; use the throwaway branch, section 3):
+- Progress line "0 of n steps done" (de: "0 von n Schritten erledigt"), selection summary on the right ("4 servings", plus any non-default swap or add-in), 4dp bar fills as steps finish.
+- Hint "Tap an underlined ingredient for its amount and tips." with lightbulb.
+- Sections: Preparation ("Get everything ready before you turn on the heat.") then Cooking ("Steps marked with a warning need a preparation step first."). Labels "Prep 1..n" / "Step 1..n" (de: "Vorb." / "Schritt").
+- First unfinished step has a thick orange outline, orange eyebrow and a dark Mark as done button; others have the outlined secondary button.
+- "Soften the onions" shows a cream note with orange outline, alert icon, "Needs Prep 1 first", "Chop the vegetables" and "Go to step", which smooth-scrolls to Prep 1. After marking Prep 1 done the note becomes the quiet "Prep 1 done · Chop the vegetables" line.
+- Underlined ingredient words (2dp, offset): tap shows a popover with name, scaled amount in current units (check imperial in Settings), note and tips; tap outside closes it. Change servings in Phase 1 and the amounts follow.
+- Mark as done collapses to a row with orange check, struck-through title and Undo; Undo restores the card.
+- Timer button: orange, timer icon, duration ("10 min", "1 h"); tapping does nothing (no countdown yet).
+- Finish all steps: gradient panel with circle-check, "Enjoy your meal." (de: "Guten Appetit."), "title · selection summary", Back to recipes (dark) goes to the Recipes tab.
+- Rotate and `adb shell am kill com.simmer.app` with some steps done: servings, selection and done steps are restored. Changing servings or a swap in Phase 1/2 clears done steps.

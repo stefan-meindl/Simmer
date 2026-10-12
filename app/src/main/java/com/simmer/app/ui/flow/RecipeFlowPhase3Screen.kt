@@ -1,0 +1,596 @@
+package com.simmer.app.ui.flow
+
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.defaultMinSize
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.style.TextDecoration
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.simmer.app.R
+import com.simmer.app.domain.CookingStep
+import com.simmer.app.domain.CookingView
+import com.simmer.app.domain.formatDuration
+import com.simmer.app.domain.model.BodySegment
+import com.simmer.app.domain.model.ResolvedIngredient
+import com.simmer.app.domain.selectionSummary
+import com.simmer.app.ui.components.DarkButton
+import com.simmer.app.ui.components.GradientHeroCard
+import com.simmer.app.ui.components.LinkButton
+import com.simmer.app.ui.components.SecondaryButton
+import com.simmer.app.ui.components.StepTimer
+import com.simmer.app.ui.theme.LocalSimmerColors
+import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
+import com.simmer.app.ui.theme.SimmerTextStyle_BodyMdMedium
+import com.simmer.app.ui.theme.SimmerTextStyle_BodySmMedium
+import com.simmer.app.ui.theme.SimmerTextStyle_Caption
+import com.simmer.app.ui.theme.SimmerTextStyle_Heading4
+import com.simmer.app.ui.theme.SimmerTextStyle_Heading5
+import com.simmer.app.ui.theme.SimmerTextStyle_HeroTitle
+import com.simmer.app.ui.theme.SimmerTextStyle_Micro
+import com.simmer.app.ui.theme.SimmerTextStyle_MicroUppercase
+import kotlinx.coroutines.launch
+
+/** One row of the cooking list; the list index of a Step is what "Go to step" scrolls to. */
+private sealed interface CookingItem {
+    data object Success : CookingItem
+    data object Progress : CookingItem
+    data object Hint : CookingItem
+    data class Section(val prep: Boolean) : CookingItem
+    data class StepItem(val cs: CookingStep) : CookingItem
+}
+
+private fun cookingItems(view: CookingView): List<CookingItem> = buildList {
+    if (view.allDone) add(CookingItem.Success)
+    add(CookingItem.Progress)
+    add(CookingItem.Hint)
+    val (prep, cook) = view.steps.partition { it.step.phase == "prep" }
+    if (prep.isNotEmpty()) {
+        add(CookingItem.Section(prep = true))
+        prep.forEach { add(CookingItem.StepItem(it)) }
+    }
+    if (cook.isNotEmpty()) {
+        add(CookingItem.Section(prep = false))
+        cook.forEach { add(CookingItem.StepItem(it)) }
+    }
+}
+
+/**
+ * Recipe flow, phase 3: cook through the steps. Shares [viewModel] with phases 1 and 2
+ * (scoped to the [com.simmer.app.ui.nav.RecipeFlow] back stack entry).
+ */
+@Composable
+fun RecipeFlowPhase3Screen(
+    viewModel: RecipeFlowViewModel,
+    onBack: () -> Unit,
+    onEdit: () -> Unit,
+    onBackToRecipes: () -> Unit,
+    onPhaseClick: (phase: Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalSimmerColors.current
+    val ui by viewModel.phase3.collectAsStateWithLifecycle()
+
+    Box(
+        modifier = modifier
+            .fillMaxSize()
+            .background(colors.surfacePage)
+            .windowInsetsPadding(WindowInsets.systemBars),
+    ) {
+        when (val u = ui) {
+            Phase3Ui.Loading -> Unit
+            is Phase3Ui.Content -> Column(modifier = Modifier.fillMaxSize()) {
+                FlowTopBar(title = u.recipe.title, phase = 3, onBack = onBack, onEdit = onEdit)
+                FlowProgress(current = 3, onSegmentClick = onPhaseClick)
+                CookingList(
+                    u = u,
+                    onMarkDone = viewModel::markStepDone,
+                    onUndo = viewModel::undoStep,
+                    onBackToRecipes = onBackToRecipes,
+                    modifier = Modifier.weight(1f),
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun CookingList(
+    u: Phase3Ui.Content,
+    onMarkDone: (String) -> Unit,
+    onUndo: (String) -> Unit,
+    onBackToRecipes: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalSimmerColors.current
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    val items = cookingItems(u.view)
+    val summary = selectionSummary(
+        u.recipe, u.selection,
+        pluralStringResource(R.plurals.flow_servings_count, u.servings, u.servings),
+    )
+
+    fun jumpTo(stepId: String) {
+        val index = items.indexOfFirst { it is CookingItem.StepItem && it.cs.step.id == stepId }
+        if (index >= 0) scope.launch { listState.animateScrollToItem(index) }
+    }
+
+    LazyColumn(
+        state = listState,
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        contentPadding = androidx.compose.foundation.layout.PaddingValues(top = 16.dp, bottom = 32.dp),
+    ) {
+        itemsIndexed(
+            items,
+            key = { _, item ->
+                when (item) {
+                    CookingItem.Success -> "success"
+                    CookingItem.Progress -> "progress"
+                    CookingItem.Hint -> "hint"
+                    is CookingItem.Section -> if (item.prep) "section-prep" else "section-cook"
+                    is CookingItem.StepItem -> "step-${item.cs.step.id}"
+                }
+            },
+        ) { _, item ->
+            when (item) {
+                CookingItem.Success -> SuccessPanel(u.recipe.title, summary, onBackToRecipes)
+                CookingItem.Progress -> ProgressBlock(u.view, summary)
+                CookingItem.Hint -> Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    Icon(painterResource(R.drawable.ic_lightbulb), null, Modifier.size(16.dp), tint = colors.textTertiary)
+                    Text(stringResource(R.string.flow_tap_hint), style = SimmerTextStyle_Caption, color = colors.textTertiary)
+                }
+                is CookingItem.Section -> Column(
+                    verticalArrangement = Arrangement.spacedBy(2.dp),
+                    modifier = Modifier.padding(top = 8.dp),
+                ) {
+                    Text(
+                        stringResource(if (item.prep) R.string.flow_phase_preparation else R.string.flow_phase_cooking),
+                        style = SimmerTextStyle_Heading5,
+                        color = colors.textPrimary,
+                    )
+                    Text(
+                        stringResource(if (item.prep) R.string.flow_prep_caption else R.string.flow_cook_caption),
+                        style = SimmerTextStyle_Caption,
+                        color = colors.textTertiary,
+                    )
+                }
+                is CookingItem.StepItem -> StepRow(
+                    cs = item.cs,
+                    ingredients = u.ingredients,
+                    onMarkDone = { onMarkDone(item.cs.step.id) },
+                    onUndo = { onUndo(item.cs.step.id) },
+                    onJump = ::jumpTo,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuccessPanel(title: String, summary: String, onBackToRecipes: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    GradientHeroCard(modifier = Modifier.fillMaxWidth()) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 24.dp),
+        ) {
+            Icon(painterResource(R.drawable.ic_circle_check), null, Modifier.size(32.dp), tint = colors.textHero)
+            Text(stringResource(R.string.flow_enjoy), style = SimmerTextStyle_HeroTitle, color = colors.textHero)
+            Text("$title · $summary", style = SimmerTextStyle_BodyMd, color = colors.textHero)
+            DarkButton(
+                text = stringResource(R.string.flow_back_to_recipes),
+                onClick = onBackToRecipes,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun ProgressBlock(view: CookingView, summary: String) {
+    val colors = LocalSimmerColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Bottom,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(
+                stringResource(R.string.flow_cook_progress, view.doneCount, view.total),
+                style = SimmerTextStyle_BodySmMedium,
+                color = colors.textPrimary,
+            )
+            Text(
+                summary,
+                style = SimmerTextStyle_Caption,
+                color = colors.textTertiary,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f),
+                textAlign = androidx.compose.ui.text.style.TextAlign.End,
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(4.dp)
+                .background(colors.borderSubtle, CircleShape),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .fillMaxWidth(view.fraction)
+                    .background(colors.accent, CircleShape),
+            )
+        }
+    }
+}
+
+@Composable
+private fun StepRow(
+    cs: CookingStep,
+    ingredients: Map<String, ResolvedIngredient>,
+    onMarkDone: () -> Unit,
+    onUndo: () -> Unit,
+    onJump: (String) -> Unit,
+) {
+    if (cs.done) DoneStepRow(cs, onUndo) else OpenStepCard(cs, ingredients, onMarkDone, onJump)
+}
+
+@Composable
+private fun DoneStepRow(cs: CookingStep, onUndo: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    val shape = RoundedCornerShape(12.dp)
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 56.dp)
+            .background(colors.surfaceSubtle, shape)
+            .border(BorderStroke(2.dp, colors.borderSubtle), shape)
+            .padding(start = 16.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(24.dp)
+                .background(colors.accent, CircleShape),
+        ) {
+            Icon(painterResource(R.drawable.ic_check), null, Modifier.size(14.dp), tint = colors.accentFg)
+        }
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .semantics(mergeDescendants = true) {},
+        ) {
+            Text(cs.step.label, style = SimmerTextStyle_Micro, color = colors.textTertiary)
+            Text(
+                cs.step.title,
+                style = SimmerTextStyle_BodySmMedium,
+                color = colors.textTertiary,
+                textDecoration = TextDecoration.LineThrough,
+            )
+        }
+        LinkButton(text = stringResource(R.string.flow_undo), onClick = onUndo)
+    }
+}
+
+@Composable
+private fun OpenStepCard(
+    cs: CookingStep,
+    ingredients: Map<String, ResolvedIngredient>,
+    onMarkDone: () -> Unit,
+    onJump: (String) -> Unit,
+) {
+    val colors = LocalSimmerColors.current
+    val shape = RoundedCornerShape(12.dp)
+    val step = cs.step
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surfaceCard, shape)
+            .border(
+                BorderStroke(if (cs.active) 3.dp else 2.dp, if (cs.active) colors.accent else colors.borderSubtle),
+                shape,
+            )
+            .padding(if (cs.active) 17.dp else 18.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
+                Text(
+                    step.label,
+                    style = SimmerTextStyle_MicroUppercase,
+                    color = if (cs.active) colors.textAccent else colors.textTertiary,
+                )
+                Text(step.title, style = SimmerTextStyle_Heading4, color = colors.textPrimary)
+            }
+            if (step.durationSecs > 0) {
+                val duration = formatDuration(step.durationSecs)
+                val description = stringResource(R.string.flow_timer_description, duration)
+                // Static idle button: the countdown is a later ticket.
+                StepTimer(
+                    durationText = duration,
+                    onClick = {},
+                    modifier = Modifier.semantics { contentDescription = description },
+                )
+            }
+        }
+        cs.pendingNeeds.forEach { need ->
+            NeedsWarning(
+                label = need.label,
+                title = need.title,
+                onJump = { onJump(need.id) },
+            )
+        }
+        cs.doneNeeds.forEach { need ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Icon(painterResource(R.drawable.ic_circle_check), null, Modifier.size(14.dp), tint = colors.textTertiary)
+                Text(
+                    stringResource(R.string.flow_need_done, need.label, need.title),
+                    style = SimmerTextStyle_Caption,
+                    color = colors.textTertiary,
+                )
+            }
+        }
+        StepBody(step.segs, ingredients)
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(2.dp)
+                .background(colors.borderSubtle),
+        )
+        val check: @Composable () -> Unit = { Icon(painterResource(R.drawable.ic_check), null, Modifier.size(20.dp)) }
+        if (cs.active) {
+            DarkButton(
+                text = stringResource(R.string.flow_mark_done),
+                onClick = onMarkDone,
+                icon = check,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        } else {
+            SecondaryButton(
+                text = stringResource(R.string.flow_mark_done),
+                onClick = onMarkDone,
+                icon = check,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun NeedsWarning(label: String, title: String, onJump: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    val shape = RoundedCornerShape(8.dp)
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(colors.surfaceWarm, shape)
+            .border(BorderStroke(2.dp, colors.accent), shape)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+    ) {
+        Icon(painterResource(R.drawable.ic_circle_alert), null, Modifier.size(18.dp), tint = colors.textAccent)
+        Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
+            Text(
+                stringResource(R.string.flow_needs_first, label),
+                style = SimmerTextStyle_BodySmMedium,
+                color = colors.textPrimary,
+            )
+            Text(title, style = SimmerTextStyle_Caption, color = colors.textSecondary)
+        }
+        LinkButton(text = stringResource(R.string.flow_go_to_step), onClick = onJump)
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Step body with tappable ingredient references
+// ---------------------------------------------------------------------------
+
+private data class LinkRange(val id: String, val start: Int, val end: Int, val shown: String)
+
+private val UnderlineThickness = 2.dp
+private val UnderlineOffset = 3.dp
+
+/**
+ * Step text where each ingredient Link is underlined (2dp, offset below the baseline).
+ * Tapping one opens a popover with the ingredient's amount, note and tips; tapping outside closes it.
+ */
+@Composable
+private fun StepBody(segs: List<BodySegment>, ingredients: Map<String, ResolvedIngredient>) {
+    val colors = LocalSimmerColors.current
+    val density = LocalDensity.current
+    val (text, ranges) = remember(segs) { bodyText(segs) }
+    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    var open by remember { mutableStateOf<ResolvedIngredient?>(null) }
+    var anchor by remember { mutableStateOf(Offset.Zero) }
+    val underlineColor = colors.textSecondary
+
+    fun openRange(r: LinkRange, at: Offset) {
+        ingredients[r.id]?.let {
+            anchor = at
+            open = it
+        }
+    }
+
+    Box {
+        Text(
+            text = text,
+            style = SimmerTextStyle_BodyMd,
+            color = colors.textSecondary,
+            onTextLayout = { layout = it },
+            modifier = Modifier
+                .drawBehind {
+                    val l = layout ?: return@drawBehind
+                    val thickness = with(density) { UnderlineThickness.toPx() }
+                    val gap = with(density) { UnderlineOffset.toPx() }
+                    ranges.forEach { r ->
+                        val firstLine = l.getLineForOffset(r.start)
+                        val lastLine = l.getLineForOffset(r.end - 1)
+                        for (line in firstLine..lastLine) {
+                            val x1 = if (line == firstLine) l.getHorizontalPosition(r.start, true) else l.getLineLeft(line)
+                            val x2 = if (line == lastLine) l.getHorizontalPosition(r.end, true) else l.getLineRight(line)
+                            val y = l.getLineBaseline(line) + gap
+                            drawRect(underlineColor, Offset(x1, y), androidx.compose.ui.geometry.Size(x2 - x1, thickness))
+                        }
+                    }
+                }
+                .pointerInput(ranges) {
+                    detectTapGestures { pos ->
+                        val l = layout ?: return@detectTapGestures
+                        val offset = l.getOffsetForPosition(pos)
+                        ranges.firstOrNull { offset >= it.start && offset < it.end }?.let { openRange(it, pos) }
+                    }
+                }
+                .semantics {
+                    customActions = ranges.filter { it.id in ingredients }.map { r ->
+                        CustomAccessibilityAction(r.shown) {
+                            openRange(r, Offset.Zero)
+                            true
+                        }
+                    }
+                },
+        )
+        open?.let { ing ->
+            val gap = with(density) { 12.dp.roundToPx() }
+            val margin = with(density) { 16.dp.roundToPx() }
+            Popup(
+                popupPositionProvider = remember(anchor) {
+                    object : PopupPositionProvider {
+                        override fun calculatePosition(
+                            anchorBounds: IntRect,
+                            windowSize: IntSize,
+                            layoutDirection: LayoutDirection,
+                            popupContentSize: IntSize,
+                        ): IntOffset {
+                            val x = (anchorBounds.left + anchor.x.toInt())
+                                .coerceIn(margin, (windowSize.width - popupContentSize.width - margin).coerceAtLeast(margin))
+                            val below = anchorBounds.top + anchor.y.toInt() + gap
+                            val y = if (below + popupContentSize.height > windowSize.height) {
+                                (anchorBounds.top + anchor.y.toInt() - gap - popupContentSize.height).coerceAtLeast(0)
+                            } else below
+                            return IntOffset(x, y)
+                        }
+                    }
+                },
+                onDismissRequest = { open = null },
+                properties = PopupProperties(focusable = true),
+            ) {
+                IngredientPopover(ing)
+            }
+        }
+    }
+}
+
+private fun bodyText(segs: List<BodySegment>): Pair<AnnotatedString, List<LinkRange>> {
+    val ranges = mutableListOf<LinkRange>()
+    val text = buildAnnotatedString {
+        segs.forEach { seg ->
+            when (seg) {
+                is BodySegment.TextSegment -> append(seg.text)
+                is BodySegment.IngredientLinkSegment -> {
+                    val start = length
+                    append(seg.text)
+                    ranges += LinkRange(seg.id, start, length, seg.text)
+                }
+            }
+        }
+    }
+    return text to ranges
+}
+
+@Composable
+private fun IngredientPopover(ing: ResolvedIngredient) {
+    val colors = LocalSimmerColors.current
+    val shape = RoundedCornerShape(12.dp)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = Modifier
+            .widthIn(min = 180.dp, max = 280.dp)
+            .background(colors.surfaceCard, shape)
+            .border(BorderStroke(2.dp, colors.borderStrong), shape)
+            .padding(14.dp),
+    ) {
+        Text(ing.name, style = SimmerTextStyle_BodyMdMedium, color = colors.textPrimary)
+        Text(ing.amount, style = SimmerTextStyle_BodySmMedium, color = colors.textAccent)
+        if (ing.note.isNotBlank()) {
+            Text(ing.note, style = SimmerTextStyle_Caption, color = colors.textTertiary)
+        }
+        ing.tips.forEach { tip ->
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                Icon(painterResource(R.drawable.ic_lightbulb), null, Modifier.size(14.dp), tint = colors.textTertiary)
+                Text(tip, style = SimmerTextStyle_Caption, color = colors.textSecondary)
+            }
+        }
+    }
+}

@@ -158,15 +158,6 @@ fun RecipeFlowPlaceholder(recipeId: String, onBack: () -> Unit, modifier: Modifi
     )
 }
 
-@Composable
-fun RecipeFlowPhase3Placeholder(recipeId: String, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    RecipeFlowScaffold(
-        title = "Recipe Flow Phase 3 (id=$recipeId)",
-        onBack = onBack,
-        modifier = modifier,
-    )
-}
-
 // ---------------------------------------------------------------------------
 // Add / Edit Recipe screens (hide tab bar, own top bar + sticky bottom action bar)
 // ---------------------------------------------------------------------------
