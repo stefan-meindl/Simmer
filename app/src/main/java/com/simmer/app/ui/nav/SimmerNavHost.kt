@@ -121,9 +121,7 @@ fun SimmerNavHost(
         // ----------------------------------------------------------------
 
         composable<AddRecipe> {
-            AddRecipePlaceholder(
-                onBack = { navController.popBackStack() },
-            )
+            ThrowawayAddRecipe(onEditDraft = { navController.navigate(EditRecipe(null)) })
         }
 
         composable<EditRecipe> { backStackEntry ->
