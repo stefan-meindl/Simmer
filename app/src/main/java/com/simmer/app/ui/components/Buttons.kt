@@ -10,6 +10,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.ui.res.painterResource
+import androidx.compose.foundation.layout.size
+import com.simmer.app.R
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -184,6 +188,7 @@ fun LinkButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    icon: @Composable (() -> Unit)? = null,
 ) {
     val colors = LocalSimmerColors.current
     TextButton(
@@ -195,6 +200,10 @@ fun LinkButton(
         ),
         modifier = modifier.defaultMinSize(minHeight = ButtonMinHeight),
     ) {
+        if (icon != null) {
+            icon()
+            Spacer(modifier = Modifier.width(6.dp))
+        }
         Text(
             text = text,
             style = SimmerTextStyle_Button.copy(
@@ -203,6 +212,32 @@ fun LinkButton(
             ),
         )
     }
+}
+
+/**
+ * The edit affordance: pencil icon and [text] as a link, at least 44 dp tall. Used by the recipe flow's
+ * top bar ("Edit") and the Add recipe review's sticky row ("Edit details").
+ */
+@Composable
+fun EditAction(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalSimmerColors.current
+    LinkButton(
+        text = text,
+        onClick = onClick,
+        modifier = modifier,
+        icon = {
+            Icon(
+                painter = painterResource(R.drawable.ic_pencil),
+                contentDescription = null,
+                tint = colors.textLink,
+                modifier = Modifier.size(16.dp),
+            )
+        },
+    )
 }
 
 // ---------------------------------------------------------------------------

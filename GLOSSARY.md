@@ -39,7 +39,7 @@ The unsaved Recipe the Add recipe review shows (`RecipeDraftStore`). Edit recipe
 _Avoid_: Pending recipe, import result
 
 **Add recipe**:
-The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe, listed first on the Recipes overview, and opens Flow Phase 1). Convert is offered only for the built-in example (`stubConvert`) until the RecipeReader exists; other text shows an inactive Download recipe reader button.
+The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe and lands on the Recipes overview, scrolled to the top where the new card is listed first). The review's top row stays pinned with the "Edit details" action. Change on the paste stage opens Settings on top; a bottom tab tap there abandons Add recipe and its draft. Convert is offered only for the built-in example (`stubConvert`) until the RecipeReader exists; other text shows an inactive Download recipe reader button.
 _Avoid_: Import screen, new recipe screen
 
 **Kitchen line**:

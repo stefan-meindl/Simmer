@@ -58,6 +58,7 @@ import com.simmer.app.domain.formatDuration
 import com.simmer.app.domain.model.Recipe
 import com.simmer.app.domain.model.ResolvedIngredient
 import com.simmer.app.domain.model.ResolvedStep
+import com.simmer.app.ui.components.EditAction
 import com.simmer.app.ui.components.GradientHeroCard
 import com.simmer.app.ui.components.LinkButton
 import com.simmer.app.ui.components.PrimaryButton
@@ -120,7 +121,7 @@ fun AddRecipeScreen(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun TopRow(caption: String, onBack: () -> Unit) {
+private fun TopRow(caption: String, onBack: () -> Unit, trailing: @Composable (() -> Unit)? = null) {
     val colors = LocalSimmerColors.current
     val shape = RoundedCornerShape(8.dp)
     Row(
@@ -146,7 +147,13 @@ private fun TopRow(caption: String, onBack: () -> Unit) {
                 modifier = Modifier.size(20.dp),
             )
         }
-        Text(text = caption, style = SimmerTextStyle_Caption, color = colors.textTertiary)
+        Text(
+            text = caption,
+            style = SimmerTextStyle_Caption,
+            color = colors.textTertiary,
+            modifier = Modifier.weight(1f),
+        )
+        trailing?.invoke()
     }
 }
 
@@ -359,7 +366,10 @@ private fun ColumnScope.ReviewStage(
     val review = ui.review
     val recipe = review.recipe
 
-    TopRow(stringResource(R.string.add_caption_review), onBack)
+    // Outside the scrolling column, so Edit details stays in view while the review scrolls.
+    TopRow(stringResource(R.string.add_caption_review), onBack) {
+        EditAction(text = stringResource(R.string.add_edit_details), onClick = onEditDetails)
+    }
     Column(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier
@@ -367,10 +377,7 @@ private fun ColumnScope.ReviewStage(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp, vertical = 16.dp),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-            Hero(review.recipe)
-            LinkButton(text = stringResource(R.string.add_edit_details), onClick = onEditDetails)
-        }
+        Hero(review.recipe)
         if (recipe.notes.isNotEmpty()) CheckNote(recipe.notes)
         if (review.choices.isNotEmpty()) ChoicesFound(review.choices)
 

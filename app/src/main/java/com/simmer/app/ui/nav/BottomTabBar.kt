@@ -81,17 +81,7 @@ fun BottomTabBar(
 
             NavigationBarItem(
                 selected = isSelected,
-                onClick = {
-                    navController.navigate(tab.route) {
-                        // Pop up to the start destination of the graph to
-                        // avoid building up a large back stack.
-                        popUpTo(navController.graph.startDestinationId) {
-                            saveState = true
-                        }
-                        launchSingleTop = true
-                        restoreState = true
-                    }
-                },
+                onClick = { navController.navigateToTab(tab.route) },
                 icon = {
                     if (tab.route == ShoppingListTab) {
                         BadgedBox(

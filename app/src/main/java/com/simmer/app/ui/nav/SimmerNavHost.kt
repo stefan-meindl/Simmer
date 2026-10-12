@@ -1,6 +1,8 @@
 package com.simmer.app.ui.nav
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -44,8 +46,12 @@ fun SimmerNavHost(
         // Bottom tab destinations
         // ----------------------------------------------------------------
 
-        composable<RecipesTab> {
+        composable<RecipesTab> { backStackEntry ->
+            val saved by backStackEntry.savedStateHandle
+                .getStateFlow(RECIPE_SAVED_KEY, false).collectAsStateWithLifecycle()
             RecipesScreen(
+                recipeSaved = saved,
+                onRecipeSavedShown = { backStackEntry.savedStateHandle[RECIPE_SAVED_KEY] = false },
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
                 onAddRecipe = { navController.navigate(AddRecipe) },
@@ -127,13 +133,10 @@ fun SimmerNavHost(
             AddRecipeScreen(
                 onBack = { navController.popBackStack() },
                 // Settings opens on top, so back returns here with the pasted text.
-                onChangeKitchen = { navController.navigate(SettingsTab) { launchSingleTop = true } },
+                onChangeKitchen = { navController.openSettingsOnTop() },
                 onEditDetails = { navController.navigate(EditRecipe()) },
-                onSaved = { id ->
-                    navController.navigate(RecipeFlow(id)) {
-                        popUpTo<AddRecipe> { inclusive = true }
-                    }
-                },
+                // The new recipe is listed first on the Recipes tab, which scrolls there.
+                onSaved = { navController.finishAddRecipe() },
             )
         }
 
