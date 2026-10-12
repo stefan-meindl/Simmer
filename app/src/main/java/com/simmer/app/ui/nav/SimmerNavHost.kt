@@ -6,11 +6,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.simmer.app.ui.flow.RecipeFlowPhase1Screen
 import com.simmer.app.ui.screens.AddRecipePlaceholder
 import com.simmer.app.ui.screens.EditRecipePlaceholder
 import com.simmer.app.ui.screens.RecipeFlowPhase2Placeholder
 import com.simmer.app.ui.screens.RecipeFlowPhase3Placeholder
-import com.simmer.app.ui.screens.RecipeFlowPlaceholder
 import com.simmer.app.ui.screens.RecipesPlaceholder
 import com.simmer.app.ui.screens.SettingsPlaceholder
 import com.simmer.app.ui.screens.ShoppingListPlaceholder
@@ -63,9 +63,16 @@ fun SimmerNavHost(
 
         composable<RecipeFlow> { backStackEntry ->
             val route: RecipeFlow = backStackEntry.toRoute()
-            RecipeFlowPlaceholder(
-                recipeId = route.recipeId,
+            RecipeFlowPhase1Screen(
                 onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
+                onViewList = {
+                    navController.navigate(ShoppingListTab) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                },
+                onPreparation = { navController.navigate(RecipeFlowPhase2(route.recipeId)) },
             )
         }
 
