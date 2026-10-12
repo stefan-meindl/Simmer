@@ -41,22 +41,12 @@ class SettingsViewModel @Inject constructor(
 
     private val previewRecipe = recipes.recipes.map { list -> list.firstOrNull { it.id == PREVIEW_RECIPE_ID } }
 
-    val ui: StateFlow<SettingsUi?> = combine(
-        prefs.lang,
-        prefs.units,
-        prefs.spices,
-        prefs.appliances,
-        prefs.kitchenMode,
-        previewRecipe,
-    ) { values ->
-        val lang = values[0] as String
-        val units = values[1] as String
-        val spices = values[2] as String
+    private val display = combine(prefs.lang, prefs.units, prefs.spices) { lang, units, spices ->
+        Triple(lang, units, spices)
+    }
+    private val kitchen = combine(prefs.appliances, prefs.kitchenMode) { appliances, mode -> appliances to mode }
 
-        @Suppress("UNCHECKED_CAST")
-        val appliances = values[3] as Set<String>
-        val mode = values[4] as String
-        val recipe = values[5] as com.simmer.app.domain.model.Recipe?
+    val ui: StateFlow<SettingsUi?> = combine(display, kitchen, previewRecipe) { (lang, units, spices), (appliances, mode), recipe ->
         SettingsUi(
             lang = lang,
             units = units,
@@ -69,6 +59,7 @@ class SettingsViewModel @Inject constructor(
 
     fun setLang(lang: String) {
         viewModelScope.launch {
+            // The write has finished when setLang returns; only then recreate the activity.
             prefs.setLang(lang)
             AppCompatDelegate.setApplicationLocales(LocaleListCompat.forLanguageTags(lang))
         }

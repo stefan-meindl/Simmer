@@ -17,21 +17,22 @@ class SettingsPrefsTest {
     fun settingsChoicesPersistInDataStore(): Unit = runBlocking {
         val context = ApplicationProvider.getApplicationContext<android.content.Context>()
         val prefs = PrefsRepository(context)
-        prefs.setLang("de")
-        prefs.setUnits("imperial")
-        prefs.setSpices("grams")
-        prefs.setKitchenMode("strict")
+        try {
+            prefs.setLang("de")
+            prefs.setUnits("imperial")
+            prefs.setSpices("grams")
+            prefs.setKitchenMode("strict")
 
-        val reread = PrefsRepository(context)
-        assertEquals("de", reread.lang.first())
-        assertEquals("imperial", reread.units.first())
-        assertEquals("grams", reread.spices.first())
-        assertEquals("strict", reread.kitchenMode.first())
-
-        prefs.setLang("en")
-        prefs.setUnits("metric")
-        prefs.setSpices("spoons")
-        prefs.setKitchenMode("medium")
-        Unit
+            val reread = PrefsRepository(context)
+            assertEquals("de", reread.lang.first())
+            assertEquals("imperial", reread.units.first())
+            assertEquals("grams", reread.spices.first())
+            assertEquals("strict", reread.kitchenMode.first())
+        } finally {
+            prefs.setLang("en")
+            prefs.setUnits("metric")
+            prefs.setSpices("spoons")
+            prefs.setKitchenMode("medium")
+        }
     }
 }

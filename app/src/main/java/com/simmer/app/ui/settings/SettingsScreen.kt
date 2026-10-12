@@ -162,16 +162,12 @@ private fun OptionGroup(
         ) {
             options.forEach { choice ->
                 val on = choice.key == selected
-                OptionCard(
+                RadioCard(
                     selected = on,
-                    onClick = { onSelect(choice.key) },
+                    onSelect = { onSelect(choice.key) },
                     modifier = Modifier
                         .weight(1f)
-                        .fillMaxHeight()
-                        .semantics(mergeDescendants = true) {
-                            role = Role.RadioButton
-                            this.selected = on
-                        },
+                        .fillMaxHeight(),
                 ) {
                     Column(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
@@ -191,6 +187,25 @@ private fun OptionGroup(
             }
         }
     }
+}
+
+/** An [OptionCard] exposed to accessibility as a radio button. */
+@Composable
+private fun RadioCard(
+    selected: Boolean,
+    onSelect: () -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    OptionCard(
+        selected = selected,
+        onClick = onSelect,
+        modifier = modifier.semantics(mergeDescendants = true) {
+            role = Role.RadioButton
+            this.selected = selected
+        },
+        content = content,
+    )
 }
 
 @Composable
@@ -275,16 +290,8 @@ private fun KitchenSection(
             )
             KitchenMode.entries.forEach { option ->
                 val on = option == mode
-                OptionCard(
-                    selected = on,
-                    onClick = { onModeSelect(option) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .semantics(mergeDescendants = true) {
-                            role = Role.RadioButton
-                            this.selected = on
-                        },
-                ) {
+                val (label, description) = modeStrings(option)
+                RadioCard(selected = on, onSelect = { onModeSelect(option) }, modifier = Modifier.fillMaxWidth()) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -295,12 +302,12 @@ private fun KitchenSection(
                     ) {
                         Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
                             Text(
-                                text = stringResource(modeLabel(option)),
+                                text = stringResource(label),
                                 style = SimmerTextStyle_BodyMdMedium,
                                 color = colors.textPrimary,
                             )
                             Text(
-                                text = stringResource(modeDescription(option)),
+                                text = stringResource(description),
                                 style = SimmerTextStyle_Caption,
                                 color = colors.textTertiary,
                             )
@@ -313,18 +320,11 @@ private fun KitchenSection(
     }
 }
 
-@StringRes
-private fun modeLabel(mode: KitchenMode): Int = when (mode) {
-    KitchenMode.Strict -> R.string.settings_mode_strict
-    KitchenMode.Medium -> R.string.settings_mode_medium
-    KitchenMode.Free -> R.string.settings_mode_free
-}
-
-@StringRes
-private fun modeDescription(mode: KitchenMode): Int = when (mode) {
-    KitchenMode.Strict -> R.string.settings_mode_strict_desc
-    KitchenMode.Medium -> R.string.settings_mode_medium_desc
-    KitchenMode.Free -> R.string.settings_mode_free_desc
+/** Label and description string resources of a kitchen mode. */
+private fun modeStrings(mode: KitchenMode): Pair<Int, Int> = when (mode) {
+    KitchenMode.Strict -> R.string.settings_mode_strict to R.string.settings_mode_strict_desc
+    KitchenMode.Medium -> R.string.settings_mode_medium to R.string.settings_mode_medium_desc
+    KitchenMode.Free -> R.string.settings_mode_free to R.string.settings_mode_free_desc
 }
 
 @Composable

@@ -49,8 +49,12 @@ data class Phase1State(
         resolve(recipe, servings, selection, units, spices, lang)
 
     /** Aisle-having ingredients for the current choice, grouped by aisle (first-seen order). */
-    fun shoppingEntries(units: String = "metric", spices: String = "spoons"): List<ShoppingEntry> =
-        resolved(units, spices).ingredients
+    fun shoppingEntries(
+        units: String = "metric",
+        spices: String = "spoons",
+        lang: String = "en",
+    ): List<ShoppingEntry> =
+        resolved(units, spices, lang).ingredients
             .filter { it.aisle.isNotBlank() }
             .map { ShoppingEntry(it.id, it.name, it.amount, it.aisle, recipe.title) }
             .groupBy { it.aisle }

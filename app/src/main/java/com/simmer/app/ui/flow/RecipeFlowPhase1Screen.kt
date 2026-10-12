@@ -391,7 +391,7 @@ private fun Variations(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
                     CheckRow(
                         label = v.label,
                         subtitle = v.d.ifBlank { null },
-                        trailing = addInAmount(r, v, s.servings, ui.units, ui.spices, s.selection),
+                        trailing = addInAmount(r, v, s.servings, ui.units, ui.spices, s.selection, ui.lang),
                         checked = s.selection.add[v.id] == true,
                         onCheckedChange = { viewModel.setAddIn(v.id, it) },
                         modifier = Modifier.background(colors.surfaceCard),
@@ -410,7 +410,7 @@ private fun Variations(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
 private fun IngredientList(ui: Phase1Ui.Content) {
     val colors = LocalSimmerColors.current
     val s = ui.state
-    val resolved = s.resolved(ui.units, ui.spices).ingredients
+    val resolved = s.resolved(ui.units, ui.spices, ui.lang).ingredients
     val sourceById = s.recipe.ingredients.associateBy { it.id }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -1,6 +1,8 @@
 package com.simmer.app
 
 import com.simmer.app.domain.KitchenMode
+import com.simmer.app.domain.addInAmount
+import com.simmer.app.domain.defaults
 import com.simmer.app.domain.fmtQty
 import com.simmer.app.domain.model.Ingredient
 import com.simmer.app.domain.settingsPreview
@@ -50,6 +52,12 @@ class SettingsLogicTest {
             preview.ingredients.map { it.name to it.amount },
         )
         assertEquals("300°F", preview.ovenTemperature)
+    }
+
+    @Test fun `add-in amount in the cooking flow uses the German decimal comma`() {
+        val cinnamon = chilli.variations.first { it.id == "cin" }
+        assertEquals("+ 1,5 g", addInAmount(chilli, cinnamon, 4, "metric", "grams", defaults(chilli), "de"))
+        assertEquals("+ 1.5 g", addInAmount(chilli, cinnamon, 4, "metric", "grams", defaults(chilli), "en"))
     }
 
     // --- Kitchen mode ---

@@ -20,10 +20,11 @@ fun addInAmount(
     units: String = "metric",
     spices: String = "spoons",
     selection: Selection = defaults(recipe),
+    lang: String = "en",
 ): String {
     // Resolve with the add-in on so rounding and units match the ingredient list.
     val on = selection.copy(add = selection.add + (variation.id to true))
-    val ingredient = resolve(recipe, servings, on, units, spices).ingredients.first { it.id == variation.ing }
+    val ingredient = resolve(recipe, servings, on, units, spices, lang).ingredients.first { it.id == variation.ing }
     return "+ " + ingredient.amount
 }
 

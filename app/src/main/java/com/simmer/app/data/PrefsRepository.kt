@@ -35,8 +35,12 @@ class PrefsRepository @Inject constructor(
         val KEY_READER_WIFI_ONLY = booleanPreferencesKey("reader_wifi_only")
     }
 
-    /** Language: "en" | "de". Defaults to "en". */
-    val lang: Flow<String> = store.data.map { it[KEY_LANG] ?: "en" }
+    /** "de" when the device language is German, else "en"; used until the user picks a language. */
+    private fun deviceLang(): String =
+        if (context.resources.configuration.locales[0].language == "de") "de" else "en"
+
+    /** Language: "en" | "de". Defaults to the device language. */
+    val lang: Flow<String> = store.data.map { it[KEY_LANG] ?: deviceLang() }
 
     /** Units: "metric" | "imperial". Defaults to "metric". */
     val units: Flow<String> = store.data.map { it[KEY_UNITS] ?: "metric" }
