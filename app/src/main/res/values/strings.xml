@@ -215,4 +215,56 @@
         <item quantity="one">%1$d item to buy</item>
         <item quantity="other">%1$d items to buy</item>
     </plurals>
+
+    <!-- Edit recipe -->
+    <string name="category_soups">Soups</string>
+    <string name="category_salads">Salads</string>
+    <string name="category_desserts">Desserts</string>
+    <string name="category_baking">Baking</string>
+    <string name="edit_heading">Edit recipe</string>
+    <string name="edit_close">Cancel and close</string>
+    <string name="edit_cancel">Cancel</string>
+    <string name="edit_save">Save changes</string>
+    <string name="edit_not_found">This recipe is no longer available.</string>
+    <string name="edit_details">Details</string>
+    <string name="edit_title">Title</string>
+    <string name="edit_summary">Summary</string>
+    <string name="edit_servings">Servings</string>
+    <string name="edit_time">Total time (min)</string>
+    <string name="edit_difficulty">Difficulty</string>
+    <string name="edit_category">Category</string>
+    <string name="edit_ingredients">Ingredients</string>
+    <string name="edit_ingredients_count">%1$d ingredients · Amounts for %2$s servings</string>
+    <string name="edit_new_ingredient">New ingredient</string>
+    <string name="edit_name">Name</string>
+    <string name="edit_amount">Amount</string>
+    <string name="edit_unit">Unit</string>
+    <string name="edit_note">Note</string>
+    <string name="edit_aisle">Shop section</string>
+    <string name="edit_remove_ingredient">Remove ingredient</string>
+    <string name="edit_add_ingredient">Add ingredient</string>
+    <string name="edit_steps_hint">Ingredient names in the instructions are linked automatically.</string>
+    <string name="edit_new_step">New step</string>
+    <string name="edit_prep_n">Prep %1$d</string>
+    <string name="edit_step_n">Step %1$d</string>
+    <string name="edit_step_title">Step title</string>
+    <string name="edit_instructions">Instructions</string>
+    <string name="edit_instructions_placeholder">What to do in this step.</string>
+    <string name="edit_linked">Linked: %1$s</string>
+    <string name="edit_no_links">No ingredients found in this text yet.</string>
+    <string name="edit_timer">Timer (min)</string>
+    <string name="edit_phase">Phase</string>
+    <string name="edit_move_up">Move up</string>
+    <string name="edit_move_down">Move down</string>
+    <string name="edit_remove_step">Remove step</string>
+    <string name="edit_add_prep">Add preparation step</string>
+    <string name="edit_add_cook">Add cooking step</string>
+    <string name="edit_only_when">Only when: %1$s</string>
+    <string name="edit_cond_not">not %1$s</string>
+    <string name="edit_cond_added">%1$s added</string>
+    <string name="edit_cond_not_added">%1$s not added</string>
+    <string name="edit_restore">Restore original</string>
+    <string name="edit_delete">Delete recipe</string>
+    <string name="edit_expand">Show details</string>
+    <string name="edit_collapse">Hide details</string>
 </resources>

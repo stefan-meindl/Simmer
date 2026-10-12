@@ -100,6 +100,9 @@ class ShoppingRepository @Inject constructor(
         )
     }
 
+    /** Drops a deleted recipe's Shopping list items and its Planned state; manual items stay. */
+    suspend fun removeRecipe(recipeId: String) = dao.removeRecipe(recipeId)
+
     suspend fun setChecked(id: String, checked: Boolean) = dao.setChecked(id, checked)
 
     /** Every Planned Recipe's saved choice, by recipe id. */

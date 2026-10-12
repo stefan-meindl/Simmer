@@ -8,13 +8,13 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
+import com.simmer.app.ui.edit.EditRecipeScreen
 import com.simmer.app.ui.flow.RecipeFlowPhase1Screen
 import com.simmer.app.ui.flow.RecipeFlowPhase2Screen
 import com.simmer.app.ui.flow.RecipeFlowPhase3Screen
 import com.simmer.app.ui.recipes.RecipesScreen
 import com.simmer.app.ui.settings.SettingsScreen
 import com.simmer.app.ui.screens.AddRecipePlaceholder
-import com.simmer.app.ui.screens.EditRecipePlaceholder
 import com.simmer.app.ui.shopping.ShoppingListScreen
 import com.simmer.app.ui.screens.YourKitchenPlaceholder
 
@@ -127,10 +127,17 @@ fun SimmerNavHost(
         }
 
         composable<EditRecipe> { backStackEntry ->
-            val route: EditRecipe = backStackEntry.toRoute()
-            EditRecipePlaceholder(
-                recipeId = route.recipeId,
-                onBack = { navController.popBackStack() },
+            // Back to the screen that opened Edit: the recipe flow at the same phase, or the Add recipe review.
+            EditRecipeScreen(
+                onClose = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() },
+                onDeleted = {
+                    // The recipe is gone, so the flow underneath would have nothing to show.
+                    navController.navigate(RecipesTab) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                },
             )
         }
 

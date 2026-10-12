@@ -15,40 +15,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 
-/** In-memory stand-in for the Room-generated DAO. The @Transaction method under test is the real one. */
-private class FakeShoppingDao : ShoppingDao() {
-    val items = mutableListOf<ShoppingItemEntity>()
-    val planned = mutableMapOf<String, PlannedRecipeEntity>()
-
-    override suspend fun getForRecipe(recipeId: String): List<ShoppingItemEntity> =
-        items.filter { it.recipeId == recipeId }
-
-    override suspend fun deleteForRecipe(recipeId: String) {
-        items.removeAll { it.recipeId == recipeId }
-    }
-
-    override suspend fun insertItems(items: List<ShoppingItemEntity>) {
-        items.forEach { new ->
-            this.items.removeAll { it.id == new.id }
-            this.items.add(new)
-        }
-    }
-
-    override suspend fun upsertPlanned(planned: PlannedRecipeEntity) {
-        this.planned[planned.recipeId] = planned
-    }
-
-    override suspend fun getPlanned(recipeId: String): PlannedRecipeEntity? = planned[recipeId]
-
-    override fun observeItems(): Flow<List<ShoppingItemEntity>> = flow { emit(items.toList()) }
-
-    override suspend fun setChecked(id: String, checked: Boolean) {
-        items.replaceAll { if (it.id == id) it.copy(checked = checked) else it }
-    }
-
-    override fun observeAllPlanned(): Flow<List<PlannedRecipeEntity>> = flow { emit(planned.values.toList()) }
-}
-
 class ShoppingRepositoryTest {
     private val dao = FakeShoppingDao()
     private val repo = ShoppingRepository(dao)
@@ -160,5 +126,17 @@ class ShoppingRepositoryTest {
         assertEquals("Pantry", item.aisle)
         assertEquals("Chilli con carne", item.note)
         assertEquals("chilli", item.recipeId)
+    }
+
+    @Test fun `removing a recipe clears its items and Planned state but keeps everything else`() = runBlocking {
+        repo.addRecipeToList("chilli", listOf(entry("onions"), entry("garlic")), choice)
+        repo.addRecipeToList("curry", listOf(entry("ginger", note = "Curry")), choice)
+        repo.addManualItem("Batteries")
+
+        repo.removeRecipe("chilli")
+
+        assertEquals(listOf("Ginger", "Batteries"), repo.items.first().map { it.name })
+        assertNull(repo.getPlanned("chilli"))
+        assertEquals(setOf("curry"), repo.planned.first().keys)
     }
 }

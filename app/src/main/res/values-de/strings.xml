@@ -213,4 +213,56 @@
         <item quantity="one">%1$d Artikel zu kaufen</item>
         <item quantity="other">%1$d Artikel zu kaufen</item>
     </plurals>
+
+    <!-- Edit recipe -->
+    <string name="category_soups">Suppen</string>
+    <string name="category_salads">Salate</string>
+    <string name="category_desserts">Desserts</string>
+    <string name="category_baking">Backen</string>
+    <string name="edit_heading">Rezept bearbeiten</string>
+    <string name="edit_close">Abbrechen und schließen</string>
+    <string name="edit_cancel">Abbrechen</string>
+    <string name="edit_save">Änderungen speichern</string>
+    <string name="edit_not_found">Dieses Rezept ist nicht mehr verfügbar.</string>
+    <string name="edit_details">Details</string>
+    <string name="edit_title">Titel</string>
+    <string name="edit_summary">Kurzbeschreibung</string>
+    <string name="edit_servings">Portionen</string>
+    <string name="edit_time">Gesamtzeit (Min.)</string>
+    <string name="edit_difficulty">Schwierigkeit</string>
+    <string name="edit_category">Kategorie</string>
+    <string name="edit_ingredients">Zutaten</string>
+    <string name="edit_ingredients_count">%1$d Zutaten · Mengen für %2$s Portionen</string>
+    <string name="edit_new_ingredient">Neue Zutat</string>
+    <string name="edit_name">Name</string>
+    <string name="edit_amount">Menge</string>
+    <string name="edit_unit">Einheit</string>
+    <string name="edit_note">Hinweis</string>
+    <string name="edit_aisle">Abteilung</string>
+    <string name="edit_remove_ingredient">Zutat entfernen</string>
+    <string name="edit_add_ingredient">Zutat hinzufügen</string>
+    <string name="edit_steps_hint">Zutaten in der Anleitung werden automatisch verknüpft.</string>
+    <string name="edit_new_step">Neuer Schritt</string>
+    <string name="edit_prep_n">Vorb. %1$d</string>
+    <string name="edit_step_n">Schritt %1$d</string>
+    <string name="edit_step_title">Titel des Schritts</string>
+    <string name="edit_instructions">Anleitung</string>
+    <string name="edit_instructions_placeholder">Was in diesem Schritt zu tun ist.</string>
+    <string name="edit_linked">Verknüpft: %1$s</string>
+    <string name="edit_no_links">Noch keine Zutaten im Text gefunden.</string>
+    <string name="edit_timer">Timer (Min.)</string>
+    <string name="edit_phase">Phase</string>
+    <string name="edit_move_up">Nach oben</string>
+    <string name="edit_move_down">Nach unten</string>
+    <string name="edit_remove_step">Schritt entfernen</string>
+    <string name="edit_add_prep">Vorbereitungsschritt hinzufügen</string>
+    <string name="edit_add_cook">Kochschritt hinzufügen</string>
+    <string name="edit_only_when">Nur wenn: %1$s</string>
+    <string name="edit_cond_not">nicht %1$s</string>
+    <string name="edit_cond_added">%1$s hinzugefügt</string>
+    <string name="edit_cond_not_added">%1$s nicht hinzugefügt</string>
+    <string name="edit_restore">Original wiederherstellen</string>
+    <string name="edit_delete">Rezept löschen</string>
+    <string name="edit_expand">Details anzeigen</string>
+    <string name="edit_collapse">Details ausblenden</string>
 </resources>

@@ -25,6 +25,16 @@ abstract class ShoppingDao {
     @Query("SELECT * FROM planned_recipes WHERE recipeId = :recipeId")
     abstract suspend fun getPlanned(recipeId: String): PlannedRecipeEntity?
 
+    @Query("DELETE FROM planned_recipes WHERE recipeId = :recipeId")
+    abstract suspend fun deletePlanned(recipeId: String)
+
+    /** Removes a recipe's items and its Planned state, atomically. */
+    @Transaction
+    open suspend fun removeRecipe(recipeId: String) {
+        deleteForRecipe(recipeId)
+        deletePlanned(recipeId)
+    }
+
     @Query("SELECT * FROM shopping_items ORDER BY rowid")
     abstract fun observeItems(): Flow<List<ShoppingItemEntity>>
 

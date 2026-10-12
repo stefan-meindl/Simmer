@@ -162,3 +162,21 @@ Open `chilli`, Preparation, Start cooking (no throwaway branch needed). Prep 2 "
 - Channels: Settings > Apps > Simmer > Notifications lists "Running timers" (silent) and "Finished timers" (sound and vibration).
 - Light and dark, German (button "Fertig", reset "Timer zurücksetzen"), large font (the title column shrinks, the timer button stays 44dp tall), TalkBack: button reads "Start 2 min timer", "Pause timer, 1:12 left", "Resume timer, 1:12 left", "Timer finished, tap to reset"; "Done" is announced.
 - `connectedDebugAndroidTest` includes `StepTimerAndroidTest` (button states, reset position, channels, SharedPreferences round trip).
+
+### Edit recipe (#13)
+
+Open `chilli`, tap Edit (top right of any flow phase). The Add recipe review does not exist yet, so editing its draft (route `EditRecipe(null)`) and a User Recipe (Delete recipe) need the throwaway branch (section 3).
+- Top bar: x, recipe title, "Edit recipe" (de: "Rezept bearbeiten"); bottom bar Cancel and Save changes. x and Cancel discard and return to the same flow phase.
+- Save changes is disabled when the title is blank, every ingredient name is blank, or no step has text; re-enabled as you fix it.
+- Details: title, 3-line summary, Servings and Total time side by side (digits only), Easy/Medium/Hard option group, wrapping Category options. Selected option has the orange outline; TalkBack reads radio + selected.
+- Ingredients: one accordion row open at a time (opening another closes the first). Collapsed: name, "note · aisle", amount + unit. Expanded: Name, Amount, Unit, Note, Shop section, Remove ingredient. Amount accepts `1.5`, `1,5`, `1/2`, `1 1/2`, `½`, `¼`, `¾` (after Save and reopen it shows the decimal, e.g. 0.5). "Beef mince" shows the info line "Only when: Beef", "Plant-based mince" shows "Only when: Plant-based" (de: "Nur wenn: ..."). Add ingredient appends a blank row and opens it.
+- Steps: Preparation and Cooking groups; collapsed shows "Prep 1" / "Step 1", title, timer ("2 min"). Expanded: title, instructions (plain text, no braces), live "Linked: Onions, Garlic" line while you type (or "No ingredients found in this text yet."), Timer in decimal minutes (`1.5` = 1 min 30 s, `0.1` saves as 30 s), phase toggle (the step moves to the other group and renumbers), Move up / Move down (disabled on the first / last step of the group), Remove step. "Add preparation step" / "Add cooking step" under each group append and open a blank step. Conditional steps show "Only when: ...".
+- Relinking: edit "Chop the vegetables" to "Slice the onions and the garlic." and Save; in Phase 3 those words are underlined and tapping shows amount and tips. Edit only its title: the old underlined words stay underlined.
+- Remove the "Dark beer" ingredient and Save: the Dark beer add-in row is gone from Phase 1.
+- Built-in recipe: after Save the Recipes card shows the "Edited" badge; reopen Edit: "Restore original" shows. Restore original: title, ingredients and steps are back, badge gone, link gone.
+- After Save or Restore you land on the flow phase you came from (try Phase 1, 2 and 3), showing the new content; servings and picks are kept.
+- User recipe (throwaway branch): Save replaces it in place (no new card, no "Edited" badge). Delete recipe: back on the Recipes tab, the card and its Planned card are gone, and its items are gone from the Shopping list (manual items stay).
+- Add recipe draft (throwaway branch): Edit, change the title, Save: the placeholder review shows the new title; nothing is stored in Room (no new card on Recipes).
+- Rotate and `adb shell am kill com.simmer.app` with edits and an open row: edits and open rows are restored.
+- German: all labels translate; categories Suppen, Salate, Backen etc. Light and dark theme. Large font: nothing clipped, accordion rows grow. Touch targets >= 44dp, rows >= 56dp. The keyboard does not cover the focused field or the bottom bar.
+- Compare against Design/ (Edit recipe screen in `Recipe App.dc.html`).
