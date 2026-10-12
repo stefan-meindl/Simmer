@@ -36,7 +36,7 @@ class ThrowawayVm @Inject constructor(
         ),
         steps = listOf(
             com.simmer.app.domain.model.Step("s1", "prep", "Mix", 120, "Whisk the {fl:flour} and {eg:eggs}."),
-            com.simmer.app.domain.model.Step("s2", "cook", "Fry", 300, "Fry in a hot pan."),
+            com.simmer.app.domain.model.Step("s2", "cook", "Fry", 0, "Fry in a hot pan, no timer."),
         ),
     )
 
