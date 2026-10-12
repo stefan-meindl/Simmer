@@ -5,4 +5,33 @@
     <string name="tab_recipes">Recipes</string>
     <string name="tab_shopping_list">Shopping list</string>
     <string name="tab_settings">Settings</string>
+
+    <!-- Recipe flow: shared chrome -->
+    <string name="flow_phase_servings">Servings</string>
+    <string name="flow_phase_preparation">Preparation</string>
+    <string name="flow_phase_cooking">Cooking</string>
+    <string name="flow_step_caption">Step %1$d of 3 · %2$s</string>
+    <string name="flow_edit">Edit</string>
+    <string name="flow_back">Back</string>
+    <string name="flow_recipe_not_found">Recipe not found.</string>
+
+    <!-- Recipe flow: phase 1 -->
+    <string name="flow_servings">Servings</string>
+    <string name="flow_servings_hint">Amounts update as you change this.</string>
+    <string name="flow_fewer_servings">Fewer servings</string>
+    <string name="flow_more_servings">More servings</string>
+    <string name="flow_your_way">Make it your way</string>
+    <string name="flow_your_way_hint">Optional swaps and additions. They change the ingredients and steps.</string>
+    <string name="flow_your_pick">Your pick</string>
+    <string name="flow_ingredients">Ingredients</string>
+    <string name="flow_ingredients_caption">%1$d items · %2$d servings</string>
+    <string name="flow_add_to_list">Add to list</string>
+    <string name="flow_on_your_list">On your list</string>
+    <string name="flow_preparation_next">Preparation</string>
+    <string name="flow_toast_added">Added %1$d items for %2$d servings.</string>
+    <string name="flow_toast_find">Find it under Planned on Recipes.</string>
+    <string name="flow_view_list">View list</string>
+    <string name="flow_time_min">%1$d min</string>
+    <string name="flow_time_h">%1$d h</string>
+    <string name="flow_time_h_min">%1$d h %2$d min</string>
 </resources>
