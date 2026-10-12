@@ -102,3 +102,17 @@ Open `chilli`, Preparation, Start cooking (Phase 3 has no entry button yet; use 
 - Timer button: orange, timer icon, duration ("10 min", "1 h"); tapping does nothing (no countdown yet).
 - Finish all steps (TalkBack announces "Enjoy your meal."): gradient panel with circle-check, "Enjoy your meal." (de: "Guten Appetit."), "title · selection summary", Back to recipes (dark) goes to the Recipes tab.
 - Rotate and `adb shell am kill com.simmer.app` with some steps done: servings, selection and done steps are restored. Changing servings or a swap in Phase 1/2 clears done steps.
+
+### Recipes overview (#9)
+
+The Recipes tab is the start screen. "Added by you" and "Edited" tags need a User Recipe or edited built-in, which no UI creates yet (see the throwaway branch in the PR).
+- Title "What are we cooking?" (de: "Was kochen wir heute?"). Top right: + (opens the Add recipe placeholder) and moon/sun (toggles theme, icon flips).
+- Search: type "feta" shows only Shakshuka (ingredient match); "chilli" matches by title; list filters per keystroke, no submit.
+- Category tabs: All, Mains, Pasta, Breakfast, Sides (de: Alle, Hauptgerichte, Pasta, Frühstück, Beilagen); the row scrolls sideways when it does not fit. Active tab has a 3dp orange underline.
+- Tag chips Vegetarian, Quick, Spicy, One-pot, Make-ahead (de: Vegetarisch, Schnell, Scharf, Eintopf, Vorkochen): multi-select, selected chip is dark with a check. Quick + Vegetarian shows only Tagliatelle; adding category Mains shows the empty state.
+- Count below filters: "5 recipes", "1 recipe" (singular), updates as you filter; TalkBack announces changes. "Clear filters" link appears only while a filter is active and resets search, category and tags.
+- Empty state: dashed box, "No recipes match these filters." and a Clear filters button.
+- Card: gradient icon tile (flame, chef hat, utensils, egg, carrot), title, category badge, "35 min · Easy" (de: "35 Min. · Einfach"), accent "3 variations" only when the recipe has variations, tags joined with " · ". Tapping opens Flow Phase 1 for that recipe.
+- Planned section: absent on a fresh install. Open `chilli`, switch Mince to Plant-based, toggle Dark beer, tap Add to list, go back: a cream "Planned" card reads "4 servings · Plant-based · Dark beer". Continue reopens Phase 1 with those servings and picks, button shows "On your list". Planned cards ignore search and filters.
+- Filters survive rotation and `adb shell am kill com.simmer.app`.
+- Bottom tab bar does not cover the last card.

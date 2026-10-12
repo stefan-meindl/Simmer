@@ -1,6 +1,9 @@
 package com.simmer.app.ui.components
 
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -30,6 +33,7 @@ import com.simmer.app.ui.theme.SimmerTextStyle_BodySmMedium
  * @param tabs List of tab label strings.
  * @param selectedIndex Index of the currently selected tab.
  * @param onTabSelected Callback when the user taps a tab.
+ * @param scrollable Tabs keep their natural width and scroll sideways instead of sharing the row equally.
  */
 @Composable
 fun UnderlineTabs(
@@ -37,6 +41,7 @@ fun UnderlineTabs(
     selectedIndex: Int,
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    scrollable: Boolean = false,
 ) {
     val colors = LocalSimmerColors.current
 
@@ -54,17 +59,20 @@ fun UnderlineTabs(
                 )
             },
     ) {
-        Row(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = if (scrollable) Modifier.horizontalScroll(rememberScrollState()) else Modifier.fillMaxWidth(),
+        ) {
             tabs.forEachIndexed { index, label ->
                 val isSelected = index == selectedIndex
                 val tabInteractionSource = remember { MutableInteractionSource() }
 
                 Box(
                     contentAlignment = Alignment.Center,
-                    modifier = Modifier
-                        .weight(1f)
-                        .clickable(
+                    modifier = (if (scrollable) Modifier else Modifier.weight(1f))
+                        .selectable(
+                            selected = isSelected,
                             onClick = { onTabSelected(index) },
+                            role = Role.Tab,
                             indication = null,
                             interactionSource = tabInteractionSource,
                         )
@@ -86,7 +94,7 @@ fun UnderlineTabs(
                         text = label,
                         style = SimmerTextStyle_BodySmMedium,
                         color = if (isSelected) colors.textPrimary else colors.textTertiary,
-                        modifier = Modifier.padding(vertical = 12.dp),
+                        modifier = Modifier.padding(vertical = 12.dp, horizontal = if (scrollable) 16.dp else 0.dp),
                     )
                 }
             }
