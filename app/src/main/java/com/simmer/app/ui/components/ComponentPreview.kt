@@ -1,5 +1,6 @@
 package com.simmer.app.ui.components
 
+import com.simmer.app.domain.TimerStatus
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
@@ -326,9 +327,11 @@ private fun PreviewStepTimerDark() = PreviewGallery { StepTimerContent() }
 
 @Composable
 private fun StepTimerContent() {
-    Section("Step Timer (Idle)")
-    StepTimer(durationText = "5 min", onClick = {})
-    StepTimer(durationText = "1:30", onClick = {})
+    Section("Step Timer (idle, running, paused, done)")
+    StepTimer(TimerStatus.Idle, "5 min", "5:00", 0f, onToggle = {}, onReset = {})
+    StepTimer(TimerStatus.Running, "5 min", "3:42", 0.26f, onToggle = {}, onReset = {})
+    StepTimer(TimerStatus.Paused, "5 min", "1:05:07", 0.5f, onToggle = {}, onReset = {})
+    StepTimer(TimerStatus.Done, "5 min", "0:00", 1f, onToggle = {}, onReset = {})
 }
 
 // ---------------------------------------------------------------------------

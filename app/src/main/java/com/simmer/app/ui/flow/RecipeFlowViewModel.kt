@@ -10,6 +10,8 @@ import com.simmer.app.data.decodeSelection
 import com.simmer.app.data.encodeSelection
 import com.simmer.app.domain.CookingProgressStore
 import com.simmer.app.domain.CookingView
+import com.simmer.app.domain.StepTimerStore
+import com.simmer.app.domain.TimerState
 import com.simmer.app.domain.cookingView
 import com.simmer.app.domain.model.ResolvedIngredient
 import com.simmer.app.domain.model.Selection
@@ -26,6 +28,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -81,6 +84,7 @@ class RecipeFlowViewModel @Inject constructor(
     private val recipes: RecipeRepository,
     private val shopping: ShoppingRepository,
     private val progress: CookingProgressStore,
+    private val stepTimers: StepTimerStore,
     private val prefs: PrefsRepository,
 ) : ViewModel() {
 
@@ -195,6 +199,21 @@ class RecipeFlowViewModel @Inject constructor(
     fun selectMethod(methodId: String, value: String) = edit { it.withSwap(methodId, value) }
 
     fun setAddIn(variationId: String, on: Boolean) = edit { it.withAddIn(variationId, on) }
+
+    /** This recipe's StepTimers by step id. Running timers continue after the flow is left. */
+    val timers: StateFlow<Map<String, TimerState>> = stepTimers.timers
+        .map { all ->
+            all.filterKeys { it.startsWith("$recipeId/") }.mapKeys { it.key.removePrefix("$recipeId/") }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
+
+    fun toggleTimer(stepId: String, title: String, durationSecs: Int) =
+        stepTimers.toggle("$recipeId/$stepId", title, durationSecs)
+
+    /** Called by visible running timers, so they finish even without the foreground service. */
+    fun tickTimers() = stepTimers.tick()
+
+    fun resetTimer(stepId: String) = stepTimers.reset("$recipeId/$stepId")
 
     fun markStepDone(stepId: String) = progress.markDone(recipeId, stepId)
 

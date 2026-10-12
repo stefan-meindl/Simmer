@@ -2,6 +2,7 @@ package com.simmer.app
 
 import android.app.Application
 import com.simmer.app.data.RecipeRepository
+import com.simmer.app.timer.TimerNotifications
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.HiltAndroidApp
@@ -21,6 +22,7 @@ class SimmerApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        TimerNotifications.createChannels(this)
         val repo = EntryPointAccessors.fromApplication(this, AppEntryPoint::class.java).recipeRepository()
         MainScope().launch {
             repo.seedBuiltInsIfEmpty(assets)

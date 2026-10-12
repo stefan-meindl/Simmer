@@ -60,6 +60,10 @@ _Avoid_: Section, category, shop section
 A single instruction in a recipe, belonging to exactly one phase. Has a title, body text, optional timer duration, and optional dependencies on other steps.
 _Avoid_: Instruction, task
 
+**StepTimer**:
+The countdown button on a Step that has a timer duration. Cycles idle, running, paused, done. Keyed by recipe and step, so several run at once; a running StepTimer lives in the TimerService foreground service and is restored after process death from its end time.
+_Avoid_: Countdown, alarm
+
 **Phase**:
 One of two ordered stages of cooking a Step belongs to: `prep` (preparation, no heat) always comes before `cook` (cooking, heat applied). Steps are sorted by phase at display time regardless of authoring order. Not to be confused with a **Flow Phase**.
 _Avoid_: Stage, section

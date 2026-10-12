@@ -99,7 +99,7 @@ Open `chilli`, Preparation, Start cooking (Phase 3 has no entry button yet; use 
 - "Soften the onions" shows a cream note with orange outline, alert icon, "Needs Prep 1 first", "Chop the vegetables" and "Go to step", which smooth-scrolls to Prep 1. After marking Prep 1 done the note becomes the quiet "Prep 1 done · Chop the vegetables" line.
 - Underlined ingredient words (2dp, offset; each is a 44dp button for TalkBack and touch, even short words like "rice"): tap shows a popover with name, scaled amount in current units (check imperial in Settings), note and tips; tap outside closes it. Change servings in Phase 1 and the amounts follow.
 - Mark as done collapses to a row with orange check, struck-through title and Undo; Undo restores the card.
-- Timer button: orange, timer icon, duration ("10 min", "1 h"); tapping does nothing (no countdown yet).
+- Timer button: orange, timer icon, duration ("10 min", "1 h"). Behaviour is under StepTimer (#8) below.
 - Finish all steps (TalkBack announces "Enjoy your meal."): gradient panel with circle-check, "Enjoy your meal." (de: "Guten Appetit."), "title · selection summary", Back to recipes (dark) goes to the Recipes tab.
 - Rotate and `adb shell am kill com.simmer.app` with some steps done: servings, selection and done steps are restored. Changing servings or a swap in Phase 1/2 clears done steps.
 
@@ -147,3 +147,18 @@ Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to li
 - German: switch in Settings, all strings above translate (built-in recipe ingredient names and aisles stay English).
 - TalkBack: rows read as checkboxes with state, basket row says "Show items in your basket", badge reads "n items to buy".
 - `connectedDebugAndroidTest` includes `ShoppingPersistenceTest` (Room reopen, re-add replaces).
+
+### StepTimer (#8)
+
+Open `chilli`, Preparation, Start cooking (no throwaway branch needed). Prep 2 "Mix the spices" is 2 min, Prep 3 "Drain the beans" is 1 min. On Android 13+ the first tap asks for notification permission: allow it (and test deny once after `pm clear`: timers still run, finishing only vibrates).
+- Idle: orange fill, timer icon, "2 min". Tap: orange fill, pause icon, "1:59" counting down, thin dark progress bar inside the bottom of the button growing left to right.
+- Tap while running: outline button (orange border and text), play icon, frozen time, bar in orange. A 44dp reset (counter-clockwise arrow) button appears to the left; the timer button does not move or change width. Tap play: resumes from the frozen time. Reset: back to "2 min", reset button gone.
+- Let it finish: inverse fill (dark in light theme, light in dark), check icon, "Done"; reset button to the left. Phone buzzes twice (short, pause, short; 200-100-200 ms) and plays the default notification sound; a "Timer done" notification appears. Tap Done: back to idle.
+- Start two timers: the notification shade shows one ongoing notification per running timer ("Mix the spices", "Drain the beans") with a countdown clock. Pause one: its notification goes. All paused or done: no ongoing notification left, no foreground service (`adb shell dumpsys activity services com.simmer.app`).
+- Leave the app (Home) while both run: notifications keep counting. Reopen: button times match.
+- Process death: with a timer running, `adb shell run-as com.simmer.app kill -9 $(adb shell pidof com.simmer.app)` (a plain `am kill` does not touch a foreground service). The service restarts by itself within seconds, notifications return, reopen the step: time is correct. A paused timer restores paused with its remaining time. A timer that ended while the process was dead shows Done and posts the "Timer done" notification.
+- Leave the flow (Back to Recipes) and open the recipe again: the running timer is still running. Timers are per recipe and step: `curry` timers are independent.
+- Rotate while running: nothing resets.
+- Channels: Settings > Apps > Simmer > Notifications lists "Running timers" (silent) and "Finished timers" (sound and vibration).
+- Light and dark, German (button "Fertig", reset "Timer zurücksetzen"), large font (the title column shrinks, the timer button stays 44dp tall), TalkBack: button reads "Start 2 min timer", "Pause timer, 1:12 left", "Resume timer, 1:12 left", "Timer finished, tap to reset"; "Done" is announced.
+- `connectedDebugAndroidTest` includes `StepTimerAndroidTest` (button states, reset position, channels, SharedPreferences round trip).
