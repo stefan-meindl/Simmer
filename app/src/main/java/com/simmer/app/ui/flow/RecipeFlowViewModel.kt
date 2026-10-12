@@ -11,8 +11,6 @@ import com.simmer.app.data.encodeSelection
 import com.simmer.app.domain.CookingProgressStore
 import com.simmer.app.domain.Phase1State
 import com.simmer.app.domain.StepPlan
-import com.simmer.app.domain.availableMethods
-import com.simmer.app.domain.coerceMethodChoices
 import com.simmer.app.domain.model.Method
 import com.simmer.app.domain.model.Recipe
 import com.simmer.app.domain.stepPlan
@@ -53,7 +51,6 @@ sealed interface Phase2Ui {
         val recipe: Recipe,
         val servings: Int,
         val units: String,
-        /** Methods limited to the user's kitchen. */
         val methods: List<Method>,
         val picks: Map<String, String>,
         val plan: StepPlan,
@@ -91,18 +88,16 @@ class RecipeFlowViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Phase1Ui.Loading)
 
-    /** Phase 2 view: Methods filtered by the user's appliances, with the step plan for the current choices. */
+    /** Phase 2 view: every Method with all its options, with the step plan for the current choices. */
     val phase2: StateFlow<Phase2Ui> = combine(
-        phase1, prefs.units, prefs.appliances, prefs.kitchenMode,
-    ) { state, units, appliances, mode ->
+        phase1, prefs.units,
+    ) { state, units ->
         if (state == null) Phase2Ui.Loading else {
-            val methods = availableMethods(state.recipe, appliances, mode)
-            // The init collector keeps state.selection coerced to the offered options.
             Phase2Ui.Content(
                 recipe = state.recipe,
                 servings = state.servings,
                 units = units,
-                methods = methods,
+                methods = state.recipe.methods,
                 picks = state.selection.choice,
                 plan = stepPlan(state.recipe, state.servings, state.selection),
             )
@@ -117,14 +112,6 @@ class RecipeFlowViewModel @Inject constructor(
     }
 
     init {
-        // Keep the stored Method picks to options the kitchen still offers (the default pick may be hidden).
-        viewModelScope.launch {
-            combine(phase1.filterNotNull(), prefs.appliances, prefs.kitchenMode) { state, appliances, mode ->
-                coerceMethodChoices(state.selection, availableMethods(state.recipe, appliances, mode))
-            }.collect { coerced ->
-                if (phase1.value?.selection != coerced) edit { it.copy(selection = coerced) }
-            }
-        }
         viewModelScope.launch {
             phase1.filterNotNull().collect {
                 savedState[KEY_SERVINGS] = it.servings

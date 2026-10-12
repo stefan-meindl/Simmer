@@ -19,7 +19,6 @@ data class MethodOption(
 
 /**
  * A method defines alternative ways to cook (e.g. hob vs oven vs slow cooker).
- * Methods are filtered by the user's kitchen appliances.
  */
 data class Method(
     val id: String,

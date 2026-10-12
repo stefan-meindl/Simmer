@@ -80,7 +80,7 @@ Open `chilli`:
 
 Open `chilli`, tap Preparation:
 - Title "How will you cook it?", caption "...for s servings." (en + de, singular at 1).
-- Default kitchen (Hob, Oven, Microwave): chilli offers Pot and Oven only (no Slow cooker); rice offers Pot and Microwave.
+- Every option of every Method is shown, whatever Appliances Settings holds: chilli offers Pot, Oven and Slow cooker; rice offers Pot, Microwave and Rice cooker.
 - Radio cards: icon tile, label, description, time; selected has thick orange outline; TalkBack reads radio + selected.
 - Settings units imperial: oven card reads "Covered at 300°F."
 - Cream panel "x preparation steps, then y cooking steps." changes when picking another method.
