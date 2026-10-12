@@ -45,6 +45,7 @@ sealed interface Phase1Ui {
         val state: Phase1State,
         val units: String,
         val spices: String,
+        val lang: String,
         /** Non-null only while the toast should be visible. */
         val toast: AddedToast?,
     ) : Phase1Ui
@@ -89,14 +90,19 @@ class RecipeFlowViewModel @Inject constructor(
     private val toast = MutableStateFlow<AddedToast?>(null)
     private val notFound = MutableStateFlow(false)
 
+    private val amountPrefs = combine(prefs.units, prefs.spices, prefs.lang) { units, spices, lang ->
+        Triple(units, spices, lang)
+    }
+
     val ui: StateFlow<Phase1Ui> = combine(
-        phase1, toast, notFound, prefs.units, prefs.spices,
-    ) { state, toast, missing, units, spices ->
+        phase1, toast, notFound, amountPrefs,
+    ) { state, toast, missing, (units, spices, lang) ->
         when {
             state != null -> Phase1Ui.Content(
                 state = state,
                 units = units,
                 spices = spices,
+                lang = lang,
                 // The toast only holds while the list still matches the current choice.
                 toast = toast.takeIf { state.isOnList },
             )
@@ -201,7 +207,7 @@ class RecipeFlowViewModel @Inject constructor(
     fun addToList() {
         val content = ui.value as? Phase1Ui.Content ?: return
         val state = content.state
-        val entries = state.shoppingEntries(content.units, content.spices)
+        val entries = state.shoppingEntries(content.units, content.spices, content.lang)
         val choice = PlannedChoice(state.servings, state.selection)
         viewModelScope.launch {
             shopping.addRecipeToList(state.recipe.id, entries, choice)

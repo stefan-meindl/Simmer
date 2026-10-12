@@ -12,9 +12,9 @@ import com.simmer.app.ui.flow.RecipeFlowPhase1Screen
 import com.simmer.app.ui.flow.RecipeFlowPhase2Screen
 import com.simmer.app.ui.flow.RecipeFlowPhase3Screen
 import com.simmer.app.ui.recipes.RecipesScreen
+import com.simmer.app.ui.settings.SettingsScreen
 import com.simmer.app.ui.screens.AddRecipePlaceholder
 import com.simmer.app.ui.screens.EditRecipePlaceholder
-import com.simmer.app.ui.screens.SettingsPlaceholder
 import com.simmer.app.ui.screens.ShoppingListPlaceholder
 import com.simmer.app.ui.screens.YourKitchenPlaceholder
 
@@ -58,7 +58,7 @@ fun SimmerNavHost(
         }
 
         composable<SettingsTab> {
-            SettingsPlaceholder()
+            SettingsScreen(onEditKitchen = { navController.navigate(YourKitchen) })
         }
 
         // ----------------------------------------------------------------

@@ -44,11 +44,6 @@ fun ShoppingListPlaceholder(modifier: Modifier = Modifier) {
     CenteredLabel(text = "Shopping List", modifier = modifier)
 }
 
-@Composable
-fun SettingsPlaceholder(modifier: Modifier = Modifier) {
-    CenteredLabel(text = "Settings", modifier = modifier)
-}
-
 // ---------------------------------------------------------------------------
 // Recipe flow screens (hide tab bar, own top bar + sticky bottom action bar)
 // ---------------------------------------------------------------------------
