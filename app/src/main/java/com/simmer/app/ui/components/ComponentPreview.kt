@@ -324,6 +324,20 @@ private fun StepTimerContent() {
 // Full gallery (all components in one preview)
 // ---------------------------------------------------------------------------
 
+/** Public entry point for use in [MainActivity] during design-system validation. */
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+fun ComponentGalleryScreen() = PreviewGallery {
+    ButtonsContent()
+    TextFieldContent()
+    TabsContent()
+    ChipsContent()
+    CardsContent()
+    CheckRowContent()
+    BadgesContent()
+    StepTimerContent()
+}
+
 @OptIn(ExperimentalLayoutApi::class)
 @Preview(name = "All Components – Light", showBackground = true, widthDp = 400)
 @Composable
