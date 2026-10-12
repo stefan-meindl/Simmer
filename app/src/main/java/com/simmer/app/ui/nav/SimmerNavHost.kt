@@ -45,10 +45,20 @@ fun SimmerNavHost(
         // ----------------------------------------------------------------
 
         composable<RecipesTab> {
-            RecipesPlaceholder(
-                isDarkTheme = isDarkTheme,
-                onThemeToggle = onThemeToggle,
-            )
+            // THROWAWAY: temporary entry points into the recipe flow. Never merge.
+            androidx.compose.foundation.layout.Box {
+                RecipesPlaceholder(
+                    isDarkTheme = isDarkTheme,
+                    onThemeToggle = onThemeToggle,
+                )
+                androidx.compose.foundation.layout.Column(Modifier.align(androidx.compose.ui.Alignment.BottomCenter)) {
+                    listOf("chilli", "curry", "tagliatelle").forEach { id ->
+                        androidx.compose.material3.Button(onClick = { navController.navigate(RecipeFlow(id)) }) {
+                            androidx.compose.material3.Text("TEST flow: $id")
+                        }
+                    }
+                }
+            }
         }
 
         composable<ShoppingListTab> {
