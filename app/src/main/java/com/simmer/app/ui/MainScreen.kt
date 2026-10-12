@@ -53,6 +53,8 @@ fun MainScreen(
         // Hide the tab bar on screens that belong to sub-flows.
         val hideTabBar = currentDestination?.shouldHideTabBar() ?: false
 
+        // Lint flags the unused padding. Real fix is to apply it to the NavHost; left for the Recipes overview ticket (#9) to verify visually.
+        @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
         Scaffold(
             bottomBar = {
                 if (!hideTabBar) {

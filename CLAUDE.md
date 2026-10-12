@@ -11,3 +11,7 @@ Default five-label vocabulary (`needs-triage`, `needs-info`, `ready-for-agent`, 
 ### Domain docs
 
 Single-context layout (`GLOSSARY.md` + `docs/adr/` at repo root). See `docs/agents/domain.md`.
+
+### Running and testing
+
+Run the app, read crash logs, or check a change on a device: `docs/manual-testing.md`.
