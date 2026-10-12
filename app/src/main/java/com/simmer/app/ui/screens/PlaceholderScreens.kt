@@ -119,15 +119,6 @@ fun AddRecipePlaceholder(onBack: () -> Unit, modifier: Modifier = Modifier) {
     )
 }
 
-@Composable
-fun EditRecipePlaceholder(recipeId: String?, onBack: () -> Unit, modifier: Modifier = Modifier) {
-    RecipeFlowScaffold(
-        title = "Edit Recipe${if (recipeId != null) " (id=$recipeId)" else ""}",
-        onBack = onBack,
-        modifier = modifier,
-    )
-}
-
 // ---------------------------------------------------------------------------
 // Your Kitchen screen (hides tab bar, back -> Settings)
 // ---------------------------------------------------------------------------

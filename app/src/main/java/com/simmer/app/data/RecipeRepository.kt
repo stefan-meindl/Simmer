@@ -15,7 +15,7 @@ import javax.inject.Singleton
 class RecipeRepository @Inject constructor(
     private val dao: RecipeDao,
     @ApplicationContext private val context: Context,
-) {
+) : RecipeWriter {
 
     /**
      * Exposes all recipes as a reactive stream.
@@ -130,7 +130,7 @@ class RecipeRepository @Inject constructor(
                 id = sObj["id"]!!.jsonPrimitive.content,
                 phase = sObj["ph"]!!.jsonPrimitive.content,
                 title = sObj["t"]!!.jsonPrimitive.content,
-                durationSecs = sObj["d"]!!.jsonPrimitive.int,
+                durationSecs = sObj["d"]?.jsonPrimitive?.int ?: 0,
                 body = sObj["b"]!!.jsonPrimitive.content,
                 needs = sObj["needs"]?.jsonArray?.map { it.jsonPrimitive.content } ?: emptyList(),
                 ifCondition = sObj["if"]?.jsonPrimitive?.content,
@@ -156,25 +156,30 @@ class RecipeRepository @Inject constructor(
         )
     }
 
+    /** The stored recipe with [id], or null. */
+    override suspend fun get(id: String): Recipe? = withContext(Dispatchers.IO) {
+        dao.getById(id)?.toDomain()
+    }
+
     /**
-     * Saves a User Recipe or persists an edit to a built-in recipe.
-     * If the recipe is a built-in, marks it as edited = true.
+     * Saves a User Recipe or persists an edit to a built-in recipe. The caller marks a built-in
+     * `edited = true` (see [RecipeEditor.save]).
      */
-    suspend fun save(recipe: Recipe) = withContext(Dispatchers.IO) {
+    override suspend fun save(recipe: Recipe) = withContext(Dispatchers.IO) {
         dao.upsert(recipe.toEntity())
     }
 
     /**
      * Deletes a User Recipe by ID. Only User Recipes (mine = true) can be deleted.
      */
-    suspend fun delete(id: String) = withContext(Dispatchers.IO) {
+    override suspend fun delete(id: String) = withContext(Dispatchers.IO) {
         dao.deleteById(id)
     }
 
     /**
      * Restores a built-in recipe to its original state by re-loading from the asset.
      */
-    suspend fun restoreBuiltIn(id: String) = withContext(Dispatchers.IO) {
+    override suspend fun restoreBuiltIn(id: String) = withContext(Dispatchers.IO) {
         val json = context.assets.open("recipes.json").bufferedReader().readText()
         val arr = Json { ignoreUnknownKeys = true }.parseToJsonElement(json).jsonArray
         val recipeObj = arr.map { it.jsonObject }.firstOrNull { it["id"]?.jsonPrimitive?.content == id }

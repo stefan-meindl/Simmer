@@ -89,6 +89,8 @@ Open `chilli`, tap Preparation:
 - Changing servings or any pick (Phase 1 or 2) clears Cooking Progress; steps marked done in Phase 3 start over.
 
 
+- Skipping Phase 2 (needs the throwaway branch's "No-method test" recipe, or any recipe whose Methods have at most one option each): in Phase 1 the bottom button reads "Start cooking" (de: "Kochen starten") and opens Phase 3 directly; Prep steps show as "Prep n"; Back from Phase 3 returns to Phase 1. The chrome has 2 phases on Phases 1 and 3: captions "Step 1 of 2 · Servings" and "Step 2 of 2 · Cooking" (de: "Schritt 1 von 2 · ..."), and the progress bar shows only two equal-width segments, Servings and Cooking, with no greyed Preparation segment; on Phase 3 tapping the Servings segment returns to Phase 1. `chilli` keeps 3 phases ("Step 3 of 3 · Cooking"). `chilli` still shows "Preparation" and Phase 2. Swap and add-in variations on Phase 1 do not change this. Resume case: from the throwaway recipe's Phase 1, an entry to Phase 2 (restored back stack) pops back to Phase 1 instead of showing an empty "How will you cook it?".
+
 ### Recipe flow, Phase 3 (#7)
 
 Open `chilli`, Preparation, Start cooking (Phase 3 has no entry button yet; use the throwaway branch, section 3):
@@ -162,3 +164,26 @@ Open `chilli`, Preparation, Start cooking (no throwaway branch needed). Prep 2 "
 - Channels: Settings > Apps > Simmer > Notifications lists "Running timers" (silent) and "Finished timers" (sound and vibration).
 - Light and dark, German (button "Fertig", reset "Timer zurücksetzen"), large font (the title column shrinks, the timer button stays 44dp tall), TalkBack: button reads "Start 2 min timer", "Pause timer, 1:12 left", "Resume timer, 1:12 left", "Timer finished, tap to reset"; "Done" is announced.
 - `connectedDebugAndroidTest` includes `StepTimerAndroidTest` (button states, reset position, channels, SharedPreferences round trip).
+
+### Edit recipe (#13)
+
+Open `chilli`, tap Edit (top right of any flow phase). The Add recipe review does not exist yet, so editing its draft (route `EditRecipe(null)`) and a User Recipe (Delete recipe) need the throwaway branch (section 3).
+- Top bar: x, recipe title, "Edit recipe" (de: "Rezept bearbeiten"); bottom bar Cancel and Save changes. x and Cancel discard and return to the same flow phase.
+- Save changes is disabled when the title is blank, every ingredient name is blank, or no step has text; re-enabled as you fix it.
+- Details: title, 3-line summary, Servings and Total time side by side (digits only), Easy/Medium/Hard option group, wrapping Category options. Selected option has the orange outline; TalkBack reads radio + selected.
+- Ingredients: one accordion row open at a time (opening another closes the first). Collapsed: name, "note · aisle", amount + unit. Expanded: Name, Amount, Unit, Note, Shop section, Remove ingredient. Amount accepts `1.5`, `1,5`, `1/2`, `1 1/2`, `½`, `¼`, `¾` (after Save and reopen it shows the decimal, e.g. 0.5). "Beef mince" shows the info line "Only when: Beef", "Plant-based mince" shows "Only when: Plant-based" (de: "Nur wenn: ..."). Add ingredient appends a blank row and opens it.
+- Steps: Preparation and Cooking groups; collapsed shows "Prep 1" / "Step 1", title, timer ("2 min"; no timer icon or text when the step has none). Expanded: title, instructions (plain text, no braces), live "Linked: Onions, Garlic" line while you type (or "No ingredients found in this text yet."), Timer in decimal minutes (`1.5` = 1 min 30 s, `0.1` saves as 6 s) with the hint "Optional" (de: "Optional"), then the Phase toggle on its own full-width row (Preparation / Cooking, each half width, labels do not wrap in en or de; the step moves to the other group and renumbers), then Move up / Move down side by side with arrow icons (disabled on the first / last step of the group), Remove step. "Add preparation step" / "Add cooking step" under each group append and open a blank step. Conditional steps show "Only when: ...".
+- Relinking: edit "Chop the vegetables" to "Slice the onions and the garlic." and Save; in Phase 3 those words are underlined and tapping shows amount and tips. Edit only its title: the old underlined words stay underlined.
+- Remove the "Dark beer" ingredient and Save: the Dark beer add-in row is gone from Phase 1.
+- Built-in recipe: after Save the Recipes card shows the "Edited" badge; reopen Edit: "Restore original" shows. Restore original: title, ingredients and steps are back, badge gone, link gone.
+- After Save or Restore you land on the flow phase you came from (try Phase 1, 2 and 3), showing the new content; servings and picks are kept.
+- User recipe (throwaway branch): Save replaces it in place (no new card, no "Edited" badge). Delete recipe: back on the Recipes tab, the card and its Planned card are gone, and its items are gone from the Shopping list (manual items stay).
+- Add recipe draft (throwaway branch): Edit, change the title, Save: the placeholder review shows the new title; nothing is stored in Room (no new card on Recipes).
+- Ingredients caption: "1 ingredient" (de: "1 Zutat") with one row, "N ingredients" otherwise.
+- Optional timer: clear the Timer field (or type `0`) on a step and Save: the step has no timer chip in the editor, and in Phase 3 it shows no timer button. Add preparation step: the new step's Timer field is empty with the hint "Optional". Typing `0.1` is accepted (6 s, no 30 s minimum). Reopen Edit on a step without a timer: the field is empty.
+- Amount or Timer typed as text such as "lots": the field shows the error outline and Save changes is disabled; a number, "1,5" or "1 1/2" enables it again. A nameless ingredient or textless step with a bad value does not block Save (it is dropped).
+- Step phase: open a Preparation step, tap Cooking: it appears as the last Cooking step.
+- Delete the Garlic ingredient and Save without touching "Chop the vegetables": in Phase 3 "garlic" in that step is no longer underlined; the other links are.
+- Rotate and `adb shell am kill com.simmer.app` with edits and an open row: edits and open rows are restored.
+- German: all labels translate; categories Suppen, Salate, Backen etc. Light and dark theme. Large font: nothing clipped, accordion rows grow. Touch targets >= 44dp, rows >= 56dp. The keyboard does not cover the focused field or the bottom bar.
+- Compare against Design/ (Edit recipe screen in `Recipe App.dc.html`).

@@ -22,6 +22,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,6 +36,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simmer.app.R
+import com.simmer.app.domain.hasSelectableMethod
 import com.simmer.app.domain.StepPlan
 import com.simmer.app.domain.methodDescription
 import com.simmer.app.domain.model.Method
@@ -61,11 +63,16 @@ fun RecipeFlowPhase2Screen(
     onBack: () -> Unit,
     onEdit: () -> Unit,
     onStartCooking: () -> Unit,
+    onNothingToPick: () -> Unit,
     onPhaseClick: (phase: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalSimmerColors.current
     val ui by viewModel.phase2.collectAsStateWithLifecycle()
+
+    // A restored screen, or an edit made from here, can leave no Method with a choice; this screen would be empty.
+    val nothingToPick = (ui as? Phase2Ui.Content)?.let { !hasSelectableMethod(it.recipe) } == true
+    LaunchedEffect(nothingToPick) { if (nothingToPick) onNothingToPick() }
 
     Box(
         modifier = modifier
@@ -76,8 +83,8 @@ fun RecipeFlowPhase2Screen(
         when (val u = ui) {
             Phase2Ui.Loading -> Unit
             is Phase2Ui.Content -> Column(modifier = Modifier.fillMaxSize()) {
-                FlowTopBar(title = u.recipe.title, phase = 2, onBack = onBack, onEdit = onEdit)
-                FlowProgress(current = 2, onSegmentClick = onPhaseClick)
+                FlowTopBar(title = u.recipe.title, phase = 2, skipsMethods = false, onBack = onBack, onEdit = onEdit)
+                FlowProgress(current = 2, skipsMethods = false, onSegmentClick = onPhaseClick)
 
                 Column(
                     verticalArrangement = Arrangement.spacedBy(28.dp),

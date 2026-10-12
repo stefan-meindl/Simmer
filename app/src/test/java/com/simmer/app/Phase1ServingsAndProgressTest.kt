@@ -1,6 +1,9 @@
 package com.simmer.app
 
 import com.simmer.app.domain.SegmentState
+import com.simmer.app.domain.flowPhaseCount
+import com.simmer.app.domain.flowPhaseNumber
+import com.simmer.app.domain.flowPhases
 import com.simmer.app.domain.progressSegments
 import com.simmer.app.domain.stepServings
 import org.junit.Assert.assertEquals
@@ -35,5 +38,26 @@ class Phase1ServingsAndProgressTest {
         assertEquals(listOf(true, true, false), s.map { it.tappable })
         assertEquals(listOf(1, 2, 3), s.map { it.phase })
         assertFalse(s[2].tappable)
+    }
+
+    @Test fun `skipped methods leave servings and cooking only`() {
+        assertEquals(listOf(1, 3), flowPhases(skipsMethods = true))
+        assertEquals(listOf(1, 2, 3), flowPhases(skipsMethods = false))
+        assertEquals(2, flowPhaseCount(skipsMethods = true))
+        assertEquals(3, flowPhaseCount(skipsMethods = false))
+    }
+
+    @Test fun `cooking is step 2 when methods are skipped and step 3 otherwise`() {
+        assertEquals(1, flowPhaseNumber(1, skipsMethods = true))
+        assertEquals(2, flowPhaseNumber(3, skipsMethods = true))
+        assertEquals(3, flowPhaseNumber(3, skipsMethods = false))
+        assertEquals(2, flowPhaseNumber(2, skipsMethods = false))
+    }
+
+    @Test fun `skipped methods give two segments with cooking current and servings tappable`() {
+        val s = progressSegments(current = 3, skipsMethods = true)
+        assertEquals(listOf(1, 3), s.map { it.phase })
+        assertEquals(listOf(SegmentState.Done, SegmentState.Current), s.map { it.state })
+        assertEquals(listOf(true, false), s.map { it.tappable })
     }
 }

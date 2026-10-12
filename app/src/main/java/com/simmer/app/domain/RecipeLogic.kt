@@ -508,8 +508,8 @@ fun normalize(j: Map<String, Any?>): Recipe {
         ?.filterIsInstance<Map<*, *>>()
         ?.filter { s -> s["b"] != null }
         ?.mapIndexed { k, s ->
-            val rawD = (s["d"] as? Number)?.toDouble()?.toInt() ?: 60
-            val d = minOf(86400, maxOf(30, rawD))
+            val rawD = (s["d"] as? Number)?.toDouble()?.toInt() ?: 0
+            val d = if (rawD > 0) minOf(86400, maxOf(30, rawD)) else 0
             val rawIf = s["if"]?.toString()?.takeIf { it.isNotBlank() }
             val cleanIf = if (condOk(rawIf)) rawIf else null
             val rawBody = s["b"].toString()

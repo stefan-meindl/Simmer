@@ -55,16 +55,27 @@ fun stepServings(current: Int, delta: Int): Int =
 
 enum class SegmentState { Done, Current, Todo }
 
-/** One segment of the 3-phase recipe-flow progress indicator. */
+/** One segment of the recipe-flow progress indicator. */
 data class ProgressSegment(val phase: Int, val state: SegmentState) {
     /** Only completed segments can be tapped (to go back). */
     val tappable: Boolean get() = state == SegmentState.Done
 }
 
-const val FLOW_PHASE_COUNT = 3
+/**
+ * Phase ids (1 Servings, 2 Preparation, 3 Cooking) shown in the flow chrome. Phase 2 is left out
+ * when [skipsMethods] (no Method has a choice, see hasSelectableMethod).
+ */
+fun flowPhases(skipsMethods: Boolean = false): List<Int> =
+    if (skipsMethods) listOf(1, 3) else listOf(1, 2, 3)
 
-fun progressSegments(current: Int): List<ProgressSegment> =
-    (1..FLOW_PHASE_COUNT).map { p ->
+fun flowPhaseCount(skipsMethods: Boolean = false): Int = flowPhases(skipsMethods).size
+
+/** 1-based position of [phase] among the shown phases ("Step n of m"). */
+fun flowPhaseNumber(phase: Int, skipsMethods: Boolean = false): Int =
+    flowPhases(skipsMethods).indexOf(phase) + 1
+
+fun progressSegments(current: Int, skipsMethods: Boolean = false): List<ProgressSegment> =
+    flowPhases(skipsMethods).map { p ->
         ProgressSegment(
             phase = p,
             state = when {
