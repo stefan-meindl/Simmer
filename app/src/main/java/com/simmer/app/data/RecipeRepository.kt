@@ -42,6 +42,11 @@ class RecipeRepository @Inject constructor(
         if (!hasBuiltIns) {
             loadBuiltIns(assets)
         }
+        // THROWAWAY (issue 9 manual test): fake a User Recipe and an edited built-in. Never merge.
+        dao.getById("chilli")?.toDomain()?.let { base ->
+            dao.upsert(base.copy(id = "fake-mine", title = "Grandma's stew", category = "Soups", mine = true, icon = "carrot").toEntity())
+        }
+        dao.getById("carrots")?.toDomain()?.let { dao.upsert(it.copy(edited = true).toEntity()) }
     }
 
     private suspend fun loadBuiltIns(assets: android.content.res.AssetManager) = withContext(Dispatchers.IO) {
