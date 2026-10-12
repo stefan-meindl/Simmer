@@ -5,8 +5,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.sp
+import com.simmer.app.R
 
 // ---------------------------------------------------------------------------
 // Font families (Downloadable Fonts via Google Fonts provider)
