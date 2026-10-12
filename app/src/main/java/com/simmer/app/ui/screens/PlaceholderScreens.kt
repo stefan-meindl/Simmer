@@ -49,6 +49,7 @@ private fun CenteredLabel(text: String, modifier: Modifier = Modifier) {
 fun RecipesPlaceholder(
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
+    onOpenRecipe: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     val colors = LocalSimmerColors.current
@@ -73,7 +74,15 @@ fun RecipesPlaceholder(
             )
         },
     ) { innerPadding ->
-        CenteredLabel(text = "Recipes", modifier = Modifier.padding(innerPadding))
+        // THROWAWAY: temporary entry points to the recipe flow. Do not merge.
+        androidx.compose.foundation.layout.Column(
+            modifier = Modifier.padding(innerPadding).padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            listOf("chilli", "curry", "tagliatelle", "shakshuka", "carrots").forEach { id ->
+                Button(onClick = { onOpenRecipe(id) }, modifier = Modifier.fillMaxWidth()) { Text("Open $id") }
+            }
+        }
     }
 }
 

@@ -48,6 +48,7 @@ fun SimmerNavHost(
             RecipesPlaceholder(
                 isDarkTheme = isDarkTheme,
                 onThemeToggle = onThemeToggle,
+                onOpenRecipe = { navController.navigate(RecipeFlow(it)) },
             )
         }
 
