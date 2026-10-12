@@ -9,6 +9,10 @@ import com.simmer.app.data.ShoppingRepository
 import com.simmer.app.data.decodeSelection
 import com.simmer.app.data.encodeSelection
 import com.simmer.app.domain.CookingProgressStore
+import com.simmer.app.domain.CookingView
+import com.simmer.app.domain.cookingView
+import com.simmer.app.domain.model.ResolvedIngredient
+import com.simmer.app.domain.model.Selection
 import com.simmer.app.domain.Phase1State
 import com.simmer.app.domain.StepPlan
 import com.simmer.app.domain.model.Method
@@ -29,6 +33,7 @@ import javax.inject.Inject
 
 private const val KEY_SERVINGS = "servings"
 private const val KEY_SELECTION = "selection"
+private const val KEY_DONE = "done"
 
 /** Confirmation shown after "Add to list". */
 data class AddedToast(val items: Int, val servings: Int)
@@ -55,6 +60,18 @@ sealed interface Phase2Ui {
         val picks: Map<String, String>,
         val plan: StepPlan,
     ) : Phase2Ui
+}
+
+sealed interface Phase3Ui {
+    data object Loading : Phase3Ui
+    data class Content(
+        val recipe: Recipe,
+        val servings: Int,
+        val selection: Selection,
+        val view: CookingView,
+        /** Resolved ingredients by id, for the reference popovers. */
+        val ingredients: Map<String, ResolvedIngredient>,
+    ) : Phase3Ui
 }
 
 @HiltViewModel
@@ -104,6 +121,22 @@ class RecipeFlowViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Phase2Ui.Loading)
 
+    /** Phase 3 view: every Step with its done state, Needs and ingredient references. */
+    val phase3: StateFlow<Phase3Ui> = combine(
+        phase1, prefs.units, prefs.spices, prefs.lang, progress.observe(recipeId),
+    ) { state, units, spices, lang, done ->
+        if (state == null) Phase3Ui.Loading else {
+            val resolved = state.resolved(units, spices, lang)
+            Phase3Ui.Content(
+                recipe = state.recipe,
+                servings = state.servings,
+                selection = state.selection,
+                view = cookingView(resolved.steps, done),
+                ingredients = resolved.ingredients.associateBy { it.id },
+            )
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), Phase3Ui.Loading)
+
     /** Servings and selection saved before process death, if any. */
     private fun savedDraft(): PlannedChoice? {
         val servings = savedState.get<Int>(KEY_SERVINGS) ?: return null
@@ -112,6 +145,11 @@ class RecipeFlowViewModel @Inject constructor(
     }
 
     init {
+        // Done steps saved with this flow's servings and Selection; they win over stale memory.
+        savedState.get<ArrayList<String>>(KEY_DONE)?.let { progress.restore(recipeId, it) }
+        viewModelScope.launch {
+            progress.observe(recipeId).collect { savedState[KEY_DONE] = ArrayList(it) }
+        }
         viewModelScope.launch {
             phase1.filterNotNull().collect {
                 savedState[KEY_SERVINGS] = it.servings
@@ -151,6 +189,10 @@ class RecipeFlowViewModel @Inject constructor(
     fun selectMethod(methodId: String, value: String) = edit { it.withSwap(methodId, value) }
 
     fun setAddIn(variationId: String, on: Boolean) = edit { it.withAddIn(variationId, on) }
+
+    fun markStepDone(stepId: String) = progress.markDone(recipeId, stepId)
+
+    fun undoStep(stepId: String) = progress.undo(recipeId, stepId)
 
     fun dismissToast() {
         toast.value = null

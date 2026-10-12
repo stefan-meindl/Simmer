@@ -45,8 +45,8 @@ data class Phase1State(
     fun withAddIn(variationId: String, on: Boolean) =
         copy(selection = selection.copy(add = selection.add + (variationId to on)))
 
-    fun resolved(units: String = "metric", spices: String = "spoons") =
-        resolve(recipe, servings, selection, units, spices)
+    fun resolved(units: String = "metric", spices: String = "spoons", lang: String = "en") =
+        resolve(recipe, servings, selection, units, spices, lang)
 
     /** Aisle-having ingredients for the current choice, grouped by aisle (first-seen order). */
     fun shoppingEntries(units: String = "metric", spices: String = "spoons"): List<ShoppingEntry> =

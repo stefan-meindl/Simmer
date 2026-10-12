@@ -63,4 +63,18 @@
     <string name="flow_plan">%1$s, then %2$s.</string>
     <string name="flow_prep_first">Preparation comes first, so everything is ready when the pan is hot.</string>
     <string name="flow_start_cooking">Start cooking</string>
+
+    <!-- Flow phase 3 -->
+    <string name="flow_cook_progress">%1$d of %2$d steps done</string>
+    <string name="flow_tap_hint">Tap an underlined ingredient for its amount and tips.</string>
+    <string name="flow_prep_caption">Get everything ready before you turn on the heat.</string>
+    <string name="flow_cook_caption">Steps marked with a warning need a preparation step first.</string>
+    <string name="flow_needs_first">Needs %1$s first</string>
+    <string name="flow_need_done">%1$s done · %2$s</string>
+    <string name="flow_go_to_step">Go to step</string>
+    <string name="flow_mark_done">Mark as done</string>
+    <string name="flow_undo">Undo</string>
+    <string name="flow_enjoy">Enjoy your meal.</string>
+    <string name="flow_back_to_recipes">Back to recipes</string>
+    <string name="flow_timer_description">Timer, %1$s</string>
 </resources>

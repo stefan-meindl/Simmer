@@ -61,4 +61,18 @@
     <string name="flow_plan">%1$s, dann %2$s.</string>
     <string name="flow_prep_first">Die Vorbereitung kommt zuerst, damit alles bereit ist, wenn die Pfanne heiß ist.</string>
     <string name="flow_start_cooking">Kochen starten</string>
+
+    <!-- Flow phase 3 -->
+    <string name="flow_cook_progress">%1$d von %2$d Schritten erledigt</string>
+    <string name="flow_tap_hint">Tippe auf eine unterstrichene Zutat für Menge und Tipps.</string>
+    <string name="flow_prep_caption">Bereite alles vor, bevor du den Herd anschaltest.</string>
+    <string name="flow_cook_caption">Schritte mit Warnhinweis brauchen zuerst einen Vorbereitungsschritt.</string>
+    <string name="flow_needs_first">Erst %1$s erledigen</string>
+    <string name="flow_need_done">%1$s erledigt · %2$s</string>
+    <string name="flow_go_to_step">Zum Schritt</string>
+    <string name="flow_mark_done">Erledigt</string>
+    <string name="flow_undo">Rückgängig</string>
+    <string name="flow_enjoy">Guten Appetit.</string>
+    <string name="flow_back_to_recipes">Zurück zu den Rezepten</string>
+    <string name="flow_timer_description">Timer, %1$s</string>
 </resources>

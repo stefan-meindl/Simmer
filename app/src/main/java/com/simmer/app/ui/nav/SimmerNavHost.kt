@@ -10,9 +10,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.toRoute
 import com.simmer.app.ui.flow.RecipeFlowPhase1Screen
 import com.simmer.app.ui.flow.RecipeFlowPhase2Screen
+import com.simmer.app.ui.flow.RecipeFlowPhase3Screen
 import com.simmer.app.ui.screens.AddRecipePlaceholder
 import com.simmer.app.ui.screens.EditRecipePlaceholder
-import com.simmer.app.ui.screens.RecipeFlowPhase3Placeholder
 import com.simmer.app.ui.screens.RecipesPlaceholder
 import com.simmer.app.ui.screens.SettingsPlaceholder
 import com.simmer.app.ui.screens.ShoppingListPlaceholder
@@ -94,9 +94,23 @@ fun SimmerNavHost(
 
         composable<RecipeFlowPhase3> { backStackEntry ->
             val route: RecipeFlowPhase3 = backStackEntry.toRoute()
-            RecipeFlowPhase3Placeholder(
-                recipeId = route.recipeId,
+            val flowEntry = remember(backStackEntry) { navController.getBackStackEntry<RecipeFlow>() }
+            RecipeFlowPhase3Screen(
+                viewModel = hiltViewModel(flowEntry),
                 onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
+                onBackToRecipes = {
+                    navController.navigate(RecipesTab) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                },
+                onPhaseClick = { phase ->
+                    when (phase) {
+                        1 -> navController.popBackStack<RecipeFlow>(inclusive = false)
+                        2 -> navController.popBackStack()
+                    }
+                },
             )
         }
 
