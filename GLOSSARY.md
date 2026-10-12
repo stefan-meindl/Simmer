@@ -166,6 +166,14 @@ _Avoid_: Validate, clean, sanitise
 The interface abstracts over the two on-device AI engines (GemmaReader and GeminiNanoReader). The app picks one at runtime based on device capability.
 _Avoid_: AI engine, model, backend
 
+**Reader model**:
+The Gemma 4 E2B file (`gemma-4-E2B-it-web.litertlm`, `ReaderModel`) that GemmaReader runs on. It is downloaded once by a unique WorkManager task (Wi-Fi only by default, resumable, SHA-256 checked, needs 3.5 GB free) into `filesDir/models/`. The file only exists under its final name once verified; until then the bytes sit in a `.part` file.
+_Avoid_: AI model file, weights
+
+**ReaderStatus**:
+The state of the Reader model that Settings shows, derived by `readerStatus`: Not downloaded, Downloading (percent, possibly waiting for a connection), Ready, Not enough storage, Not supported, or Failed (checksum mismatch). Never stored; recomputed from the file, the download task and free storage.
+_Avoid_: Model state, download state
+
 ### Shopping
 
 **Shopping List**:
