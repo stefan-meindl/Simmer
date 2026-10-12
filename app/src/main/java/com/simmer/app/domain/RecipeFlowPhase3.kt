@@ -48,8 +48,12 @@ fun cookingView(steps: List<ResolvedStep>, done: Set<String>): CookingView {
  * "4 servings · Plant-based · Dark chocolate": [servingsText] followed by every swap that
  * differs from its default and every add-in that is on.
  */
-fun selectionSummary(recipe: Recipe, selection: Selection, servingsText: String): String {
-    val bits = mutableListOf(servingsText)
+fun selectionSummary(recipe: Recipe, selection: Selection, servingsText: String): String =
+    (listOf(servingsText) + selectionLabels(recipe, selection)).joinToString(" · ")
+
+/** Label of every swap option that differs from its default and every add-in that is on. */
+fun selectionLabels(recipe: Recipe, selection: Selection): List<String> {
+    val bits = mutableListOf<String>()
     recipe.variations.forEach { v ->
         if (v.kind == "swap") {
             val picked = selection.choice[v.id]
@@ -58,7 +62,7 @@ fun selectionSummary(recipe: Recipe, selection: Selection, servingsText: String)
             bits += v.label
         }
     }
-    return bits.joinToString(" · ")
+    return bits
 }
 
 /** Timer label such as "45 s", "5 min", "1 h 30 min". Units read the same in English and German. */

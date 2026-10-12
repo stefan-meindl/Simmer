@@ -77,4 +77,41 @@
     <string name="flow_enjoy">Enjoy your meal.</string>
     <string name="flow_back_to_recipes">Back to recipes</string>
     <string name="flow_timer_description">Timer, %1$s</string>
+
+    <!-- Recipes overview -->
+    <string name="recipes_title">What are we cooking?</string>
+    <string name="recipes_add">Add recipe</string>
+    <string name="recipes_theme_to_dark">Switch to dark theme</string>
+    <string name="recipes_theme_to_light">Switch to light theme</string>
+    <string name="recipes_search_label">Search</string>
+    <string name="recipes_search_placeholder">Recipes or ingredients</string>
+    <string name="recipes_all">All</string>
+    <string name="recipes_planned">Planned</string>
+    <string name="recipes_continue">Continue</string>
+    <string name="recipes_continue_description">Continue %1$s</string>
+    <plurals name="recipes_count">
+        <item quantity="one">%1$d recipe</item>
+        <item quantity="other">%1$d recipes</item>
+    </plurals>
+    <plurals name="recipes_variations">
+        <item quantity="one">%1$d variation</item>
+        <item quantity="other">%1$d variations</item>
+    </plurals>
+    <string name="recipes_clear_filters">Clear filters</string>
+    <string name="recipes_empty">No recipes match these filters.</string>
+    <string name="recipes_mine">Added by you</string>
+    <string name="recipes_edited">Edited</string>
+    <string name="recipes_meta">%1$s · %2$s</string>
+    <string name="category_mains">Mains</string>
+    <string name="category_pasta">Pasta</string>
+    <string name="category_breakfast">Breakfast</string>
+    <string name="category_sides">Sides</string>
+    <string name="tag_vegetarian">Vegetarian</string>
+    <string name="tag_quick">Quick</string>
+    <string name="tag_spicy">Spicy</string>
+    <string name="tag_one_pot">One-pot</string>
+    <string name="tag_make_ahead">Make-ahead</string>
+    <string name="difficulty_easy">Easy</string>
+    <string name="difficulty_medium">Medium</string>
+    <string name="difficulty_hard">Hard</string>
 </resources>

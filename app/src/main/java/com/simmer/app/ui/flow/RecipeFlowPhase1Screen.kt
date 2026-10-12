@@ -235,7 +235,7 @@ private fun MetaItem(icon: Int, text: String) {
 }
 
 @Composable
-private fun formatMinutes(min: Int): String = when {
+internal fun formatMinutes(min: Int): String = when {
     min < 60 -> pluralStringResource(R.plurals.flow_time_min, min, min)
     min % 60 == 0 -> pluralStringResource(R.plurals.flow_time_h, min / 60, min / 60)
     else -> stringResource(

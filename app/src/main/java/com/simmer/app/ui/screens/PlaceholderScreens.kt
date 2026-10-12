@@ -39,44 +39,6 @@ private fun CenteredLabel(text: String, modifier: Modifier = Modifier) {
 // Bottom tab screens
 // ---------------------------------------------------------------------------
 
-/**
- * Placeholder for the Recipes overview tab.
- *
- * Shows a top bar with the theme toggle (moon/sun icon).
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun RecipesPlaceholder(
-    isDarkTheme: Boolean,
-    onThemeToggle: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val colors = LocalSimmerColors.current
-    Scaffold(
-        modifier = modifier,
-        topBar = {
-            TopAppBar(
-                title = { Text("Recipes") },
-                actions = {
-                    IconButton(onClick = onThemeToggle) {
-                        Icon(
-                            painter = painterResource(if (isDarkTheme) R.drawable.ic_sun else R.drawable.ic_moon),
-                            contentDescription = if (isDarkTheme) "Switch to light theme" else "Switch to dark theme",
-                            tint = colors.textPrimary,
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = colors.surfacePage,
-                    titleContentColor = colors.textPrimary,
-                ),
-            )
-        },
-    ) { innerPadding ->
-        CenteredLabel(text = "Recipes", modifier = Modifier.padding(innerPadding))
-    }
-}
-
 @Composable
 fun ShoppingListPlaceholder(modifier: Modifier = Modifier) {
     CenteredLabel(text = "Shopping List", modifier = modifier)

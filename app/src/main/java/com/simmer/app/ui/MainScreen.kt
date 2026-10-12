@@ -1,6 +1,7 @@
 package com.simmer.app.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,8 +54,6 @@ fun MainScreen(
         // Hide the tab bar on screens that belong to sub-flows.
         val hideTabBar = currentDestination?.shouldHideTabBar() ?: false
 
-        // Lint flags the unused padding. Real fix is to apply it to the NavHost; left for the Recipes overview ticket (#9) to verify visually.
-        @Suppress("UnusedMaterial3ScaffoldPaddingParameter")
         Scaffold(
             bottomBar = {
                 if (!hideTabBar) {
@@ -64,12 +63,12 @@ fun MainScreen(
                     )
                 }
             },
-        ) { _ ->
+        ) { innerPadding ->
             SimmerNavHost(
                 navController = navController,
                 isDarkTheme = effectiveDark,
                 onThemeToggle = { viewModel.setTheme(!effectiveDark) },
-                modifier = Modifier,
+                modifier = Modifier.padding(innerPadding),
             )
         }
     }

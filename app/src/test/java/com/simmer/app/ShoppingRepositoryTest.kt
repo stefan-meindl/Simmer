@@ -7,6 +7,9 @@ import com.simmer.app.data.ShoppingRepository
 import com.simmer.app.domain.PlannedChoice
 import com.simmer.app.domain.ShoppingEntry
 import com.simmer.app.domain.model.Selection
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -36,6 +39,8 @@ private class FakeShoppingDao : ShoppingDao() {
     }
 
     override suspend fun getPlanned(recipeId: String): PlannedRecipeEntity? = planned[recipeId]
+
+    override fun observeAllPlanned(): Flow<List<PlannedRecipeEntity>> = flow { emit(planned.values.toList()) }
 }
 
 class ShoppingRepositoryTest {
@@ -102,5 +107,11 @@ class ShoppingRepositoryTest {
             Selection(mapOf("mince" to "plant"), mapOf("beer" to true)),
             com.simmer.app.data.decodeSelection("""{"choice":{"mince":"plant"},"add":{"beer":true}}"""),
         )
+    }
+
+    @Test fun `planned recipes are observable by recipe id with their saved choice`() = runBlocking {
+        repo.addRecipeToList("chilli", listOf(entry("onions")), choice)
+
+        assertEquals(mapOf("chilli" to choice), repo.planned.first())
     }
 }

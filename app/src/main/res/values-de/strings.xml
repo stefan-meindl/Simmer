@@ -75,4 +75,41 @@
     <string name="flow_enjoy">Guten Appetit.</string>
     <string name="flow_back_to_recipes">Zurück zu den Rezepten</string>
     <string name="flow_timer_description">Timer, %1$s</string>
+
+    <!-- Recipes overview -->
+    <string name="recipes_title">Was kochen wir heute?</string>
+    <string name="recipes_add">Rezept hinzufügen</string>
+    <string name="recipes_theme_to_dark">Zum dunklen Design wechseln</string>
+    <string name="recipes_theme_to_light">Zum hellen Design wechseln</string>
+    <string name="recipes_search_label">Suche</string>
+    <string name="recipes_search_placeholder">Rezepte oder Zutaten</string>
+    <string name="recipes_all">Alle</string>
+    <string name="recipes_planned">Geplant</string>
+    <string name="recipes_continue">Weiter</string>
+    <string name="recipes_continue_description">%1$s fortsetzen</string>
+    <plurals name="recipes_count">
+        <item quantity="one">%1$d Rezept</item>
+        <item quantity="other">%1$d Rezepte</item>
+    </plurals>
+    <plurals name="recipes_variations">
+        <item quantity="one">%1$d Variation</item>
+        <item quantity="other">%1$d Variationen</item>
+    </plurals>
+    <string name="recipes_clear_filters">Filter zurücksetzen</string>
+    <string name="recipes_empty">Keine Rezepte passen zu diesen Filtern.</string>
+    <string name="recipes_mine">Von dir hinzugefügt</string>
+    <string name="recipes_edited">Bearbeitet</string>
+    <string name="recipes_meta">%1$s · %2$s</string>
+    <string name="category_mains">Hauptgerichte</string>
+    <string name="category_pasta">Pasta</string>
+    <string name="category_breakfast">Frühstück</string>
+    <string name="category_sides">Beilagen</string>
+    <string name="tag_vegetarian">Vegetarisch</string>
+    <string name="tag_quick">Schnell</string>
+    <string name="tag_spicy">Scharf</string>
+    <string name="tag_one_pot">Eintopf</string>
+    <string name="tag_make_ahead">Vorkochen</string>
+    <string name="difficulty_easy">Einfach</string>
+    <string name="difficulty_medium">Mittel</string>
+    <string name="difficulty_hard">Schwer</string>
 </resources>

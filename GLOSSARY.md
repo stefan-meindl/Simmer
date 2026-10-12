@@ -34,6 +34,18 @@ _Avoid_: Default servings, original servings
 The complete set of a user's current choices for a recipe: a map of method picks (`choice`) and a map of add-in toggle states (`add`). Together with the serving count, it fully determines what gets displayed.
 _Avoid_: Options, preferences, config
 
+**Recipes overview**:
+The Recipes tab: search, Category tabs, Tag chips, the Planned section and the list of recipe cards that open the cooking flow. Filters AND together; the Planned section ignores them.
+_Avoid_: Home, library, browse screen
+
+**Category**:
+The single group a Recipe belongs to (e.g. Mains, Pasta), shown as a badge and as one underline tab per distinct category present, after "All".
+_Avoid_: Type, course, section
+
+**Tag**:
+A descriptor a Recipe can carry several of (Vegetarian, Quick, Spicy, One-pot, Make-ahead). The Recipes overview filters on them with multi-select chips.
+_Avoid_: Label, keyword, filter
+
 ### Ingredients and Steps
 
 **Ingredient**:

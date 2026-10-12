@@ -3,6 +3,8 @@ package com.simmer.app.data
 import com.simmer.app.domain.PlannedChoice
 import com.simmer.app.domain.ShoppingEntry
 import com.simmer.app.domain.model.Selection
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -58,6 +60,11 @@ class ShoppingRepository @Inject constructor(
             },
             planned = PlannedRecipeEntity(recipeId, choice.servings, encodeSelection(choice.selection)),
         )
+    }
+
+    /** Every Planned Recipe's saved choice, by recipe id. */
+    val planned: Flow<Map<String, PlannedChoice>> = dao.observeAllPlanned().map { all ->
+        all.associate { it.recipeId to PlannedChoice(it.servings, decodeSelection(it.selectionJson)) }
     }
 
     suspend fun getPlanned(recipeId: String): PlannedChoice? =

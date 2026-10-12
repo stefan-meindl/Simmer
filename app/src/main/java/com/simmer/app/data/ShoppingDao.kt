@@ -5,6 +5,7 @@ import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Transaction
+import kotlinx.coroutines.flow.Flow
 
 @Dao
 abstract class ShoppingDao {
@@ -23,6 +24,9 @@ abstract class ShoppingDao {
 
     @Query("SELECT * FROM planned_recipes WHERE recipeId = :recipeId")
     abstract suspend fun getPlanned(recipeId: String): PlannedRecipeEntity?
+
+    @Query("SELECT * FROM planned_recipes")
+    abstract fun observeAllPlanned(): Flow<List<PlannedRecipeEntity>>
 
     /**
      * Replaces all of a recipe's items and records it as planned, atomically.
