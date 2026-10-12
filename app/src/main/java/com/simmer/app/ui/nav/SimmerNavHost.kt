@@ -1,0 +1,122 @@
+package com.simmer.app.ui.nav
+
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.toRoute
+import com.simmer.app.ui.screens.AddRecipePlaceholder
+import com.simmer.app.ui.screens.EditRecipePlaceholder
+import com.simmer.app.ui.screens.RecipeFlowPhase2Placeholder
+import com.simmer.app.ui.screens.RecipeFlowPhase3Placeholder
+import com.simmer.app.ui.screens.RecipeFlowPlaceholder
+import com.simmer.app.ui.screens.RecipesPlaceholder
+import com.simmer.app.ui.screens.SettingsPlaceholder
+import com.simmer.app.ui.screens.ShoppingListPlaceholder
+import com.simmer.app.ui.screens.YourKitchenPlaceholder
+
+/**
+ * Navigation host for the Simmer app.
+ *
+ * All destinations are registered here. The start destination is [RecipesTab].
+ *
+ * @param navController the nav controller shared with [BottomTabBar] and callers
+ * @param isDarkTheme   current resolved dark-theme state (for theme toggle icon)
+ * @param onThemeToggle callback to toggle the theme
+ * @param modifier      applied to the [NavHost]
+ */
+@Composable
+fun SimmerNavHost(
+    navController: NavHostController,
+    isDarkTheme: Boolean,
+    onThemeToggle: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    NavHost(
+        navController = navController,
+        startDestination = RecipesTab,
+        modifier = modifier,
+    ) {
+        // ----------------------------------------------------------------
+        // Bottom tab destinations
+        // ----------------------------------------------------------------
+
+        composable<RecipesTab> {
+            RecipesPlaceholder(
+                isDarkTheme = isDarkTheme,
+                onThemeToggle = onThemeToggle,
+            )
+        }
+
+        composable<ShoppingListTab> {
+            ShoppingListPlaceholder()
+        }
+
+        composable<SettingsTab> {
+            SettingsPlaceholder()
+        }
+
+        // ----------------------------------------------------------------
+        // Recipe flow (hides tab bar)
+        // ----------------------------------------------------------------
+
+        composable<RecipeFlow> { backStackEntry ->
+            val route: RecipeFlow = backStackEntry.toRoute()
+            RecipeFlowPlaceholder(
+                recipeId = route.recipeId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<RecipeFlowPhase2> { backStackEntry ->
+            val route: RecipeFlowPhase2 = backStackEntry.toRoute()
+            RecipeFlowPhase2Placeholder(
+                recipeId = route.recipeId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<RecipeFlowPhase3> { backStackEntry ->
+            val route: RecipeFlowPhase3 = backStackEntry.toRoute()
+            RecipeFlowPhase3Placeholder(
+                recipeId = route.recipeId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // ----------------------------------------------------------------
+        // Add / Edit Recipe (hides tab bar)
+        // ----------------------------------------------------------------
+
+        composable<AddRecipe> {
+            AddRecipePlaceholder(
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        composable<EditRecipe> { backStackEntry ->
+            val route: EditRecipe = backStackEntry.toRoute()
+            EditRecipePlaceholder(
+                recipeId = route.recipeId,
+                onBack = { navController.popBackStack() },
+            )
+        }
+
+        // ----------------------------------------------------------------
+        // Your Kitchen (hides tab bar; back -> Settings)
+        // ----------------------------------------------------------------
+
+        composable<YourKitchen> {
+            YourKitchenPlaceholder(
+                onBack = {
+                    // Back from YourKitchen returns to Settings tab.
+                    navController.navigate(SettingsTab) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
+    }
+}
