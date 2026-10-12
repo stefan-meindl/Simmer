@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -26,7 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.material3.Text
 import com.simmer.app.ui.theme.LocalSimmerColors
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
-import com.simmer.app.ui.theme.SimmerTextStyle_Caption
+import com.simmer.app.ui.theme.SimmerTextStyle_BodySmMedium
 
 private val InputShape = RoundedCornerShape(8.dp)
 
@@ -77,6 +78,7 @@ fun SimmerTextField(
     isError: Boolean = false,
     trailingIcon: @Composable (() -> Unit)? = null,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    keyboardActions: KeyboardActions = KeyboardActions.Default,
 ) {
     val colors = LocalSimmerColors.current
     val interactionSource = remember { MutableInteractionSource() }
@@ -86,9 +88,9 @@ fun SimmerTextField(
         if (label != null) {
             Text(
                 text = label,
-                style = SimmerTextStyle_Caption,
-                color = colors.textSecondary,
-                modifier = Modifier.padding(bottom = 4.dp),
+                style = SimmerTextStyle_BodySmMedium,
+                color = colors.textPrimary,
+                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
 
@@ -101,13 +103,14 @@ fun SimmerTextField(
             cursorBrush = SolidColor(colors.accent),
             interactionSource = interactionSource,
             keyboardOptions = keyboardOptions,
+            keyboardActions = keyboardActions,
             decorationBox = { innerTextField ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .defaultMinSize(minHeight = 44.dp)
                         .background(
-                            color = if (enabled) colors.surfacePage else colors.disabledBg,
+                            color = if (enabled) colors.surfaceCard else colors.surfaceSubtle,
                             shape = InputShape,
                         )
                         .simmerFieldBorder(
@@ -117,7 +120,7 @@ fun SimmerTextField(
                             accentColor = colors.accent,
                             errorColor = colors.accentPressed,
                         )
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                 ) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -169,9 +172,9 @@ fun SimmerTextArea(
         if (label != null) {
             Text(
                 text = label,
-                style = SimmerTextStyle_Caption,
-                color = colors.textSecondary,
-                modifier = Modifier.padding(bottom = 4.dp),
+                style = SimmerTextStyle_BodySmMedium,
+                color = colors.textPrimary,
+                modifier = Modifier.padding(bottom = 8.dp),
             )
         }
 
@@ -188,7 +191,7 @@ fun SimmerTextArea(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            color = if (enabled) colors.surfacePage else colors.disabledBg,
+                            color = if (enabled) colors.surfaceCard else colors.surfaceSubtle,
                             shape = InputShape,
                         )
                         .simmerFieldBorder(
@@ -198,7 +201,7 @@ fun SimmerTextArea(
                             accentColor = colors.accent,
                             errorColor = colors.accentPressed,
                         )
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
                 ) {
                     if (value.isEmpty() && placeholder != null) {
                         Text(

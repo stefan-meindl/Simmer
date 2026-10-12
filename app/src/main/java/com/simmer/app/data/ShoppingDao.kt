@@ -25,6 +25,12 @@ abstract class ShoppingDao {
     @Query("SELECT * FROM planned_recipes WHERE recipeId = :recipeId")
     abstract suspend fun getPlanned(recipeId: String): PlannedRecipeEntity?
 
+    @Query("SELECT * FROM shopping_items ORDER BY rowid")
+    abstract fun observeItems(): Flow<List<ShoppingItemEntity>>
+
+    @Query("UPDATE shopping_items SET checked = :checked WHERE id = :id")
+    abstract suspend fun setChecked(id: String, checked: Boolean)
+
     @Query("SELECT * FROM planned_recipes")
     abstract fun observeAllPlanned(): Flow<List<PlannedRecipeEntity>>
 

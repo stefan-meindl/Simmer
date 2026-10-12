@@ -180,4 +180,23 @@
     <string name="appliance_waffle">Waffeleisen</string>
     <string name="appliance_icecream">Eismaschine</string>
     <string name="appliance_dehydrator">Dörrgerät</string>
+
+    <!-- Shopping list -->
+    <string name="shopping_title">Einkaufsliste.</string>
+    <string name="shopping_add_label">Artikel hinzufügen</string>
+    <string name="shopping_add_placeholder">Milch, Batterien…</string>
+    <string name="shopping_add_button">Hinzufügen</string>
+    <string name="shopping_empty">Noch nichts zu kaufen. Füge ein Rezept im ersten Schritt hinzu oder tippe oben einen Artikel ein.</string>
+    <string name="shopping_other_items">Weitere Artikel</string>
+    <string name="shopping_basket">Im Einkaufskorb</string>
+    <string name="shopping_basket_expand">Artikel im Einkaufskorb anzeigen</string>
+    <string name="shopping_basket_collapse">Artikel im Einkaufskorb ausblenden</string>
+    <plurals name="shopping_items_count">
+        <item quantity="one">%1$d Artikel</item>
+        <item quantity="other">%1$d Artikel</item>
+    </plurals>
+    <plurals name="shopping_badge_description">
+        <item quantity="one">%1$d Artikel zu kaufen</item>
+        <item quantity="other">%1$d Artikel zu kaufen</item>
+    </plurals>
 </resources>

@@ -11,12 +11,21 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.simmer.app.R
 import com.simmer.app.ui.theme.LocalSimmerColors
+import com.simmer.app.ui.theme.SimmerTextStyle_Micro
 
 // ---------------------------------------------------------------------------
 // Bottom tab bar
@@ -40,7 +49,7 @@ private val TAB_ITEMS = listOf(
  *
  * - Active tab: [SimmerColors.accent] (orange) icon + label color
  * - Inactive tabs: [SimmerColors.textTertiary] icon + label color
- * - Shopping list tab shows a [BadgedBox]; badge always renders, showing "0" when [badgeCount] == 0
+ * - Shopping list tab shows a [BadgedBox]; badge shows [badgeCount] and is hidden when it is 0
  */
 @Composable
 fun BottomTabBar(
@@ -53,6 +62,16 @@ fun BottomTabBar(
 
     NavigationBar(
         containerColor = colors.surfacePage,
+        modifier = Modifier.drawWithContent {
+            drawContent()
+            // 2 dp border-subtle rule on top, as in the design tab bar.
+            drawLine(
+                color = colors.borderSubtle,
+                start = Offset(0f, 1.dp.toPx()),
+                end = Offset(size.width, 1.dp.toPx()),
+                strokeWidth = 2.dp.toPx(),
+            )
+        },
     ) {
         TAB_ITEMS.forEach { tab ->
             val label = stringResource(tab.labelRes)
@@ -77,7 +96,18 @@ fun BottomTabBar(
                     if (tab.route == ShoppingListTab) {
                         BadgedBox(
                             badge = {
-                                Badge { Text(badgeCount.toString()) }
+                                if (badgeCount > 0) {
+                                    val description = pluralStringResource(
+                                        R.plurals.shopping_badge_description, badgeCount, badgeCount,
+                                    )
+                                    Badge(
+                                        containerColor = colors.accent,
+                                        contentColor = colors.accentFg,
+                                        modifier = Modifier.semantics { contentDescription = description },
+                                    ) {
+                                        Text(badgeCount.toString())
+                                    }
+                                }
                             },
                         ) {
                             Icon(
@@ -92,13 +122,13 @@ fun BottomTabBar(
                         )
                     }
                 },
-                label = { Text(label) },
+                label = { Text(label, style = SimmerTextStyle_Micro) },
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = colors.accent,
-                    selectedTextColor = colors.accent,
+                    selectedIconColor = colors.textAccent,
+                    selectedTextColor = colors.textAccent,
                     unselectedIconColor = colors.textTertiary,
                     unselectedTextColor = colors.textTertiary,
-                    indicatorColor = colors.surfaceWarm,
+                    indicatorColor = Color.Transparent,
                 ),
             )
         }

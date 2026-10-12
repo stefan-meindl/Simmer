@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.simmer.app.ui.theme.LocalSimmerColors
-import com.simmer.app.ui.theme.SimmerTextStyle_Caption
+import com.simmer.app.ui.theme.SimmerTextStyle_CaptionBold
 
 /**
  * Visual variant for [Badge].
@@ -16,7 +16,7 @@ import com.simmer.app.ui.theme.SimmerTextStyle_Caption
 enum class BadgeVariant {
     /** Orange fill (#FF6B1A), black text. */
     Primary,
-    /** Surface-warm fill, text-primary text. Soft neutral look. */
+    /** Surface-warm-strong fill, text-primary text. Soft neutral look. */
     Cream,
     /** Surface-inverse fill, text-inverse text. High-contrast dark look. */
     Dark,
@@ -27,7 +27,7 @@ enum class BadgeVariant {
  *
  * - Full pill shape (CircleShape).
  * - Three variants: Primary (orange), Cream (warm), Dark (inverse).
- * - Uses caption text style.
+ * - Uses caption-bold text style.
  *
  * @param label The badge text.
  * @param variant Visual style variant; defaults to [BadgeVariant.Primary].
@@ -42,7 +42,7 @@ fun Badge(
 
     val (containerColor, textColor) = when (variant) {
         BadgeVariant.Primary -> colors.accent to colors.accentFg
-        BadgeVariant.Cream -> colors.surfaceWarm to colors.textPrimary
+        BadgeVariant.Cream -> colors.surfaceWarmStrong to colors.textPrimary
         BadgeVariant.Dark -> colors.surfaceInverse to colors.textInverse
     }
 
@@ -54,7 +54,7 @@ fun Badge(
     ) {
         Text(
             text = label,
-            style = SimmerTextStyle_Caption,
+            style = SimmerTextStyle_CaptionBold,
             color = textColor,
             modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
         )

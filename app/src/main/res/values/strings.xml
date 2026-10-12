@@ -182,4 +182,23 @@
     <string name="appliance_waffle">Waffle iron</string>
     <string name="appliance_icecream">Ice cream maker</string>
     <string name="appliance_dehydrator">Dehydrator</string>
+
+    <!-- Shopping list -->
+    <string name="shopping_title">Shopping list.</string>
+    <string name="shopping_add_label">Add an item</string>
+    <string name="shopping_add_placeholder">Milk, batteries…</string>
+    <string name="shopping_add_button">Add</string>
+    <string name="shopping_empty">Nothing to buy yet. Add a recipe from its first step, or type an item above.</string>
+    <string name="shopping_other_items">Other items</string>
+    <string name="shopping_basket">In your basket</string>
+    <string name="shopping_basket_expand">Show items in your basket</string>
+    <string name="shopping_basket_collapse">Hide items in your basket</string>
+    <plurals name="shopping_items_count">
+        <item quantity="one">%1$d item</item>
+        <item quantity="other">%1$d items</item>
+    </plurals>
+    <plurals name="shopping_badge_description">
+        <item quantity="one">%1$d item to buy</item>
+        <item quantity="other">%1$d items to buy</item>
+    </plurals>
 </resources>

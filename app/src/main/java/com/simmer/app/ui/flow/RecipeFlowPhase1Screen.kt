@@ -50,6 +50,8 @@ import com.simmer.app.domain.isYourPick
 import com.simmer.app.ui.components.Badge
 import com.simmer.app.ui.components.BadgeVariant
 import com.simmer.app.ui.components.CheckRow
+import com.simmer.app.ui.components.RowCard
+import com.simmer.app.ui.components.RowDivider
 import com.simmer.app.ui.components.GradientHeroCard
 import com.simmer.app.ui.components.LinkButton
 import com.simmer.app.ui.components.OptionCard
@@ -379,13 +381,7 @@ private fun Variations(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
         }
 
         if (addIns.isNotEmpty()) {
-            val shape = RoundedCornerShape(12.dp)
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(shape)
-                    .border(BorderStroke(2.dp, colors.borderSubtle), shape),
-            ) {
+            RowCard {
                 addIns.forEachIndexed { i, v ->
                     if (i > 0) RowDivider()
                     CheckRow(
@@ -394,7 +390,6 @@ private fun Variations(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
                         trailing = addInAmount(r, v, s.servings, ui.units, ui.spices, s.selection, ui.lang),
                         checked = s.selection.add[v.id] == true,
                         onCheckedChange = { viewModel.setAddIn(v.id, it) },
-                        modifier = Modifier.background(colors.surfaceCard),
                     )
                 }
             }
@@ -434,13 +429,7 @@ private fun IngredientList(ui: Phase1Ui.Content) {
                 color = colors.textTertiary,
             )
         }
-        val shape = RoundedCornerShape(12.dp)
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(shape)
-                .border(BorderStroke(2.dp, colors.borderSubtle), shape),
-        ) {
+        RowCard {
             resolved.forEachIndexed { i, ing ->
                 if (i > 0) RowDivider()
                 val pick = sourceById[ing.id]?.let { isYourPick(s.recipe, it, s.selection) } == true
@@ -475,16 +464,6 @@ private fun IngredientList(ui: Phase1Ui.Content) {
             }
         }
     }
-}
-
-@Composable
-private fun RowDivider() {
-    Box(
-        Modifier
-            .fillMaxWidth()
-            .height(2.dp)
-            .background(LocalSimmerColors.current.borderSubtle),
-    )
 }
 
 // ---------------------------------------------------------------------------

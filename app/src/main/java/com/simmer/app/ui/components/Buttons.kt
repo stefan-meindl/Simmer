@@ -2,6 +2,7 @@ package com.simmer.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -24,6 +25,7 @@ import com.simmer.app.ui.theme.SimmerTextStyle_Button
 
 private val ButtonShape = RoundedCornerShape(8.dp)
 private val ButtonMinHeight = 44.dp
+private val ButtonPadding = PaddingValues(horizontal = 20.dp, vertical = 10.dp)
 
 // ---------------------------------------------------------------------------
 // PrimaryButton — orange fill, black label
@@ -54,6 +56,7 @@ fun PrimaryButton(
             disabledContainerColor = colors.disabledBg,
             disabledContentColor = colors.disabledFg,
         ),
+        contentPadding = ButtonPadding,
         modifier = modifier.defaultMinSize(minHeight = ButtonMinHeight),
     ) {
         ButtonContent(text = text, icon = icon)
@@ -86,6 +89,7 @@ fun DarkButton(
             disabledContainerColor = colors.disabledBg,
             disabledContentColor = colors.disabledFg,
         ),
+        contentPadding = ButtonPadding,
         modifier = modifier.defaultMinSize(minHeight = ButtonMinHeight),
     ) {
         ButtonContent(text = text, icon = icon)
@@ -93,11 +97,11 @@ fun DarkButton(
 }
 
 // ---------------------------------------------------------------------------
-// SecondaryButton — transparent, 2 dp border-default outline
+// SecondaryButton — transparent, 2 dp border-strong outline
 // ---------------------------------------------------------------------------
 
 /**
- * Outlined button with a 2 dp border in the default border color.
+ * Outlined button with a 2 dp border-strong outline.
  * Background is transparent at rest; presses show a subtle surface fill
  * via the ripple / pressed state.
  */
@@ -116,12 +120,13 @@ fun SecondaryButton(
         shape = ButtonShape,
         border = BorderStroke(
             width = 2.dp,
-            color = if (enabled) colors.borderDefault else colors.disabledBg,
+            color = if (enabled) colors.borderStrong else colors.disabledBg,
         ),
         colors = ButtonDefaults.outlinedButtonColors(
             contentColor = colors.textPrimary,
             disabledContentColor = colors.disabledFg,
         ),
+        contentPadding = ButtonPadding,
         modifier = modifier.defaultMinSize(minHeight = ButtonMinHeight),
     ) {
         ButtonContent(text = text, icon = icon)
@@ -158,6 +163,7 @@ fun CreamButton(
             disabledContainerColor = colors.disabledBg,
             disabledContentColor = colors.disabledFg,
         ),
+        contentPadding = ButtonPadding,
         modifier = modifier.defaultMinSize(minHeight = ButtonMinHeight),
     ) {
         ButtonContent(text = text, icon = icon)
@@ -218,10 +224,6 @@ private fun ButtonContent(
             Text(text = text, style = SimmerTextStyle_Button)
         }
     } else {
-        Text(
-            text = text,
-            style = SimmerTextStyle_Button,
-            modifier = Modifier.padding(horizontal = 4.dp),
-        )
+        Text(text = text, style = SimmerTextStyle_Button)
     }
 }

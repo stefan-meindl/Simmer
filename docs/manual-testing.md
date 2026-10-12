@@ -71,7 +71,7 @@ Open `chilli`:
 - Add-in rows: checkbox shows "+ amount" scaled by servings; toggling on then off returns button state to what it was.
 - Caption reads "n items · s servings".
 - Add to list: toast "Added n items for s servings...", button becomes "On your list"; change servings or a choice and it reverts to "Add to list". Toast "View list" opens Shopping tab.
-- Add again: replaces items (Shopping list UI is a later ticket; inspect Room via Android Studio App Inspection > Databases: `shopping_items`, `planned_recipes`).
+- Add again: replaces the recipe's items on the Shopping tab (see Shopping list below), no duplicates.
 - Progress bar: 3 segments, only current is active; "Preparation" opens Phase 2 (see below); the Cooking segment does nothing (Phase 3 is reached only via Start cooking).
 - Back button and Edit button (placeholder).
 - Kill process mid-edit: servings and selection restored.
@@ -131,3 +131,19 @@ Settings tab. "Your kitchen" has no editor yet (#12), so pills need the throwawa
 - Preview: five rows update immediately when Units or Spices change.
 - Light and dark theme, large font (cards grow, text wraps), rotate: scroll position and selections intact.
 - `connectedDebugAndroidTest` includes `SettingsPrefsTest` (DataStore round trip).
+
+### Shopping list (#10)
+
+Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to list" and the text field.
+- Fresh install (`adb shell pm clear com.simmer.app`): title "Shopping list." (de: "Einkaufsliste."), "Add an item" field, empty-state text, no badge on the tab icon.
+- Open `chilli`, Add to list, tap View list in the toast: items grouped under aisle headings (Produce, Spices, ...), each row with ingredient name, amount on the right, "Chilli con carne" as the note under the name. Tab badge shows the item count.
+- Type "Batteries", tap Add (or the keyboard Done): it appears under "Other items" (de: "Weitere Artikel"), apart from the aisle groups; field clears. Add is disabled while the field is blank or spaces.
+- Row look (also the add-in rows on Flow Phase 1): checkbox on the left, a 24dp rounded square with a 2dp grey outline; ticked it fills orange with a black check. 16dp gap between box and text. Name 16sp, note below in small grey, amount right-aligned in grey. Ticked rows show a struck-through grey name. Rows are at least 56dp.
+- Card look: each aisle, "Other items" and "In your basket" is its own rounded card with a 2dp light outline, thin dividers between rows, and a small uppercase label above. Compare with `Design/shots/`; no progress bar or "Clear checked" by design.
+- Aisle order is fixed (Produce, Meat, Chilled, ... Spices, Drinks) whichever recipe you add first: add `curry` then `chilli` and compare with the reverse after `pm clear`.
+- Tick an item: it leaves its group, badge drops by 1. "In your basket" (de: "Im Einkaufskorb") row appears collapsed with "1 item"; tap it to expand (chevron turns), tap the item to return it to its aisle. Tick every item: badge disappears (not "0").
+- Re-add: open `chilli`, change servings to 2, Add to list again: aisle amounts change, no duplicate rows; manual items stay; items you had ticked and that remain stay ticked. Add `curry` too: both recipes' items show, notes differ.
+- `adb shell am kill com.simmer.app`, reopen: list, ticks, badge kept. Typed-but-unsent text and the open basket survive rotation.
+- German: switch in Settings, all strings above translate (built-in recipe ingredient names and aisles stay English).
+- TalkBack: rows read as checkboxes with state, basket row says "Show items in your basket", badge reads "n items to buy".
+- `connectedDebugAndroidTest` includes `ShoppingPersistenceTest` (Room reopen, re-add replaces).

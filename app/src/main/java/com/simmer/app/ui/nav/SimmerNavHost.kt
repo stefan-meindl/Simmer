@@ -15,7 +15,7 @@ import com.simmer.app.ui.recipes.RecipesScreen
 import com.simmer.app.ui.settings.SettingsScreen
 import com.simmer.app.ui.screens.AddRecipePlaceholder
 import com.simmer.app.ui.screens.EditRecipePlaceholder
-import com.simmer.app.ui.screens.ShoppingListPlaceholder
+import com.simmer.app.ui.shopping.ShoppingListScreen
 import com.simmer.app.ui.screens.YourKitchenPlaceholder
 
 /**
@@ -54,7 +54,7 @@ fun SimmerNavHost(
         }
 
         composable<ShoppingListTab> {
-            ShoppingListPlaceholder()
+            ShoppingListScreen()
         }
 
         composable<SettingsTab> {
