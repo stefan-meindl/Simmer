@@ -168,7 +168,7 @@ fun temp(s: String, units: String): String {
 // Body segment parsing
 // ---------------------------------------------------------------------------
 
-private val LINK_RE = Regex("\\{(\\w+):([^}]+)}")
+private val LINK_RE = Regex("\\{(\\w+):([^}]+)\\}")
 
 /**
  * Parses a step body string into a list of [BodySegment]s.
@@ -508,7 +508,7 @@ fun normalize(j: Map<String, Any?>): Recipe {
             val cleanIf = if (condOk(rawIf)) rawIf else null
             val rawBody = s["b"].toString()
             // Strip links for unknown ingredient IDs
-            val body = rawBody.replace(Regex("\\{(\\w+):([^}]+)}")) { mr ->
+            val body = rawBody.replace(Regex("\\{(\\w+):([^}]+)\\}")) { mr ->
                 val id = mr.groupValues[1]
                 val text = mr.groupValues[2]
                 if (ingIds.contains(id)) mr.value else text
