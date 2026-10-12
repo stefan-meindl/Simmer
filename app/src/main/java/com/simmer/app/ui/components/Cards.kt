@@ -1,7 +1,6 @@
 package com.simmer.app.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
@@ -23,10 +22,10 @@ private val CardShape = RoundedCornerShape(12.dp)
 private val HeroCardShape = RoundedCornerShape(16.dp)
 
 /**
- * Draws a card-style outline that changes weight without causing layout shift.
+ * Draws a card-style outline via [drawBehind] — never affects layout size.
  *
- * - Inactive: 2 dp border-default.
- * - Selected: 2 dp border-default + 1 dp inset accent ring (visual weight = 3 dp).
+ * - Inactive: 2 dp [defaultBorderColor].
+ * - Selected: single 3 dp [accentColor] stroke (full orange, no double ring).
  */
 private fun Modifier.optionCardBorder(
     selected: Boolean,
@@ -34,26 +33,8 @@ private fun Modifier.optionCardBorder(
     accentColor: Color,
 ): Modifier = this.drawBehind {
     val cornerRadius = CornerRadius(12.dp.toPx())
-    // Always draw the 2 dp outer border
-    drawRoundRect(
-        color = if (selected) accentColor else defaultBorderColor,
-        cornerRadius = cornerRadius,
-        style = Stroke(width = 2.dp.toPx()),
-    )
-    if (selected) {
-        // 1 dp inset accent ring for total 3 dp emphasis without layout shift
-        val inset = 2.dp.toPx()
-        drawRoundRect(
-            color = accentColor,
-            topLeft = Offset(inset, inset),
-            size = size.copy(
-                width = size.width - inset * 2,
-                height = size.height - inset * 2,
-            ),
-            cornerRadius = CornerRadius((12.dp.toPx() - inset).coerceAtLeast(0f)),
-            style = Stroke(width = 1.dp.toPx()),
-        )
-    }
+    val (color, width) = if (selected) accentColor to 3.dp.toPx() else defaultBorderColor to 2.dp.toPx()
+    drawRoundRect(color = color, cornerRadius = cornerRadius, style = Stroke(width = width))
 }
 
 // ---------------------------------------------------------------------------
@@ -65,7 +46,7 @@ private fun Modifier.optionCardBorder(
  *
  * - 12 dp radius.
  * - Inactive: 2 dp border-default outline.
- * - Selected: 3 dp accent outline (drawn as 2 dp outer + 1 dp inset, no layout shift).
+ * - Selected: 3 dp accent (orange) outline.
  *
  * @param content The card body composable.
  */

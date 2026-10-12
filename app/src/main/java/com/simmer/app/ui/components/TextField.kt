@@ -31,13 +31,11 @@ import com.simmer.app.ui.theme.SimmerTextStyle_Caption
 private val InputShape = RoundedCornerShape(8.dp)
 
 /**
- * Draws the field outline behind the composable content.
+ * Draws the field outline via [drawBehind] — never affects layout size.
  *
- * Focus ring technique (no layout shift):
- * - Outer container is always the same size.
- * - At rest: 2 dp border in border-strong color.
- * - Focused: 2 dp border-strong + additional 1 dp inset drawn via drawBehind,
- *   rendered as a 3 dp visual weight without changing the layout bounding box.
+ * - At rest / disabled: 2 dp [borderColor] stroke.
+ * - Focused: single 3 dp [accentColor] stroke (full orange, no double ring).
+ * - Error: 2 dp [errorColor] stroke.
  */
 private fun Modifier.simmerFieldBorder(
     focused: Boolean,
@@ -47,44 +45,12 @@ private fun Modifier.simmerFieldBorder(
     errorColor: Color,
 ): Modifier = this.drawBehind {
     val cornerRadius = CornerRadius(8.dp.toPx())
-    when {
-        isError -> {
-            // 2 dp error border
-            drawRoundRect(
-                color = errorColor,
-                cornerRadius = cornerRadius,
-                style = Stroke(width = 2.dp.toPx()),
-            )
-        }
-        focused -> {
-            // 2 dp base border
-            drawRoundRect(
-                color = borderColor,
-                cornerRadius = cornerRadius,
-                style = Stroke(width = 2.dp.toPx()),
-            )
-            // 1 dp inset orange ring (total visual weight = 3 dp)
-            val inset = 2.dp.toPx()
-            drawRoundRect(
-                color = accentColor,
-                topLeft = androidx.compose.ui.geometry.Offset(inset, inset),
-                size = size.copy(
-                    width = size.width - inset * 2,
-                    height = size.height - inset * 2,
-                ),
-                cornerRadius = CornerRadius((8.dp.toPx() - inset).coerceAtLeast(0f)),
-                style = Stroke(width = 1.dp.toPx()),
-            )
-        }
-        else -> {
-            // 2 dp rest border
-            drawRoundRect(
-                color = borderColor,
-                cornerRadius = cornerRadius,
-                style = Stroke(width = 2.dp.toPx()),
-            )
-        }
+    val (color, width) = when {
+        isError -> errorColor to 2.dp.toPx()
+        focused -> accentColor to 3.dp.toPx()
+        else    -> borderColor to 2.dp.toPx()
     }
+    drawRoundRect(color = color, cornerRadius = cornerRadius, style = Stroke(width = width))
 }
 
 // ---------------------------------------------------------------------------

@@ -1,12 +1,16 @@
 package com.simmer.app.ui.components
 
 import android.content.res.Configuration.UI_MODE_NIGHT_YES
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -16,17 +20,24 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.simmer.app.ui.theme.LocalSimmerColors
+import com.simmer.app.ui.theme.SimmerTextStyle_Button
 import com.simmer.app.ui.theme.SimmerTextStyle_Heading4
+import com.simmer.app.ui.theme.SimmerTextStyle_Heading5
 import com.simmer.app.ui.theme.SimmerTextStyle_MicroUppercase
 import com.simmer.app.ui.theme.SimmerTheme
 
@@ -324,18 +335,78 @@ private fun StepTimerContent() {
 // Full gallery (all components in one preview)
 // ---------------------------------------------------------------------------
 
-/** Public entry point for use in [MainActivity] during design-system validation. */
+/**
+ * On-device design-system gallery.
+ *
+ * Features not available in static @Preview composables:
+ * - Theme toggle (light ↔ OLED dark) via header button.
+ * - Background tap dismisses keyboard and clears text-field focus.
+ */
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
-fun ComponentGalleryScreen() = PreviewGallery {
-    ButtonsContent()
-    TextFieldContent()
-    TabsContent()
-    ChipsContent()
-    CardsContent()
-    CheckRowContent()
-    BadgesContent()
-    StepTimerContent()
+fun ComponentGalleryScreen() {
+    var darkTheme by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
+    SimmerTheme(darkTheme = darkTheme) {
+        val colors = LocalSimmerColors.current
+        Surface(
+            color = colors.surfacePage,
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    awaitEachGesture {
+                        // See the down event even if a child already consumed it, so
+                        // any tap anywhere (button, card, blank area) clears the focus.
+                        awaitFirstDown(requireUnconsumed = false)
+                        focusManager.clearFocus()
+                        keyboardController?.hide()
+                    }
+                },
+        ) {
+            Column(modifier = Modifier.fillMaxSize()) {
+                // Header row with theme toggle
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "Components",
+                        style = SimmerTextStyle_Heading5,
+                        color = colors.textPrimary,
+                    )
+                    TextButton(onClick = { darkTheme = !darkTheme }) {
+                        Text(
+                            text = if (darkTheme) "Light" else "Dark",
+                            style = SimmerTextStyle_Button,
+                            color = colors.textLink,
+                        )
+                    }
+                }
+                HorizontalDivider(color = colors.borderSubtle)
+                // Scrollable content
+                Column(
+                    modifier = Modifier
+                        .verticalScroll(rememberScrollState())
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    ButtonsContent()
+                    TextFieldContent()
+                    TabsContent()
+                    ChipsContent()
+                    CardsContent()
+                    CheckRowContent()
+                    BadgesContent()
+                    StepTimerContent()
+                }
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalLayoutApi::class)
