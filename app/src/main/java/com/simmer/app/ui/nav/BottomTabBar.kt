@@ -11,7 +11,11 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.pluralStringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -40,7 +44,7 @@ private val TAB_ITEMS = listOf(
  *
  * - Active tab: [SimmerColors.accent] (orange) icon + label color
  * - Inactive tabs: [SimmerColors.textTertiary] icon + label color
- * - Shopping list tab shows a [BadgedBox]; badge always renders, showing "0" when [badgeCount] == 0
+ * - Shopping list tab shows a [BadgedBox]; badge shows [badgeCount] and is hidden when it is 0
  */
 @Composable
 fun BottomTabBar(
@@ -77,7 +81,14 @@ fun BottomTabBar(
                     if (tab.route == ShoppingListTab) {
                         BadgedBox(
                             badge = {
-                                Badge { Text(badgeCount.toString()) }
+                                if (badgeCount > 0) {
+                                    val description = pluralStringResource(
+                                        R.plurals.shopping_badge_description, badgeCount, badgeCount,
+                                    )
+                                    Badge(modifier = Modifier.semantics { contentDescription = description }) {
+                                        Text(badgeCount.toString())
+                                    }
+                                }
                             },
                         ) {
                             Icon(

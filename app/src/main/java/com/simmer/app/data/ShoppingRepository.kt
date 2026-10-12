@@ -2,6 +2,7 @@ package com.simmer.app.data
 
 import com.simmer.app.domain.PlannedChoice
 import com.simmer.app.domain.ShoppingEntry
+import com.simmer.app.domain.ShoppingItem
 import com.simmer.app.domain.model.Selection
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -13,6 +14,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -61,6 +63,22 @@ class ShoppingRepository @Inject constructor(
             planned = PlannedRecipeEntity(recipeId, choice.servings, encodeSelection(choice.selection)),
         )
     }
+
+    /** Every Shopping list item, recipe and manual, in the order they were added. */
+    val items: Flow<List<ShoppingItem>> = dao.observeItems().map { all ->
+        all.map { ShoppingItem(it.id, it.recipeId, it.name, it.amount, it.aisle, it.note, it.checked) }
+    }
+
+    /** Adds a manual item by [name]; blank names are ignored. */
+    suspend fun addManualItem(name: String) {
+        val trimmed = name.trim()
+        if (trimmed.isEmpty()) return
+        dao.insertItems(
+            listOf(ShoppingItemEntity("manual-${UUID.randomUUID()}", null, trimmed, "", "", "", false)),
+        )
+    }
+
+    suspend fun setChecked(id: String, checked: Boolean) = dao.setChecked(id, checked)
 
     /** Every Planned Recipe's saved choice, by recipe id. */
     val planned: Flow<Map<String, PlannedChoice>> = dao.observeAllPlanned().map { all ->

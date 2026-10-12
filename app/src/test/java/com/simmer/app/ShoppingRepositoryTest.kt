@@ -40,6 +40,12 @@ private class FakeShoppingDao : ShoppingDao() {
 
     override suspend fun getPlanned(recipeId: String): PlannedRecipeEntity? = planned[recipeId]
 
+    override fun observeItems(): Flow<List<ShoppingItemEntity>> = flow { emit(items.toList()) }
+
+    override suspend fun setChecked(id: String, checked: Boolean) {
+        items.replaceAll { if (it.id == id) it.copy(checked = checked) else it }
+    }
+
     override fun observeAllPlanned(): Flow<List<PlannedRecipeEntity>> = flow { emit(planned.values.toList()) }
 }
 
@@ -113,5 +119,46 @@ class ShoppingRepositoryTest {
         repo.addRecipeToList("chilli", listOf(entry("onions")), choice)
 
         assertEquals(mapOf("chilli" to choice), repo.planned.first())
+    }
+
+    @Test fun `added manual item shows up unchecked with no recipe, aisle or note`() = runBlocking {
+        repo.addManualItem("  Batteries ")
+
+        val item = repo.items.first().single()
+        assertEquals("Batteries", item.name)
+        assertNull(item.recipeId)
+        assertEquals("", item.aisle)
+        assertEquals(false, item.checked)
+    }
+
+    @Test fun `blank manual item is ignored`() = runBlocking {
+        repo.addManualItem("   ")
+
+        assertEquals(emptyList<Any>(), repo.items.first())
+    }
+
+    @Test fun `same manual name added twice gives two items`() = runBlocking {
+        repo.addManualItem("Milk")
+        repo.addManualItem("Milk")
+
+        assertEquals(2, repo.items.first().size)
+    }
+
+    @Test fun `checking and unchecking an item is stored`() = runBlocking {
+        repo.addRecipeToList("chilli", listOf(entry("onions")), choice)
+
+        repo.setChecked("chilli-onions", true)
+        assertEquals(true, repo.items.first().single().checked)
+        repo.setChecked("chilli-onions", false)
+        assertEquals(false, repo.items.first().single().checked)
+    }
+
+    @Test fun `recipe items are observable with aisle and recipe title note`() = runBlocking {
+        repo.addRecipeToList("chilli", listOf(entry("rice", "Pantry", "450 g")), choice)
+
+        val item = repo.items.first().single()
+        assertEquals("Pantry", item.aisle)
+        assertEquals("Chilli con carne", item.note)
+        assertEquals("chilli", item.recipeId)
     }
 }

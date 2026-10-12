@@ -3,6 +3,8 @@ package com.simmer.app.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.PrefsRepository
+import com.simmer.app.data.ShoppingRepository
+import com.simmer.app.domain.shoppingListView
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +24,8 @@ import javax.inject.Inject
 @HiltViewModel
 class MainViewModel @Inject constructor(
     private val prefs: PrefsRepository,
-) : ViewModel() {
+    shopping: ShoppingRepository,
+): ViewModel() {
 
     /** Raw theme preference: "system" | "light" | "dark". */
     val themePreference: StateFlow<String> = prefs.theme
@@ -42,11 +45,10 @@ class MainViewModel @Inject constructor(
         .map { it == "dark" }
         .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    /**
-     * Placeholder badge count for the shopping list tab.
-     * Will be driven by real data in a future issue.
-     */
-    val shoppingListBadgeCount: StateFlow<Int> = kotlinx.coroutines.flow.MutableStateFlow(0)
+    /** Unchecked Shopping list items, for the tab badge. */
+    val shoppingListBadgeCount: StateFlow<Int> = shopping.items
+        .map { shoppingListView(it).uncheckedCount }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
 
     /**
      * Toggles theme between "dark" and "light".
