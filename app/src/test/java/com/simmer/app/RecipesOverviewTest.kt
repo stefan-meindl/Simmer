@@ -4,6 +4,9 @@ import com.simmer.app.domain.PlannedChoice
 import com.simmer.app.domain.RecipeFilters
 import com.simmer.app.domain.model.Selection
 import com.simmer.app.domain.recipesOverview
+import com.simmer.app.domain.selectionSummary
+import com.simmer.app.domain.FILTER_TAGS
+import com.simmer.app.ui.recipes.DISPLAY_LABELS
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -67,11 +70,25 @@ class RecipesOverviewTest {
         val o = recipesOverview(all, planned, RecipeFilters(query = "carrots"))
         assertEquals(listOf("chilli"), o.planned.map { it.recipe.id })
         assertEquals(4, o.planned.single().choice.servings)
-        assertEquals(listOf("Plant-based", "Dark beer"), o.planned.single().variationLabels)
+        val e = o.planned.single()
+        assertEquals("4 servings · Plant-based · Dark beer", selectionSummary(e.recipe, e.choice.selection, "4 servings"))
     }
 
     @Test fun `planned recipes that no longer exist are dropped`() {
         val o = recipesOverview(all, mapOf("ghost" to PlannedChoice(2, Selection())), RecipeFilters())
         assertTrue(o.planned.isEmpty())
+    }
+
+    @Test fun `tab index 0 is All and the rest follow the categories`() {
+        val o = recipesOverview(all, emptyMap(), RecipeFilters(category = "Pasta"))
+        assertEquals(2, o.selectedTab)
+        assertEquals(0, recipesOverview(all, emptyMap(), RecipeFilters()).selectedTab)
+        assertNull(o.categoryForTab(0))
+        assertEquals("Sides", o.categoryForTab(4))
+    }
+
+    @Test fun `every filter tag and built-in category has a translated label`() {
+        assertTrue(FILTER_TAGS.all { it in DISPLAY_LABELS })
+        assertTrue(all.all { it.category in DISPLAY_LABELS && it.difficulty in DISPLAY_LABELS })
     }
 }
