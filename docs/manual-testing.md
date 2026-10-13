@@ -231,8 +231,8 @@ Recipes tab, + , "With a chatbot". Needs a way to put text on the clipboard (typ
 
 Recipes tab, + , "With a chatbot". No throwaway branch needed. Step 2, reply field; one failure kind per row, then tap "Add recipe" (de: "Rezept hinzufügen"). Each must show "That doesn't look like a recipe from the prompt." (de: "Das sieht nicht nach einem Rezept aus dem Prompt aus.") under the field with a "Copy fix prompt" (de: "Fix-Prompt kopieren") button, stay on the chatbot screen and keep the pasted text:
 - No JSON: `hello`. Fix prompt error: "There is no JSON object in the reply."
-- Cut off: `{"title":"Pancakes","ingredients":[{"name":"Flour","q":200}],"steps":[{"b":"Whi`. "The JSON is cut off: the object never closes."
-- Not valid: `{"title":"Pancakes","ingredients": }`. "The JSON object is not valid JSON."
+- Cut off: `{"title":"Pancakes","ingredients":[{"name":"Flour","q":200}],"steps":[{"b":"Whi`. "The JSON is cut off: the object that opens at character N never closes." (N = where the object starts; prose with `{braces}` before it counts)
+- Not valid: `{"title":"Pancakes","ingredients": }`. "The JSON object is not valid JSON (parser message: ...)." with the real parser message (offset and token)
 - No title: the #48 JSON with `"title"` removed or `""`. "The \"title\" is missing or empty."
 - No Ingredient: `"ingredients":[]`. No Step: `"steps":[]`. They name "ingredients" and "steps".
 - Copy fix prompt: a "Fix prompt copied" toast; paste elsewhere: it holds the error line for that failure, "Return only valid JSON matching this shape:" and the schema, "Reply with one JSON object and nothing else.". Set Settings > Language to German and repeat: the same in German ("Gib nur gültiges JSON in dieser Form zurück:").

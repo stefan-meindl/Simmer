@@ -327,8 +327,8 @@
     <string name="add_fix_prompt_copied">Fix prompt copied</string>
     <string name="fix_prompt_instruction">Your last reply could not be read as a recipe: %1$s\nReturn only valid JSON matching this shape: %2$s\nReply with one JSON object and nothing else. Fix your last reply; do not add commentary.</string>
     <string name="fix_prompt_error_no_json">There is no JSON object in the reply.</string>
-    <string name="fix_prompt_error_cut_off">The JSON is cut off: the object never closes.</string>
-    <string name="fix_prompt_error_not_valid">The JSON object is not valid JSON.</string>
+    <string name="fix_prompt_error_cut_off">The JSON is cut off: the object that opens at character %1$s never closes.</string>
+    <string name="fix_prompt_error_not_valid">The JSON object is not valid JSON (parser message: %1$s).</string>
     <string name="fix_prompt_error_no_title">The \"title\" is missing or empty.</string>
     <string name="fix_prompt_error_no_ingredient">\"ingredients\" is missing or empty: the recipe needs at least one ingredient with a name.</string>
     <string name="fix_prompt_error_no_step">\"steps\" is missing or empty: the recipe needs at least one step with a body \"b\".</string>

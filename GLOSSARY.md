@@ -43,7 +43,7 @@ The screen that turns pasted text into a User Recipe. It opens on the start stag
 _Avoid_: Import screen, new recipe screen
 
 **Reply parser**:
-Turns a pasted chatbot reply into a User Recipe (`parseChatbotReply`): takes the first JSON object (code fences and chatter ignored, `parseModelJson`), applies the Kitchen rule in code for Strict and Medium, runs `normalize()`, and rejects a reply that has no JSON, is cut off, is not valid JSON, or lacks a title, an Ingredient or a Step (`readChatbotReply` names which, as a `ReplyError`). Instant; it shares those rules with the Pipeline.
+Turns a pasted chatbot reply into a User Recipe (`readChatbotReply`): takes the first JSON object that parses (code fences and chatter ignored, balanced braces in prose skipped, `readModelJson`), applies the Kitchen rule in code for Strict and Medium, runs `normalize()`, and rejects a reply that has no JSON, is cut off, is not valid JSON, or lacks a title, an Ingredient or a Step (`readChatbotReply` names which, as a `ReplyError`). Instant; it shares those rules with the Pipeline.
 _Avoid_: Chatbot importer, reply converter
 
 **Reader prompt**:
@@ -51,7 +51,7 @@ What the chatbot screen's "Copy prompt" puts on the clipboard (`readerPrompt`): 
 _Avoid_: Chatbot prompt, import prompt
 
 **Fix prompt**:
-What the chatbot screen's "Copy fix prompt" puts on the clipboard after a bad paste (`fixPrompt`): the exact parse error (`ReplyError`) plus "Return only valid JSON matching this shape" and the Reader prompt's schema, worded like the Pipeline's Repair retry. Its prose follows the Settings language (string resources `fix_prompt_*`). The user sends it back to the chatbot and pastes the corrected reply.
+What the chatbot screen's "Copy fix prompt" puts on the clipboard after a bad paste (`fixPrompt`): the exact parse error (`ReplyError`, with the parser's message or the position of the cut-off object) plus "Return only valid JSON matching this shape" and the Reader prompt's schema, worded like the Pipeline's Repair retry. Its prose follows the Settings language (string resources `fix_prompt_*`). The user sends it back to the chatbot and pastes the corrected reply.
 _Avoid_: Repair prompt, retry prompt
 
 **Kitchen line**:

@@ -41,6 +41,25 @@ class ChatbotReplyErrorTest {
         assertEquals(ReplyError.NotValid, errorOf("""{"title": "Pancakes", "ingredients": }"""))
     }
 
+    @Test fun `a cut-off reply says where its object opened`() {
+        val failed = read("Here: {\"title\": \"Pa") as ReplyResult.Failed
+
+        assertEquals("6", failed.detail)
+    }
+
+    @Test fun `a broken object carries the parser message`() {
+        val failed = read("""{"title": "Pancakes", "ingredients": }""") as ReplyResult.Failed
+
+        assertTrue(failed.detail, failed.detail.contains("offset"))
+    }
+
+    @Test fun `braces in prose before the JSON are skipped`() {
+        val recipe = """{"title": "Pancakes", "ingredients": $ING, "steps": $STEPS}"""
+
+        assertEquals("Pancakes", (read("Use {your} oven! Here you go: $recipe") as ReplyResult.Done).recipe.title)
+        assertEquals(ReplyError.CutOff, errorOf("Use {your} oven! Here: {\"title\": \"Pancakes\", \"ingredients\": $ING, \"steps\": ["))
+    }
+
     @Test fun `a missing or blank title is named`() {
         assertEquals(ReplyError.NoTitle, errorOf("""{"ingredients": $ING, "steps": $STEPS}"""))
         assertEquals(ReplyError.NoTitle, errorOf("""{"title": "  ", "ingredients": $ING, "steps": $STEPS}"""))

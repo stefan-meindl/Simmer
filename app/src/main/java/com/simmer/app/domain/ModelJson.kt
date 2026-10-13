@@ -10,29 +10,48 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.doubleOrNull
 import kotlinx.serialization.json.longOrNull
 
-/**
- * The first JSON object in a model [reply] as nested maps, lists, strings, numbers and booleans
- * (the shape `normalize()` takes); null when there is none or it is cut off or malformed.
- * Code fences and chatter around the object are ignored.
- */
-fun parseModelJson(reply: String): Map<String, Any?>? {
-    val start = reply.indexOf('{')
-    if (start < 0) return null
-    val end = matchingBrace(reply, start) ?: return null
-    val element = try {
-        Json.parseToJsonElement(reply.substring(start, end + 1))
-    } catch (e: kotlinx.serialization.SerializationException) {
-        return null
-    }
-    @Suppress("UNCHECKED_CAST")
-    return (element as? JsonObject)?.let { toPlain(it) as Map<String, Any?> }
+/** What [readModelJson] found in a model reply. */
+sealed interface ModelJson {
+    data class Found(val json: Map<String, Any?>) : ModelJson
+
+    /** No `{` at all. */
+    data object None : ModelJson
+
+    /** The object opened at character [at] never closes. */
+    data class CutOff(val at: Int) : ModelJson
+
+    /** Every closed `{...}` span failed to parse; [message] is the first parser message. */
+    data class Invalid(val message: String) : ModelJson
 }
 
-/** True when [reply] opens a JSON object that never closes (the chatbot stopped mid-reply). */
-fun isCutOffJson(reply: String): Boolean {
-    val start = reply.indexOf('{')
-    return start >= 0 && matchingBrace(reply, start) == null
+private const val MAX_PARSE_MESSAGE = 200
+
+/**
+ * The first JSON object in a model [reply] that parses, as nested maps, lists, strings, numbers and booleans
+ * (the shape `normalize()` takes), or why there is none. Code fences and chatter around the object are
+ * ignored, including balanced braces in prose before it (those spans are skipped). An object that never
+ * closes is [ModelJson.CutOff]: the reply stopped there.
+ */
+fun readModelJson(reply: String): ModelJson {
+    var invalid: String? = null
+    var from = 0
+    while (true) {
+        val start = reply.indexOf('{', from)
+        if (start < 0) return invalid?.let { ModelJson.Invalid(it) } ?: ModelJson.None
+        val end = matchingBrace(reply, start) ?: return ModelJson.CutOff(start)
+        try {
+            val element = Json.parseToJsonElement(reply.substring(start, end + 1))
+            @Suppress("UNCHECKED_CAST")
+            return ModelJson.Found(toPlain(element as JsonObject) as Map<String, Any?>)
+        } catch (e: kotlinx.serialization.SerializationException) {
+            if (invalid == null) invalid = e.message.orEmpty().take(MAX_PARSE_MESSAGE)
+            from = end + 1
+        }
+    }
 }
+
+/** The first JSON object in a model [reply] (see [readModelJson]); null when there is none, or it is cut off or malformed. */
+fun parseModelJson(reply: String): Map<String, Any?>? = (readModelJson(reply) as? ModelJson.Found)?.json
 
 /** Index of the brace closing the one at [open], skipping strings; null when it never closes. */
 private fun matchingBrace(text: String, open: Int): Int? {

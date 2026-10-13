@@ -3,7 +3,6 @@ package com.simmer.app.data
 import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.RecipeDraft
 import com.simmer.app.domain.model.Recipe
-import com.simmer.app.domain.ReplyError
 import com.simmer.app.domain.ReplyResult
 import com.simmer.app.domain.readChatbotReply
 import com.simmer.app.domain.stubConvert
@@ -51,13 +50,13 @@ class AddRecipeSession @Inject constructor(
     }
 
     /** Puts the chatbot [reply] in the draft store as recipe [id]; null on success, else why not (draft untouched). */
-    fun addFromReply(reply: String, id: String, appliances: Set<String>, kitchenMode: KitchenMode): ReplyError? =
+    fun addFromReply(reply: String, id: String, appliances: Set<String>, kitchenMode: KitchenMode): ReplyResult.Failed? =
         when (val result = readChatbotReply(reply, id, appliances, kitchenMode)) {
             is ReplyResult.Done -> {
                 drafts.set(result.recipe)
                 null
             }
-            is ReplyResult.Failed -> result.error
+            is ReplyResult.Failed -> result
         }
 
     /** Drops the draft; the pasted text is not kept here. */

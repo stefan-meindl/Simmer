@@ -36,7 +36,7 @@ private fun texts(lang: String): FixPromptTexts {
     return FixPromptTexts(get("instruction"), ReplyError.entries.associateWith { get("error_" + KEYS.getValue(it)) })
 }
 
-private fun fix(lang: String, error: ReplyError) = fixPrompt(texts(lang), error)
+private fun fix(lang: String, error: ReplyError, detail: String = "") = fixPrompt(texts(lang), error, detail)
 
 /** Seam: the Fix prompt as built from the shipped English and German string resources. */
 class FixPromptTest {
@@ -44,9 +44,9 @@ class FixPromptTest {
     @Test fun `every Fix prompt names its error and asks for only valid JSON in the shape`() {
         listOf("en", "de").forEach { lang ->
             ReplyError.entries.forEach { error ->
-                val p = fix(lang, error)
+                val p = fix(lang, error, "DETAIL")
 
-                assertTrue("$lang $error", p.contains(texts(lang).errors.getValue(error)))
+                assertTrue("$lang $error", p.contains(texts(lang).errors.getValue(error).format("DETAIL")))
                 assertTrue("$lang $error", p.contains(READER_PROMPT_SCHEMA))
                 assertTrue("$lang $error", p.contains(if (lang == "de") "Gib nur gültiges JSON" else "Return only valid JSON matching this shape"))
             }
@@ -67,6 +67,19 @@ class FixPromptTest {
         assertTrue(fix("en", ReplyError.NoStep).contains("\"steps\""))
         assertTrue(fix("de", ReplyError.CutOff).contains("abgeschnitten"))
         assertTrue(fix("de", ReplyError.NoStep).contains("\"steps\""))
+    }
+
+    @Test fun `a cut-off Fix prompt says where the object opened, in both languages`() {
+        listOf("en", "de").forEach { lang ->
+            assertTrue(lang, fix(lang, ReplyError.CutOff, "17").contains("17"))
+        }
+    }
+
+    @Test fun `a not-valid Fix prompt carries the parser message, in both languages`() {
+        val message = "Unexpected JSON token at offset 40: Expected start of the object"
+        listOf("en", "de").forEach { lang ->
+            assertTrue(lang, fix(lang, ReplyError.NotValid, message).contains(message))
+        }
     }
 
     @Test fun `German Fix prompts are German and English ones are English`() {

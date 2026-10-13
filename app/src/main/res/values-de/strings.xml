@@ -325,8 +325,8 @@
     <string name="add_fix_prompt_copied">Fix-Prompt kopiert</string>
     <string name="fix_prompt_instruction">Deine letzte Antwort konnte nicht als Rezept gelesen werden: %1$s\nGib nur gültiges JSON in dieser Form zurück: %2$s\nAntworte mit genau einem JSON-Objekt und sonst nichts. Korrigiere deine letzte Antwort; keine Kommentare.</string>
     <string name="fix_prompt_error_no_json">In der Antwort steckt kein JSON-Objekt.</string>
-    <string name="fix_prompt_error_cut_off">Das JSON ist abgeschnitten: das Objekt wird nie geschlossen.</string>
-    <string name="fix_prompt_error_not_valid">Das JSON-Objekt ist kein gültiges JSON.</string>
+    <string name="fix_prompt_error_cut_off">Das JSON ist abgeschnitten: das Objekt, das bei Zeichen %1$s beginnt, wird nie geschlossen.</string>
+    <string name="fix_prompt_error_not_valid">Das JSON-Objekt ist kein gültiges JSON (Meldung des Parsers: %1$s).</string>
     <string name="fix_prompt_error_no_title">Der \"title\" fehlt oder ist leer.</string>
     <string name="fix_prompt_error_no_ingredient">\"ingredients\" fehlt oder ist leer: das Rezept braucht mindestens eine Zutat mit Namen.</string>
     <string name="fix_prompt_error_no_step">\"steps\" fehlt oder ist leer: das Rezept braucht mindestens einen Schritt mit Text \"b\".</string>
