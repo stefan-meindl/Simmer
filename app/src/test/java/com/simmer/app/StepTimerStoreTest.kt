@@ -159,4 +159,40 @@ class StepTimerStoreTest {
         assertTrue(store.timers.value.isEmpty())
         assertTrue(disk.saved.isEmpty())
     }
+
+    @Test
+    fun cancellingARecipeRemovesItsTimersOnly() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 600)
+        store.toggle("chilli/s2", "Rice", 300)
+        store.toggle("chilli/s2", "Rice", 300) // paused
+        store.toggle("curry/s1", "Fry", 120)
+
+        store.cancelRecipe("chilli")
+
+        assertEquals(setOf("curry/s1"), store.timers.value.keys)
+        assertEquals(setOf("curry/s1"), store.runningKeys())
+        assertEquals(setOf("curry/s1"), disk.saved.keys)
+    }
+
+    @Test
+    fun cancellingARecipeDismissesItsFinishedNotifications() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 60)
+        store.toggle("chilli/s2", "Rice", 600)
+        now += 60_000
+        store.tick()
+
+        store.cancelRecipe("chilli")
+
+        assertEquals(listOf("chilli/s1"), host.dismissed)
+    }
+
+    @Test
+    fun cancellingARecipeDoesNotMatchARecipeWithTheSamePrefix() {
+        val store = store()
+        store.toggle("chilli-vegan/s1", "Simmer", 600)
+        store.cancelRecipe("chilli")
+        assertEquals(setOf("chilli-vegan/s1"), store.timers.value.keys)
+    }
 }

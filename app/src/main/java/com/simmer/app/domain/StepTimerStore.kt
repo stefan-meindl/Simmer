@@ -60,6 +60,18 @@ class StepTimerStore(
     }
 
     /**
+     * Drops every timer of [recipeId], whatever its state (Stop cooking). The service sees the
+     * running ones go, removes their notifications and stops itself when none is left; the finished
+     * alerts of Done ones are dismissed here.
+     */
+    fun cancelRecipe(recipeId: String) {
+        val mine = state.value.filterKeys { it.startsWith("$recipeId/") }
+        if (mine.isEmpty()) return
+        change { it - mine.keys }
+        mine.filterValues { it.status == TimerStatus.Done }.keys.forEach(host::dismissFinished)
+    }
+
+    /**
      * Finishes every running timer whose time is up and alerts for each, once. Safe to call from
      * several places (the service and the visible timers); a finished timer is no longer Running.
      */

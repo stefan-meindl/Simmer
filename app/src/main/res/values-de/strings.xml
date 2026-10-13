@@ -77,6 +77,11 @@
     <string name="flow_undo">Rückgängig</string>
     <string name="flow_enjoy">Guten Appetit.</string>
     <string name="flow_back_to_recipes">Zurück zu den Rezepten</string>
+    <string name="flow_leave_title">Kochen verlassen?</string>
+    <string name="flow_leave_body">Deine Timer und erledigten Schritte bleiben erhalten, wenn du zu den Rezepten gehst. Beenden setzt sie zurück.</string>
+    <string name="flow_leave_stop">Kochen beenden</string>
+    <string name="flow_leave_keep">Weiterkochen</string>
+    <string name="flow_leave_recipes">Zu den Rezepten</string>
 
     <!-- Step timer -->
     <string name="timer_done">Fertig</string>
@@ -102,6 +107,7 @@
     <string name="recipes_search_placeholder">Rezepte oder Zutaten</string>
     <string name="recipes_all">Alle</string>
     <string name="recipes_planned">Geplant</string>
+    <string name="recipes_cooking_now">Gerade am Kochen</string>
     <string name="recipes_continue">Weiter</string>
     <string name="recipes_continue_description">%1$s fortsetzen</string>
     <plurals name="recipes_count">

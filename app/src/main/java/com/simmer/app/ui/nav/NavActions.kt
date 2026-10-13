@@ -2,6 +2,8 @@ package com.simmer.app.ui.nav
 
 import androidx.navigation.NavHostController
 import androidx.navigation.NavDestination.Companion.hasRoute
+import com.simmer.app.domain.hasSelectableMethod
+import com.simmer.app.domain.model.Recipe
 
 private fun NavHostController.isTab(route: Any): Boolean = when (route) {
     RecipesTab -> currentDestination?.hasRoute<RecipesTab>() == true
@@ -57,4 +59,15 @@ fun NavHostController.finishAddRecipe() {
 fun NavHostController.openAddRecipe() {
     if (currentDestination?.hasRoute<AddRecipe>() == true) return
     if (hasAddRecipeOnStack()) popBackStack<AddRecipe>(inclusive = false) else navigate(AddRecipe) { launchSingleTop = true }
+}
+
+/**
+ * Recipes tab "Cooking now" Continue: opens Flow Phase 3 with the earlier phases underneath, so
+ * Back and the progress segments work as if the user had walked there. The flow ViewModel on the
+ * first entry restores the servings and Selection the Steps were marked under.
+ */
+fun NavHostController.continueCooking(recipe: Recipe) {
+    navigate(RecipeFlow(recipe.id))
+    if (hasSelectableMethod(recipe)) navigate(RecipeFlowPhase2(recipe.id))
+    navigate(RecipeFlowPhase3(recipe.id))
 }

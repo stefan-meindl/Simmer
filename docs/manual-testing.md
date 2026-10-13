@@ -105,6 +105,20 @@ Open `chilli`, Preparation, Start cooking (Phase 3 has no entry button yet; use 
 - Finish all steps (TalkBack announces "Enjoy your meal."): gradient panel with circle-check, "Enjoy your meal." (de: "Guten Appetit."), "title · selection summary", Back to recipes (dark) goes to the Recipes tab.
 - Rotate and `adb shell am kill com.simmer.app` with some steps done: servings, selection and done steps are restored. Changing servings or a swap in Phase 1/2 clears done steps.
 
+### Leave cooking (#36)
+
+Open `chilli`, Preparation, Start cooking. "In progress" = a StepTimer running or paused, or a Step marked done.
+- Nothing started: top-bar back, system back (button or gesture) and tapping the Servings or Preparation segment go back at once, no dialog.
+- Mark one step done (or start a timer; a finished-and-Done timer alone does not count), then top-bar back, system back and tapping an earlier progress segment each open the dialog "Leave cooking?" (de: "Kochen verlassen?") with three full-width buttons: Keep cooking (orange, de: "Weiterkochen"), Go to recipes (outlined, de: "Zu den Rezepten"), Stop cooking (dark, de: "Kochen beenden"). Tapping outside or system back while the dialog is open keeps cooking: dialog closes, nothing changes. Rotate with the dialog open: it stays.
+- Stop cooking: goes back one phase. Reopen Phase 3: no steps marked, timers gone, ongoing timer notifications removed, and with no other timer running the foreground service is stopped (`adb shell dumpsys activity services com.simmer.app` shows no TimerService). Servings and picks are unchanged in Phase 1. The Recipes tab has no "Cooking now" card for it.
+- Go to recipes: lands on the Recipes tab; a running timer keeps its notification and keeps counting. A "Cooking now" (de: "Gerade am Kochen") card shows the title and "4 servings" plus picks, with Continue (de: "Weiter"). Continue opens Phase 3 directly: marked steps and timers intact, Back goes to Phase 2 (or Phase 1 for a recipe without Method choices) and the Servings segment returns to Phase 1 with the same servings and picks. The card ignores search and filters.
+- Two recipes in progress (`chilli`, `curry`): one card each. Stop cooking one: only its card goes.
+- Finish every step (success panel): the card is gone from the Recipes tab; back from the success panel does not ask.
+- Process death: with a recipe in progress, Go to recipes, then `adb shell am kill com.simmer.app` and reopen from recents: card still there, Continue restores marked steps, servings, picks and the running timer's remaining time. Repeat with the kill while on Phase 3 (dialog not shown): same state.
+- A timer alone (no step marked) is enough for the card; pausing it keeps the card; resetting it (and no step marked) removes it.
+- German: all dialog and card strings; long labels wrap. Light and dark.
+- Card look is a reuse of the Planned card, no design exists: flagged for design review.
+
 ### Recipes overview (#9)
 
 The Recipes tab is the start screen. "Added by you" and "Edited" tags need a User Recipe or edited built-in, which no UI creates yet (see the throwaway branch in the PR).

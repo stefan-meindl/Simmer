@@ -9,6 +9,7 @@ import com.simmer.app.data.ShoppingRepository
 import com.simmer.app.data.decodeSelection
 import com.simmer.app.data.encodeSelection
 import com.simmer.app.domain.CookingProgressStore
+import com.simmer.app.domain.CookingSessions
 import com.simmer.app.domain.CookingView
 import com.simmer.app.domain.StepTimerStore
 import com.simmer.app.domain.TimerState
@@ -85,6 +86,7 @@ class RecipeFlowViewModel @Inject constructor(
     private val shopping: ShoppingRepository,
     private val progress: CookingProgressStore,
     private val stepTimers: StepTimerStore,
+    private val sessions: CookingSessions,
     private val prefs: PrefsRepository,
 ) : ViewModel() {
 
@@ -164,6 +166,8 @@ class RecipeFlowViewModel @Inject constructor(
             phase1.filterNotNull().collect {
                 savedState[KEY_SERVINGS] = it.servings
                 savedState[KEY_SELECTION] = encodeSelection(it.selection)
+                // Persisted with the marked Steps, so a recipe left mid-cooking resumes with the same plan.
+                progress.setChoice(recipeId, PlannedChoice(it.servings, it.selection))
             }
         }
         viewModelScope.launch {
@@ -174,7 +178,7 @@ class RecipeFlowViewModel @Inject constructor(
                 phase1.update { current ->
                     when {
                         recipe == null -> null
-                        current == null -> Phase1State.initial(recipe, planned, draft = savedDraft())
+                        current == null -> Phase1State.initial(recipe, planned, draft = savedDraft() ?: sessions.resumeChoice(recipe))
                         else -> current.copy(recipe = recipe)
                     }
                 }
@@ -218,6 +222,15 @@ class RecipeFlowViewModel @Inject constructor(
     fun markStepDone(stepId: String) = progress.markDone(recipeId, stepId)
 
     fun undoStep(stepId: String) = progress.undo(recipeId, stepId)
+
+    /** Whether leaving Phase 3 backwards should ask first: this recipe is in progress. */
+    fun needsLeaveConfirm(): Boolean {
+        val state = phase1.value ?: return false
+        return sessions.isInProgress(state.recipe, PlannedChoice(state.servings, state.selection))
+    }
+
+    /** Stop cooking: cancels this recipe's timers and clears its Cooking Progress; servings and Selection stay. */
+    fun stopCooking() = sessions.stop(recipeId)
 
     fun dismissToast() {
         toast.value = null

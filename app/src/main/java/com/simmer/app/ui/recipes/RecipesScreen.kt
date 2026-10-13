@@ -80,6 +80,7 @@ fun RecipesScreen(
     onThemeToggle: () -> Unit,
     onAddRecipe: () -> Unit,
     onOpenRecipe: (String) -> Unit,
+    onContinueCooking: (Recipe) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: RecipesViewModel = hiltViewModel(),
 ) {
@@ -136,6 +137,13 @@ fun RecipesScreen(
                 }
                 item(key = "chips") {
                     TagChips(overview.tags, viewModel::toggleTag)
+                }
+                if (content.cooking.isNotEmpty()) {
+                    item(key = "cooking-title") { SectionTitle(stringResource(R.string.recipes_cooking_now)) }
+                    items(content.cooking, key = { "cooking-" + it.recipe.id }) { entry ->
+                        // Same look as a Planned card; the choice is the one the Steps were marked under.
+                        PlannedCard(PlannedEntry(entry.recipe, entry.choice), onContinue = { onContinueCooking(entry.recipe) })
+                    }
                 }
                 if (overview.planned.isNotEmpty()) {
                     item(key = "planned-title") { SectionTitle(stringResource(R.string.recipes_planned)) }
