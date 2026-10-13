@@ -70,7 +70,9 @@ Open `chilli`:
 - Swap cards: 2 columns, selected has thick orange outline, ingredient list changes, "Your pick" tag appears.
 - Add-in rows: checkbox shows "+ amount" scaled by servings; toggling on then off returns button state to what it was.
 - Caption reads "n items · s servings".
-- Add to list: toast "Added n items for s servings...", button becomes "On your list"; change servings or a choice and it reverts to "Add to list". Toast "View list" opens Shopping tab.
+- Add to list: button reads "Add to list · 4 servings" ("· 1 serving" at 1; de: "Auf die Liste · 4 Portionen", "1 Portion"). Tap: toast "Added n items for s servings...", button becomes "Remove from list · 4 servings" (de: "Von der Liste entfernen · 4 Portionen"); change servings or a choice and it reverts to "Add to list · ...". Toast "View list" opens Shopping tab; the button itself no longer navigates.
+- Remove from list: with the button showing "Remove from list", tap it: no confirm, button flips back to "Add to list", the Shopping tab has none of the recipe's items (ticked ones too) and the Recipes tab no longer lists it under Planned; manual items and other recipes stay. A running or marked Cooking now card for it stays.
+- Narrow width / large font / German: the button text wraps instead of clipping, both bottom buttons stay usable.
 - Add again: replaces the recipe's items on the Shopping tab (see Shopping list below), no duplicates.
 - Progress bar: 3 segments, only current is active; "Preparation" opens Phase 2 (see below); the Cooking segment does nothing (Phase 3 is reached only via Start cooking).
 - Back button and Edit button (placeholder).
@@ -117,7 +119,7 @@ Open `chilli`, Preparation, Start cooking. "In progress" = a StepTimer running o
 - Process death: with a recipe in progress, Go to recipes, then `adb shell am kill com.simmer.app` and reopen from recents: card still there, Continue restores marked steps, servings, picks and the running timer's remaining time. Repeat with the kill while on Phase 3 (dialog not shown): same state.
 - A timer alone (no step marked) is enough for the card; pausing it keeps the card; resetting it (and no step marked) removes it.
 - German: all dialog and card strings; long labels wrap. Light and dark.
-- Card look is a reuse of the Planned card, no design exists: flagged for design review.
+- Card look is a reuse of the Planned card, no design exists: flagged for design review. Cooking now cards have no three-dot menu.
 
 ### Recipes overview (#9)
 
@@ -129,7 +131,7 @@ The Recipes tab is the start screen. "Added by you" and "Edited" tags need a Use
 - Count below filters: "5 recipes", "1 recipe" (singular), updates as you filter; TalkBack announces changes. "Clear filters" link appears only while a filter is active and resets search, category and tags.
 - Empty state: dashed box, "No recipes match these filters." and a Clear filters button.
 - Card: gradient icon tile (flame, chef hat, utensils, egg, carrot), title, category badge, "35 min · Easy" (de: "35 Min. · Einfach"), accent "3 variations" only when the recipe has variations, tags joined with " · ". Tapping opens Flow Phase 1 for that recipe.
-- Planned section: absent on a fresh install. Open `chilli`, switch Mince to Plant-based, toggle Dark beer, tap Add to list, go back: a cream "Planned" card reads "4 servings · Plant-based · Dark beer". Continue reopens Phase 1 with those servings and picks, button shows "On your list". Planned cards ignore search and filters.
+- Planned section: absent on a fresh install. Open `chilli`, switch Mince to Plant-based, toggle Dark beer, tap Add to list, go back: a cream "Planned" card reads "4 servings · Plant-based · Dark beer". Continue reopens Phase 1 with those servings and picks, button shows "On your list". Planned cards ignore search and filters. Each Planned card has a three-dot menu (TalkBack "More options for Chilli con carne") with one item, "Remove from list" (de: "Von der Liste entfernen"): tap it and the card and the recipe's Shopping items go at once, no confirm, no undo. Cooking now cards have no menu.
 - Filters survive rotation and `adb shell am kill com.simmer.app`.
 - Bottom tab bar does not cover the last card.
 
@@ -169,6 +171,11 @@ Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to li
   - Expand "In your basket" and untick an item: it returns to its aisle instantly, no fade or delay.
   - Turn on reduced motion (Settings > Accessibility > Remove animations, or `adb shell settings put global animator_duration_scale 0`): tick an item, it stays struck through for 3s, then jumps to the basket with no fade or collapse. Restore with `... animator_duration_scale 1`.
   - TalkBack: during the 3s the row still reads as a checked checkbox and a double tap unticks it.
+- Clear actions (#60): the header has a three-dot menu (TalkBack "More options"). Empty list: no menu. With items but none ticked: only "Clear all". With a ticked item (even one still in its grace period): both. German: "Abgehakte entfernen", "Alles entfernen".
+  - Add `chilli` and `curry`, tick every `curry` item and one `chilli` item, manual item "Batteries" ticked too. Clear ticked off: snackbar "Cleared n items" with Undo for about 5s then gone; `curry` is gone from Planned on Recipes, `chilli` stays Planned (its unticked items remain), the ticked manual item is gone.
+  - Undo within 5s: items return still ticked, `curry` is Planned again with its servings and picks (Continue reopens Phase 1 with "Remove from list" on the button). Tapping nothing: the snackbar leaves after ~5s and Undo is gone.
+  - Clear all: every item (recipe, manual, basket) and all Planned cards go; Undo restores everything. A Cooking now card is untouched by both actions.
+  - Rotate with the snackbar showing: it stays with Undo.
 - Re-add: open `chilli`, change servings to 2, Add to list again: aisle amounts change, no duplicate rows; manual items stay; items you had ticked and that remain stay ticked. Add `curry` too: both recipes' items show, notes differ.
 - `adb shell am kill com.simmer.app`, reopen: list, ticks, badge kept. Typed-but-unsent text and the open basket survive rotation.
 - German: switch in Settings, all strings above translate (built-in recipe ingredient names and aisles stay English).
