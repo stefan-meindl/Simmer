@@ -28,6 +28,12 @@ fun parseModelJson(reply: String): Map<String, Any?>? {
     return (element as? JsonObject)?.let { toPlain(it) as Map<String, Any?> }
 }
 
+/** True when [reply] opens a JSON object that never closes (the chatbot stopped mid-reply). */
+fun isCutOffJson(reply: String): Boolean {
+    val start = reply.indexOf('{')
+    return start >= 0 && matchingBrace(reply, start) == null
+}
+
 /** Index of the brace closing the one at [open], skipping strings; null when it never closes. */
 private fun matchingBrace(text: String, open: Int): Int? {
     var depth = 0

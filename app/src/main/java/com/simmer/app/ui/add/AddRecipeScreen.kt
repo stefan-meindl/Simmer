@@ -273,6 +273,8 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
     val scope = rememberCoroutineScope()
     val copyLabel = stringResource(R.string.add_copy_prompt)
     val copiedText = stringResource(R.string.add_prompt_copied)
+    val fixCopyLabel = stringResource(R.string.add_copy_fix_prompt)
+    val fixCopiedText = stringResource(R.string.add_fix_prompt_copied)
 
     TopRow(stringResource(R.string.add_choose_chatbot), onBack)
     Column(
@@ -333,6 +335,26 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             onChange = viewModel::setReply,
             onClear = viewModel::clearReply,
         )
+        if (ui.error != null) {
+            Text(
+                text = stringResource(R.string.add_reply_error),
+                style = SimmerTextStyle_BodySm,
+                color = colors.textPrimary,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            SecondaryButton(
+                text = stringResource(R.string.add_copy_fix_prompt),
+                onClick = {
+                    val prompt = fixPromptFor(context, ui.lang, ui.error)
+                    scope.launch {
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(fixCopyLabel, prompt)))
+                        Toast.makeText(context, fixCopiedText, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                icon = { icon(R.drawable.ic_copy, 16) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 
     BottomBar {
