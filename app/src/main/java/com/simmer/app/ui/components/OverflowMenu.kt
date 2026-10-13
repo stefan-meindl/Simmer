@@ -19,7 +19,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.simmer.app.R
 import com.simmer.app.ui.theme.LocalSimmerColors
-import com.simmer.app.ui.theme.LocalSimmerDarkTheme
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
 
 private val MenuShape = RoundedCornerShape(12.dp)
@@ -39,15 +38,15 @@ fun OverflowMenu(contentDescription: String, actions: List<MenuAction>, modifier
             tint = colors.textPrimary,
             modifier = Modifier.size(24.dp),
         )
-        // Same surface as the ingredient tooltip: card fill, 2dp strong outline, 12dp corners; shadow-4 is
-        // light theme only, dark relies on the outline.
+        // Same surface as the ingredient tooltip: card fill, 2dp strong outline, 12dp corners. No shadow: the
+        // platform menu window clips it and draws it in the default (heavier) colour, which looks out of place.
         DropdownMenu(
             expanded = open,
             onDismissRequest = { open = false },
             shape = MenuShape,
             containerColor = colors.surfaceCard,
             tonalElevation = 0.dp,
-            shadowElevation = if (LocalSimmerDarkTheme.current) 0.dp else 16.dp,
+            shadowElevation = 0.dp,
             border = BorderStroke(2.dp, colors.borderStrong),
         ) {
             actions.forEach { action ->
