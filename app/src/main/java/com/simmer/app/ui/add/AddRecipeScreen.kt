@@ -3,6 +3,8 @@ package com.simmer.app.ui.add
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.withFrameNanos
 import android.content.ClipData
+import android.content.Context
+import androidx.compose.ui.platform.Clipboard
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.platform.ClipEntry
@@ -292,6 +294,11 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
     // The last text this screen put on the clipboard or prefilled from it; never offered for autofill again
     // (the prompts carry a recipe example that would parse).
     var handledClip by rememberSaveable { mutableStateOf("") }
+    // The one way this screen writes the clipboard, so a new writer cannot forget to record the text.
+    suspend fun copyToClipboard(label: String, text: String) {
+        handledClip = text
+        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(label, text)))
+    }
 
     // On return to the app, a clipboard reply that reads as a recipe prefills the reply field. Never submits.
     // Reading the clipboard needs window focus on Android 10+, which arrives just after ON_RESUME.
@@ -307,10 +314,7 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
     val windowFocused = LocalWindowInfo.current.isWindowFocused
     LaunchedEffect(resumed, windowFocused) {
         if (!resumed || !windowFocused) return@LaunchedEffect
-        val clip = clipboard.getClipEntry()?.clipData
-            ?.takeIf { it.itemCount > 0 }
-            ?.getItemAt(0)?.coerceToText(context)?.toString()
-        val reply = autofillReply(clip, handledClip, ui.kitchen.appliances.toSet(), ui.kitchen.mode)
+        val reply = autofillReply(clipboard.readText(context),handledClip, ui.kitchen.appliances.toSet(), ui.kitchen.mode)
         if (reply != null) {
             handledClip = reply
             viewModel.setReply(reply)
@@ -367,9 +371,8 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             text = stringResource(R.string.add_copy_prompt),
             onClick = {
                 val prompt = readerPromptFor(context, ui)
-                handledClip = prompt
                 scope.launch {
-                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(copyLabel, prompt)))
+                    copyToClipboard(copyLabel, prompt)
                     Toast.makeText(context, copiedText, Toast.LENGTH_SHORT).show()
                 }
             },
@@ -382,9 +385,8 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
                 text = geminiLabel,
                 onClick = {
                     val prompt = readerPromptFor(context, ui)
-                    handledClip = prompt
                     scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(copyLabel, prompt)))
+                        copyToClipboard(copyLabel, prompt)
                         openInGemini(context, prompt)
                     }
                 },
@@ -417,9 +419,8 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
                 text = stringResource(R.string.add_copy_fix_prompt),
                 onClick = {
                     val prompt = fixPromptFor(context, ui.lang, ui.error)
-                    handledClip = prompt
                     scope.launch {
-                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(fixCopyLabel, prompt)))
+                        copyToClipboard(fixCopyLabel, prompt)
                         Toast.makeText(context, fixCopiedText, Toast.LENGTH_SHORT).show()
                     }
                 },
@@ -484,6 +485,12 @@ private fun PasteField(
     }
 }
 
+/** The clipboard's first item as text, or null when it holds none. */
+private suspend fun Clipboard.readText(context: Context): String? =
+    getClipEntry()?.clipData
+        ?.takeIf { it.itemCount > 0 }
+        ?.getItemAt(0)?.coerceToText(context)?.toString()
+
 /** A click handler that pastes the clipboard's text into [onPasted], or calls [onEmpty] when it holds none. */
 @Composable
 private fun rememberPasteAction(onPasted: (String) -> Unit, onEmpty: () -> Unit): () -> Unit {
@@ -492,9 +499,7 @@ private fun rememberPasteAction(onPasted: (String) -> Unit, onEmpty: () -> Unit)
     val scope = rememberCoroutineScope()
     return {
         scope.launch {
-            val pasted = clipboard.getClipEntry()?.clipData
-                ?.takeIf { it.itemCount > 0 }
-                ?.getItemAt(0)?.coerceToText(context)?.toString()
+            val pasted = clipboard.readText(context)
             if (pasted.isNullOrEmpty()) onEmpty() else onPasted(pasted)
         }
     }

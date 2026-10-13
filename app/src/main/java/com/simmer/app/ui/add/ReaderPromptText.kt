@@ -57,7 +57,6 @@ fun openInGemini(context: Context, prompt: String): Boolean {
         type = "text/plain"
         putExtra(Intent.EXTRA_TEXT, prompt)
         setPackage(GEMINI_PACKAGE)
-        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
     }
     return try {
         context.startActivity(send)
