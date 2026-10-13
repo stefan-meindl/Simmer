@@ -5,19 +5,10 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import com.simmer.app.domain.hasSelectableMethod
 import com.simmer.app.domain.model.Recipe
 
-private fun NavHostController.isTab(route: Any): Boolean = when (route) {
-    RecipesTab -> currentDestination?.hasRoute<RecipesTab>() == true
-    ShoppingListTab -> currentDestination?.hasRoute<ShoppingListTab>() == true
-    SettingsTab -> currentDestination?.hasRoute<SettingsTab>() == true
-    else -> false
-}
+private fun NavHostController.isTab(route: Any): Boolean = currentDestination?.hasRoute(route::class) == true
 
 private fun NavHostController.hasAddRecipeOnStack(): Boolean =
     runCatching { getBackStackEntry<AddRecipe>() }.isSuccess
-
-/** A tab is shown over an origin (Add recipe or the recipe flow), so a Back banner is showing. */
-private fun NavHostController.hasBannerOrigin(): Boolean =
-    backOriginFor(currentDestination?.route, previousBackStackEntry?.destination?.route) != null
 
 /**
  * Switches to a bottom tab, as the tab bar does.
@@ -25,11 +16,12 @@ private fun NavHostController.hasBannerOrigin(): Boolean =
  * A screen that is not a tab (Add recipe or the recipe flow, with a tab opened on top of it) is abandoned, not saved:
  * `popUpTo { saveState }` would store it with the tab's state, and `restoreState` would bring it back
  * the next time that tab is tapped (the Recipes tab then showed Settings on top of Add recipe again).
- * Tapping the tab that is already shown does nothing, so Add recipe keeps its draft.
+ * The same holds for the recipe flow under the Shopping list tab ("View list").
+ * Tapping the tab that is already shown does nothing, so Add recipe and the flow keep their state.
  */
 fun NavHostController.navigateToTab(route: Any) {
     if (isTab(route)) return
-    if (hasBannerOrigin()) popBackStack(graph.startDestinationId, inclusive = false)
+    if (backOrigin() != null) popBackStack(graph.startDestinationId, inclusive = false)
     navigate(route) {
         // Pop up to the start destination of the graph to
         // avoid building up a large back stack.

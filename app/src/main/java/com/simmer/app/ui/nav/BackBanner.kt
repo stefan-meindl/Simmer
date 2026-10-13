@@ -51,11 +51,15 @@ fun backOriginFor(currentRoute: String?, previousRoute: String?): BackOrigin? {
     }
 }
 
-private val TAB_ROUTES = listOf(RecipesTab, ShoppingListTab, SettingsTab).map { it::class.qualifiedName }
+private val TAB_ROUTES = TABS.map { it::class.qualifiedName }
+
+/** The origin the current tab's Back banner names, or null for no banner. */
+fun NavHostController.backOrigin(): BackOrigin? =
+    backOriginFor(currentDestination?.route, previousBackStackEntry?.destination?.route)
 
 /**
- * A tab screen with the pinned Back banner above it when a [BackOrigin] sits underneath the tab.
- * The banner pops to the origin, as device Back does; the origin keeps its state.
+ * Wraps the nav host: the pinned Back banner sits above it when a [BackOrigin] sits underneath the
+ * shown tab. The banner pops to the origin, as device Back does; the origin keeps its state.
  */
 @Composable
 fun BackBannerHost(
@@ -63,8 +67,9 @@ fun BackBannerHost(
     modifier: Modifier = Modifier,
     content: @Composable () -> Unit,
 ) {
+    // Read so the banner follows every back stack change.
     val entry by navController.currentBackStackEntryAsState()
-    val origin = backOriginFor(entry?.destination?.route, navController.previousBackStackEntry?.destination?.route)
+    val origin = if (entry != null) navController.backOrigin() else null
     Column(modifier) {
         if (origin != null) BackBanner(origin, onClick = { navController.popBackStack() })
         // The banner already sits below the status bar, so the screen must not pad for it again.

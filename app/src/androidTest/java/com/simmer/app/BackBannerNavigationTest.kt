@@ -56,14 +56,16 @@ class BackBannerNavigationTest {
     fun setUp() {
         compose.setContent {
             nav = rememberNavController()
-            NavHost(nav, startDestination = RecipesTab) {
-                composable<RecipesTab> { BackBannerHost(nav) { Text("recipes") } }
-                composable<ShoppingListTab> { BackBannerHost(nav) { Text("shopping") } }
-                composable<SettingsTab> { BackBannerHost(nav) { Text("settings") } }
-                composable<AddRecipe> { Counter("add") }
-                composable<RecipeFlow> { Counter("flow") }
-                composable<EditRecipe> { Text("edit") }
-                composable<YourKitchen> { Text("kitchen") }
+            BackBannerHost(nav) {
+                NavHost(nav, startDestination = RecipesTab) {
+                    composable<RecipesTab> { Text("recipes") }
+                    composable<ShoppingListTab> { Text("shopping") }
+                    composable<SettingsTab> { Text("settings") }
+                    composable<AddRecipe> { Counter("add") }
+                    composable<RecipeFlow> { Counter("flow") }
+                    composable<EditRecipe> { Text("edit") }
+                    composable<YourKitchen> { Text("kitchen") }
+                }
             }
         }
         compose.waitForIdle()

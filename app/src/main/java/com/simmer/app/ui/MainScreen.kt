@@ -1,7 +1,11 @@
 package com.simmer.app.ui
 
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -77,6 +81,8 @@ fun MainScreen(
         val hideTabBar = currentDestination?.shouldHideTabBar() ?: false
 
         Scaffold(
+            // The screens (and the Back banner) pad for the status bar themselves; Scaffold only adds the bottom.
+            contentWindowInsets = WindowInsets.systemBars.only(WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom),
             bottomBar = {
                 if (!hideTabBar) {
                     BottomTabBar(

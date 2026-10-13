@@ -1,10 +1,7 @@
 package com.simmer.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,6 +11,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.size
 import com.simmer.app.R
@@ -227,19 +226,11 @@ fun EditAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = LocalSimmerColors.current
     LinkButton(
         text = text,
         onClick = onClick,
         modifier = modifier,
-        icon = {
-            Icon(
-                painter = painterResource(R.drawable.ic_pencil),
-                contentDescription = null,
-                tint = colors.textLink,
-                modifier = Modifier.size(16.dp),
-            )
-        },
+        icon = { PencilIcon(size = 16.dp) },
     )
 }
 
@@ -250,20 +241,19 @@ fun EditIconAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = LocalSimmerColors.current
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .size(44.dp)
-            .clickable(role = Role.Button, onClick = onClick),
-    ) {
-        Icon(
-            painter = painterResource(R.drawable.ic_pencil),
-            contentDescription = contentDescription,
-            tint = colors.textLink,
-            modifier = Modifier.size(18.dp),
-        )
+    IconButton(onClick = onClick, modifier = modifier.size(44.dp)) {
+        PencilIcon(size = 18.dp, contentDescription = contentDescription)
     }
+}
+
+@Composable
+private fun PencilIcon(size: Dp, contentDescription: String? = null) {
+    Icon(
+        painter = painterResource(R.drawable.ic_pencil),
+        contentDescription = contentDescription,
+        tint = LocalSimmerColors.current.textLink,
+        modifier = Modifier.size(size),
+    )
 }
 
 // ---------------------------------------------------------------------------
