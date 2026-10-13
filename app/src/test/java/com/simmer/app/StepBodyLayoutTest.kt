@@ -2,6 +2,7 @@ package com.simmer.app
 
 import com.simmer.app.domain.BODY_TIP_MARK
 import com.simmer.app.domain.Phase1State
+import com.simmer.app.domain.hasTipLinks
 import com.simmer.app.domain.layoutBody
 import com.simmer.app.domain.model.BodySegment
 import org.junit.Assert.assertEquals
@@ -59,5 +60,21 @@ class StepBodyLayoutTest {
         val body = layoutBody(listOf(link("zz", "salt")), byId)
         assertEquals("salt", body.text)
         assertTrue(body.links.isEmpty())
+    }
+
+    private val steps = state.resolved().steps
+
+    @Test fun `no tips hint when no linked ingredient has tips`() {
+        assertFalse(hasTipLinks(steps, byId))
+    }
+
+    @Test fun `tips hint when a linked ingredient has tips`() {
+        val tipped = byId + ("ga" to byId.getValue("ga").copy(tips = listOf("Smash it.")))
+        assertTrue(hasTipLinks(steps, tipped))
+    }
+
+    @Test fun `tips on an ingredient no step links to do not count`() {
+        val tipped = byId + ("cr" to byId.getValue("cr").copy(tips = listOf("Stir in last.")))
+        assertFalse(hasTipLinks(steps.filter { it.id == "p-veg" }, tipped))
     }
 }

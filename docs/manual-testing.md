@@ -95,7 +95,7 @@ Open `chilli`, tap Preparation:
 
 Open `chilli`, Preparation, Start cooking (Phase 3 has no entry button yet; use the throwaway branch, section 3):
 - Progress line "0 of n steps done" (de: "0 von n Schritten erledigt"), selection summary on the right ("4 servings", plus any non-default swap or add-in), 4dp bar fills as steps finish.
-- Hint "Tap an ingredient marked with a lightbulb for its tips." (de: "Tippe auf eine Zutat mit Glühbirne für ihre Tipps.") with lightbulb.
+- Hint "Tap an ingredient marked with a lightbulb for its tips." (de: "Tippe auf eine Zutat mit Glühbirne für ihre Tipps.") with lightbulb. It only shows when a step links an ingredient with tips (not on the built-in recipes).
 - Sections: Preparation ("Get everything ready before you turn on the heat.") then Cooking ("Steps marked with a warning need a preparation step first."). Labels "Prep 1..n" / "Step 1..n" (de: "Vorb." / "Schritt").
 - First unfinished step has a thick orange outline, orange eyebrow and a dark Mark as done button; others have the outlined secondary button.
 - "Soften the onions" shows a cream note with orange outline, alert icon, "Needs Prep 1 first", "Chop the vegetables" and "Go to step", which smooth-scrolls to Prep 1. After marking Prep 1 done the note becomes the quiet "Prep 1 done · Chop the vegetables" line.
@@ -219,10 +219,10 @@ Built-in recipes have no tips, so make a recipe with them: Recipes tab, +, "With
 `{"title":"Pancakes","summary":"Thin and easy.","category":"Breakfast","time":20,"base":4,"ingredients":[{"id":"i1","name":"Flour","q":200,"u":"g","tips":["Sift it for lighter pancakes.","Plain flour works too."]},{"id":"i2","name":"Milk","q":300,"u":"ml"}],"steps":[{"id":"p1","ph":"prep","t":"Whisk","b":"Whisk the {i1:flour} with the {i2:milk}."},{"id":"c1","ph":"cook","t":"Fry","b":"Fry until golden.","d":300,"needs":["p1"]}]}`
 - Inline amounts: "Whisk the flour (200 g) with the milk (300 ml)." both words and their "(amount)" underlined in orange, in light and dark. Settings Units Imperial: "flour (7 oz)"; servings in Phase 1 scale them; German shows the comma where an amount has a decimal.
 - Only "flour" has a lightbulb after "(200 g)" (the bulb is not underlined). Tapping "milk (300 ml)" does nothing.
-- Tap "flour": the tooltip opens centred under the word with a 14dp arrow pointing at it, white card with rounded corners and a soft shadow (light) or just the outline (dark). The word gets a warm background while it is open. Title "Tips" (de: "Tipps"), X button at the top right, then the two tips. No ingredient name, amount, note or tabs.
+- Tap "flour": the tooltip opens centred under the word with a 14dp arrow pointing at it, white card with rounded corners and a soft shadow (light) or just the outline (dark). The word gets a warm background while it is open. Title "Tips" (de: "Tipps"), X button at the top right (the first frame must not flash the arrow on the wrong side), then the two tips. No ingredient name, amount, note or tabs.
 - Close with the X, and again by tapping outside: both dismiss and the word loses its background. Back also dismisses.
 - Scroll so the word is near the bottom of the screen and tap it: the tooltip opens above the word with the arrow at its bottom edge. Near the screen edge the tooltip keeps a 12dp margin and the arrow still points at the word. A long tip wraps; the tooltip is at most 300dp wide.
-- TalkBack: the link reads "flour (200 g), tips for Flour, button"; opening announces "Tips"; the close button reads "Close tips" and is at least 40dp. With a large font nothing is clipped.
+- TalkBack: the link reads "flour (200 g), tips for Flour, button"; opening announces "Tips"; the close button reads "Close tips" and is a 44dp target. With a large font nothing is clipped.
 
 ### Add recipe: paste a chatbot reply (#48)
 

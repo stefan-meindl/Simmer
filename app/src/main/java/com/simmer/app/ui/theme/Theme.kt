@@ -80,7 +80,10 @@ fun SimmerTheme(
     val simmerColors = if (darkTheme) DarkSimmerColors else LightSimmerColors
     val materialColorScheme = if (darkTheme) SimmerDarkColorScheme else SimmerLightColorScheme
 
-    CompositionLocalProvider(LocalSimmerColors provides simmerColors) {
+    CompositionLocalProvider(
+        LocalSimmerColors provides simmerColors,
+        LocalSimmerDarkTheme provides darkTheme,
+    ) {
         MaterialTheme(
             colorScheme = materialColorScheme,
             typography = Typography,

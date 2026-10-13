@@ -2,6 +2,7 @@ package com.simmer.app.domain
 
 import com.simmer.app.domain.model.BodySegment
 import com.simmer.app.domain.model.ResolvedIngredient
+import com.simmer.app.domain.model.ResolvedStep
 
 /** Placeholder char the step text carries where the lightbulb icon is drawn (object replacement char). */
 const val BODY_TIP_MARK = '￼'
@@ -49,6 +50,12 @@ fun layoutBody(segs: List<BodySegment>, ingredients: Map<String, ResolvedIngredi
     }
     return BodyLayout(text, links)
 }
+
+/** True when some step links an ingredient that has tips, i.e. the cooking flow shows a lightbulb to tap. */
+fun hasTipLinks(steps: List<ResolvedStep>, ingredients: Map<String, ResolvedIngredient>): Boolean =
+    steps.any { step ->
+        step.segs.any { it is BodySegment.IngredientLinkSegment && ingredients[it.id]?.tips?.isNotEmpty() == true }
+    }
 
 /** Where the Tips tooltip goes (px, window coordinates) and where its arrow sits from the tooltip's left edge. */
 data class TooltipPlacement(val x: Int, val y: Int, val below: Boolean, val arrowX: Int)

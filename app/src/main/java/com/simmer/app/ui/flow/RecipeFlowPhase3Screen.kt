@@ -8,32 +8,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.text.InlineTextContent
-import androidx.compose.foundation.text.appendInlineContent
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.paneTitle
-import androidx.compose.ui.text.Placeholder
-import androidx.compose.ui.text.PlaceholderVerticalAlign
-import androidx.compose.ui.unit.sp
-import com.simmer.app.domain.BODY_TIP_MARK
-import com.simmer.app.domain.BodyLink
-import com.simmer.app.domain.TooltipPlacement
-import com.simmer.app.domain.layoutBody
-import com.simmer.app.domain.placeTooltip
-import com.simmer.app.ui.theme.DarkSimmerColors
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
@@ -44,6 +28,8 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,20 +40,28 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.semantics.liveRegion
-import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
 import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
@@ -77,25 +71,33 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simmer.app.R
+import com.simmer.app.domain.BODY_TIP_MARK
+import com.simmer.app.domain.BodyLink
 import com.simmer.app.domain.CookingStep
 import com.simmer.app.domain.CookingView
 import com.simmer.app.domain.TimerState
+import com.simmer.app.domain.TooltipPlacement
 import com.simmer.app.domain.formatDuration
+import com.simmer.app.domain.hasSelectableMethod
+import com.simmer.app.domain.hasTipLinks
+import com.simmer.app.domain.layoutBody
 import com.simmer.app.domain.model.BodySegment
 import com.simmer.app.domain.model.ResolvedIngredient
+import com.simmer.app.domain.placeTooltip
 import com.simmer.app.domain.selectionSummary
-import com.simmer.app.domain.hasSelectableMethod
 import com.simmer.app.ui.components.DarkButton
 import com.simmer.app.ui.components.GradientHeroCard
 import com.simmer.app.ui.components.LinkButton
-import com.simmer.app.ui.components.SecondaryButton
 import com.simmer.app.ui.components.LiveStepTimer
+import com.simmer.app.ui.components.SecondaryButton
 import com.simmer.app.ui.theme.LocalSimmerColors
+import com.simmer.app.ui.theme.LocalSimmerDarkTheme
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMdMedium
 import com.simmer.app.ui.theme.SimmerTextStyle_BodySmMedium
@@ -116,10 +118,10 @@ private sealed interface CookingItem {
     data class StepItem(val cookingStep: CookingStep) : CookingItem
 }
 
-private fun cookingItems(view: CookingView): List<CookingItem> = buildList {
+private fun cookingItems(view: CookingView, showHint: Boolean): List<CookingItem> = buildList {
     if (view.allDone) add(CookingItem.Success)
     add(CookingItem.Progress)
-    add(CookingItem.Hint)
+    if (showHint) add(CookingItem.Hint)
     val (prep, cook) = view.steps.partition { it.step.phase == "prep" }
     if (prep.isNotEmpty()) {
         add(CookingItem.Section(prep = true))
@@ -194,7 +196,7 @@ private fun CookingList(
     val colors = LocalSimmerColors.current
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val items = cookingItems(content.view)
+    val items = cookingItems(content.view, showHint = hasTipLinks(content.view.steps.map { it.step }, content.ingredients))
     val summary = selectionSummary(
         content.recipe, content.selection,
         pluralStringResource(R.plurals.flow_servings_count, content.servings, content.servings),
@@ -505,7 +507,6 @@ private fun NeedsWarning(label: String, title: String, onJump: () -> Unit) {
     }
 }
 
-
 // ---------------------------------------------------------------------------
 // Step body: Links with their amount inline; Links with tips open the Tips tooltip
 // ---------------------------------------------------------------------------
@@ -521,11 +522,14 @@ private val TooltipArrow = 14.dp
 private val TooltipArrowInset = 20.dp
 private val TooltipShadowPad = 24.dp
 private val TooltipCorner = 12.dp
-private val CloseButtonSize = 40.dp
+private val CloseButtonSize = 44.dp
 private const val TIP_ICON = "tip"
 
 /** The part of a Link on one text line, in text coordinates. */
-private data class LinkLine(val index: Int, val left: Float, val right: Float)
+private data class LinkLine(val index: Int, val left: Float, val right: Float, val top: Float, val bottom: Float) {
+    val width get() = right - left
+    val height get() = bottom - top
+}
 
 private fun linkLines(layout: TextLayoutResult, start: Int, end: Int): List<LinkLine> {
     val first = layout.getLineForOffset(start)
@@ -535,6 +539,8 @@ private fun linkLines(layout: TextLayoutResult, start: Int, end: Int): List<Link
             index = line,
             left = if (line == first) layout.getHorizontalPosition(start, true) else layout.getLineLeft(line),
             right = if (line == last) layout.getHorizontalPosition(end, true) else layout.getLineRight(line),
+            top = layout.getLineTop(line),
+            bottom = layout.getLineBottom(line),
         )
     }
 }
@@ -562,8 +568,8 @@ internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, Resolved
         )
     }
     var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    var open by remember { mutableStateOf<BodyLink?>(null) }
-    var anchor by remember { mutableStateOf(IntRect.Zero) }
+    var openLink by remember { mutableStateOf<BodyLink?>(null) }
+    var tipsAnchor by remember { mutableStateOf(IntRect.Zero) }
 
     // The vertical padding gives short links room to reach a 44dp touch target.
     val padPx = with(density) { LinkTargetPadding.roundToPx() }
@@ -580,20 +586,20 @@ internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, Resolved
                     val l = layout ?: return@drawBehind
                     val thickness = UnderlineThickness.toPx()
                     val gap = UnderlineOffset.toPx()
-                    open?.let { link ->
-                        linkLines(l, link.start, link.end).forEach { line ->
+                    // Like the design's Ingredient, the open highlight covers what is underlined.
+                    openLink?.let { link ->
+                        linkLines(l, link.start, link.underlineEnd).forEach { line ->
                             drawRoundRect(
                                 colors.surfaceWarmStrong,
-                                Offset(line.left, l.getLineTop(line.index)),
-                                Size(line.right - line.left, l.getLineBottom(line.index) - l.getLineTop(line.index)),
+                                Offset(line.left, line.top),
+                                Size(line.width, line.height),
                                 CornerRadius(4.dp.toPx()),
                             )
                         }
                     }
                     body.links.forEach { link ->
                         linkLines(l, link.start, link.underlineEnd).forEach { line ->
-                            val y = l.getLineBaseline(line.index) + gap
-                            drawRect(colors.accent, Offset(line.left, y), Size(line.right - line.left, thickness))
+                            drawRect(colors.accent, Offset(line.left, l.getLineBaseline(line.index) + gap), Size(line.width, thickness))
                         }
                     }
                 },
@@ -607,13 +613,12 @@ internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, Resolved
                     body.text.substring(link.start, link.underlineEnd),
                     ingredients.getValue(link.id).name,
                 )
+                val wordLines = linkLines(l, link.start, link.underlineEnd)
                 linkLines(l, link.start, link.end).forEachIndexed { n, line ->
-                    val width = (line.right - line.left).toInt()
-                    val height = (l.getLineBottom(line.index) - l.getLineTop(line.index)).toInt()
-                    val w = maxOf(width, minTargetPx)
-                    val h = maxOf(height, minTargetPx)
-                    val x = (line.left - (w - width) / 2f).toInt().coerceAtLeast(0)
-                    val y = (padPx + l.getLineTop(line.index) - (h - height) / 2f).toInt().coerceAtLeast(0)
+                    val w = maxOf(line.width.toInt(), minTargetPx)
+                    val h = maxOf(line.height.toInt(), minTargetPx)
+                    val x = (line.left - (w - line.width) / 2f).toInt().coerceAtLeast(0)
+                    val y = (padPx + line.top - (h - line.height) / 2f).toInt().coerceAtLeast(0)
                     Box(
                         Modifier
                             .offset { IntOffset(x, y) }
@@ -630,23 +635,25 @@ internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, Resolved
                                 indication = null,
                                 role = Role.Button,
                             ) {
-                                anchor = IntRect(
-                                    line.left.toInt(),
-                                    padPx + l.getLineTop(line.index).toInt(),
-                                    line.right.toInt(),
-                                    padPx + l.getLineBottom(line.index).toInt(),
+                                // The arrow points at the underlined word on the tapped line (the lightbulb may have wrapped).
+                                val target = wordLines.firstOrNull { it.index == line.index } ?: wordLines.last()
+                                tipsAnchor = IntRect(
+                                    target.left.toInt(),
+                                    padPx + target.top.toInt(),
+                                    target.right.toInt(),
+                                    padPx + target.bottom.toInt(),
                                 )
-                                open = link
+                                openLink = link
                             },
                     )
                 }
             }
         }
-        open?.let { link ->
+        openLink?.let { link ->
             TipsTooltip(
                 tips = ingredients.getValue(link.id).tips,
-                anchor = anchor,
-                onDismiss = { open = null },
+                anchor = tipsAnchor,
+                onDismiss = { openLink = null },
             )
         }
     }
@@ -656,13 +663,16 @@ internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, Resolved
 @Composable
 private fun TipsTooltip(tips: List<String>, anchor: IntRect, onDismiss: () -> Unit) {
     val colors = LocalSimmerColors.current
+    val isDark = LocalSimmerDarkTheme.current
     val density = LocalDensity.current
     val shape = RoundedCornerShape(TooltipCorner)
     val shadowPad = with(density) { TooltipShadowPad.roundToPx() }
     val margin = with(density) { TooltipMargin.roundToPx() }
     val gap = with(density) { TooltipGap.roundToPx() }
     val arrowInset = with(density) { TooltipArrowInset.roundToPx() }
-    var placement by remember { mutableStateOf(TooltipPlacement(0, 0, true, arrowInset)) }
+    // Null until the popup has been measured and placed; the tooltip stays invisible until then so the
+    // arrow never shows on the wrong side for a frame.
+    var placement by remember { mutableStateOf<TooltipPlacement?>(null) }
     val title = stringResource(R.string.flow_tips_title)
     Popup(
         popupPositionProvider = remember(anchor) {
@@ -695,9 +705,8 @@ private fun TipsTooltip(tips: List<String>, anchor: IntRect, onDismiss: () -> Un
         properties = PopupProperties(focusable = true),
     ) {
         // The outer padding leaves room for the shadow, which the popup window would otherwise clip.
-        Box(Modifier.padding(TooltipShadowPad)) {
+        Box(Modifier.padding(TooltipShadowPad).alpha(if (placement == null) 0f else 1f)) {
             Box(Modifier.widthIn(max = TooltipMaxWidth).semantics { paneTitle = title }) {
-                val isDark = colors === DarkSimmerColors
                 Box(
                     Modifier
                         .matchParentSize()
@@ -716,11 +725,11 @@ private fun TipsTooltip(tips: List<String>, anchor: IntRect, onDismiss: () -> Un
                         .background(colors.surfaceCard, shape)
                         .border(BorderStroke(2.dp, colors.borderStrong), shape),
                 )
-                TooltipArrowMark(placement)
+                placement?.let { TooltipArrowMark(it) }
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 6.dp, end = 6.dp),
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 4.dp, end = 4.dp),
                     ) {
                         Text(
                             title,
@@ -777,16 +786,13 @@ private fun BoxScope.TooltipArrowMark(placement: TooltipPlacement) {
             .rotate(45f)
             .background(colors.surfaceCard, RoundedCornerShape(topStart = 3.dp, bottomEnd = 3.dp))
             .drawBehind {
+                // Outline the two edges that face away from the card: top and left when below the word,
+                // bottom and right when above it.
                 val w = 2.dp.toPx()
-                val inset = w / 2
                 val s = size.width
-                if (below) {
-                    drawLine(colors.borderStrong, Offset(0f, inset), Offset(s, inset), w)
-                    drawLine(colors.borderStrong, Offset(inset, 0f), Offset(inset, s), w)
-                } else {
-                    drawLine(colors.borderStrong, Offset(0f, s - inset), Offset(s, s - inset), w)
-                    drawLine(colors.borderStrong, Offset(s - inset, 0f), Offset(s - inset, s), w)
-                }
+                val edge = if (below) w / 2 else s - w / 2
+                drawLine(colors.borderStrong, Offset(0f, edge), Offset(s, edge), w)
+                drawLine(colors.borderStrong, Offset(edge, 0f), Offset(edge, s), w)
             },
     )
 }
