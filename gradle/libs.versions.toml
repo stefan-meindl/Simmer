@@ -15,6 +15,7 @@ datastore = "1.2.1"
 navigationCompose = "2.10.2"
 kotlinxSerializationJson = "1.8.0"
 work = "2.10.2"
+# Pinned: 0.17+ pulls Kotlin 2.4 libs; the project compiler is Kotlin 2.2. Raise kotlin first.
 litertlm = "0.16.1"
 coroutines = "1.11.0"
 
