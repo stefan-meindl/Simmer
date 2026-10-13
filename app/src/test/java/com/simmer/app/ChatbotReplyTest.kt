@@ -1,7 +1,8 @@
 package com.simmer.app
 
 import com.simmer.app.domain.KitchenMode
-import com.simmer.app.domain.parseChatbotReply
+import com.simmer.app.domain.ReplyResult
+import com.simmer.app.domain.readChatbotReply
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -33,9 +34,9 @@ private val CHICKEN = """{
 }"""
 
 private fun parse(text: String, owned: Set<String> = emptySet(), mode: KitchenMode = KitchenMode.Free) =
-    parseChatbotReply(text, id = "u-new", appliances = owned, kitchenMode = mode)
+    (readChatbotReply(text, id = "u-new", appliances = owned, kitchenMode = mode) as? ReplyResult.Done)?.recipe
 
-/** Seam: [parseChatbotReply], a pasted chatbot reply into a new User Recipe (or null when it cannot be one). */
+/** Seam: [readChatbotReply], a pasted chatbot reply into a new User Recipe (or null when it cannot be one). */
 class ChatbotReplyTest {
 
     @Test fun `plain JSON becomes a User Recipe with the given id`() {

@@ -221,11 +221,25 @@ Recipes tab, + , "With a chatbot". Needs a way to put text on the clipboard (typ
 - Valid JSON, Add recipe: the review shows "Pancakes" at once (no Working stage, no notification), Ingredients and Steps tabs filled, "Whisk the flour..." links work. Save recipe stores it; it is first in Recipes, tagged "Added by you", and opens in the cooking flow.
 - Same JSON inside a ```json fence, and wrapped in prose ("Sure! Here is your recipe: ... Enjoy!"): the same review.
 - Kitchen rule: reply with a Method "m1" of options Oven (`oven`), Air fryer (`air`), Hob (`hob`) and steps tagged `"if":"m1=oven"` etc. In Settings > Your kitchen set Strict or Medium with no air fryer: the review shows Oven and Hob only, and no air fryer step. With only the oven: no Method is shown and the oven steps carry no condition. Free for all keeps all three.
-- Not a recipe: "hello", a cut-off JSON, `{"title":"X"}`, or a reply with an empty title, empty `ingredients` or empty `steps`: Add recipe does nothing, the screen stays on the chatbot screen with the text kept (an error message is a later ticket).
+- Not a recipe: "hello", a cut-off JSON, `{"title":"X"}`, or a reply with an empty title, empty `ingredients` or empty `steps`: Add recipe does nothing, the screen stays on the chatbot screen with the text kept and shows the error from "Add recipe: bad pastes (#50)" below.
 - Back from review (Edit text): returns to the chatbot screen with the reply still in the field. Back from the chatbot screen goes to the start stage; picking "With a chatbot" again still shows the reply.
 - Rotate with a reply in the field, and after Add recipe on the review: both are restored.
 - Process death: with a reply in the field `adb shell am kill com.simmer.app`, reopen from Recents: still on the chatbot screen with the reply. Same on the review stage (the draft is restored).
 - English and German strings. Large font: nothing clipped. Keyboard does not cover the field or the bottom bar.
+
+### Add recipe: bad pastes and the Fix prompt (#50)
+
+Recipes tab, + , "With a chatbot". No throwaway branch needed. Step 2, reply field; one failure kind per row, then tap "Add recipe" (de: "Rezept hinzufügen"). Each must show "That doesn't look like a recipe from the prompt." (de: "Das sieht nicht nach einem Rezept aus dem Prompt aus.") under the field with a "Copy fix prompt" (de: "Fix-Prompt kopieren") button, stay on the chatbot screen and keep the pasted text:
+- No JSON: `hello`. Fix prompt error: "There is no JSON object in the reply."
+- Cut off: `{"title":"Pancakes","ingredients":[{"name":"Flour","q":200}],"steps":[{"b":"Whi`. "The JSON is cut off: the object that opens at character N never closes." (N = where the object starts; prose with `{braces}` before it counts)
+- Not valid: `{"title":"Pancakes","ingredients": }`. "The JSON object is not valid JSON (parser message: ...)." with the real parser message (offset and token)
+- No title: the #48 JSON with `"title"` removed or `""`. "The \"title\" is missing or empty."
+- No Ingredient: `"ingredients":[]`. No Step: `"steps":[]`. They name "ingredients" and "steps".
+- Every failed tap on Add recipe, even a repeat of the same failure, shows a toast with the error and scrolls down so the error and "Copy fix prompt" are in view (check with a small window or large font so they start off screen).
+- Copy fix prompt: a "Fix prompt copied" toast; paste elsewhere: it holds the error line for that failure, "Return only valid JSON matching this shape:" and the schema, "Reply with one JSON object and nothing else.". Set Settings > Language to German and repeat: the same in German ("Gib nur gültiges JSON in dieser Form zurück:").
+- Editing, pasting or clearing the reply hides the error and the button. Paste the corrected #48 JSON and Add recipe: the review opens.
+- Error shown, rotate, and `adb shell am kill com.simmer.app` + reopen: still on the chatbot screen with the error and the text.
+- Automated (JVM): `ChatbotReplyErrorTest` (classification), `FixPromptTest` (shipped EN/DE strings), `AddRecipeSessionTest` (failed then corrected reply). Not covered: the clipboard, toast and saved-state wiring (this checklist).
 
 ### Add recipe (#14)
 

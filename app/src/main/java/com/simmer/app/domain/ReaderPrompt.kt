@@ -54,7 +54,7 @@ fun readerPrompt(
     ).joinToString("\n\n")
 }
 
-/** The recipe JSON shape the chatbot is asked to fill (what [parseChatbotReply] reads). Keys are English in every language. */
+/** The recipe JSON shape the chatbot is asked to fill (what [readChatbotReply] reads). Keys are English in every language. */
 const val READER_PROMPT_SCHEMA =
     """{"title":"","summary":"","category":"","tags":[],"time":0,"difficulty":"","base":0,"icon":"",""" +
         """"ingredients":[{"id":"i1","name":"","q":0,"u":"","note":"","aisle":"","tips":[],"if":""}],""" +

@@ -5,6 +5,8 @@ import com.simmer.app.data.RecipeDraftStore
 import com.simmer.app.data.RecipeWriter
 import com.simmer.app.domain.EXAMPLE_TEXT
 import com.simmer.app.domain.KitchenMode
+import com.simmer.app.domain.ReplyError
+import com.simmer.app.domain.ReplyResult
 import com.simmer.app.domain.model.Recipe
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -45,17 +47,26 @@ class AddRecipeSessionTest {
             {"title": "Toast", "ingredients": [{"name": "Bread", "q": 2}], "steps": [{"b": "Toast it.", "ph": "cook"}]}
             ```"""
 
-        assertTrue(session.addFromReply(reply, "u-new", emptySet(), KitchenMode.Free))
+        assertNull(session.addFromReply(reply, "u-new", emptySet(), KitchenMode.Free))
 
         assertEquals("Toast", drafts.current.value!!.title)
         assertEquals("u-new", drafts.current.value!!.id)
         assertTrue(recipes.saved.isEmpty())
     }
 
-    @Test fun `an unusable chatbot reply leaves no draft`() {
-        assertFalse(session.addFromReply("""{"title": "Toast"}""", "u-new", emptySet(), KitchenMode.Free))
+    @Test fun `an unusable chatbot reply leaves no draft and says why`() {
+        assertEquals(ReplyResult.Failed(ReplyError.NoIngredient), session.addFromReply("""{"title": "Toast"}""", "u-new", emptySet(), KitchenMode.Free))
 
         assertNull(drafts.current.value)
+    }
+
+    @Test fun `a corrected reply after a failed one puts the recipe in the draft store`() {
+        assertEquals(ReplyResult.Failed(ReplyError.CutOff, "0"), session.addFromReply("""{"title": "Toast", "ingredi""", "u-new", emptySet(), KitchenMode.Free))
+
+        val fixed = """{"title": "Toast", "ingredients": [{"name": "Bread", "q": 2}], "steps": [{"b": "Toast it.", "ph": "cook"}]}"""
+        assertNull(session.addFromReply(fixed, "u-new", emptySet(), KitchenMode.Free))
+
+        assertEquals("Toast", drafts.current.value!!.title)
     }
 
     @Test fun `discard drops the draft`() {

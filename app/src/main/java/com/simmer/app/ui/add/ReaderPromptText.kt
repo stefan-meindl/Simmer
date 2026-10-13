@@ -3,18 +3,27 @@ package com.simmer.app.ui.add
 import android.content.Context
 import android.content.res.Configuration
 import com.simmer.app.R
+import com.simmer.app.domain.FixPromptTexts
 import com.simmer.app.domain.ReaderPromptTexts
+import com.simmer.app.domain.ReplyError
+import com.simmer.app.domain.ReplyResult
+import com.simmer.app.domain.fixPrompt
 import com.simmer.app.domain.readerPrompt
 import com.simmer.app.ui.settings.APPLIANCE_LABELS
 import java.util.Locale
 
+/** [context] with resources in the Settings language [lang], which may differ from the device's (as with the Pipeline's notes). */
+private fun localizedContext(context: Context, lang: String): Context {
+    val config = Configuration(context.resources.configuration).apply { setLocale(Locale(lang)) }
+    return context.createConfigurationContext(config)
+}
+
 /**
- * The Reader prompt for [ui] in the Settings language, which may differ from the device's (as with the
- * Pipeline's notes): its prose from the string resources, appliance names as the cook sees them in that language.
+ * The Reader prompt for [ui] in the Settings language: its prose from the string resources,
+ * appliance names as the cook sees them in that language.
  */
 fun readerPromptFor(context: Context, ui: AddRecipeUi.Chatbot): String {
-    val config = Configuration(context.resources.configuration).apply { setLocale(Locale(ui.lang)) }
-    val localized = context.createConfigurationContext(config)
+    val localized = localizedContext(context, ui.lang)
     val texts = ReaderPromptTexts(
         intro = localized.getString(R.string.reader_prompt_intro),
         rules = localized.getString(R.string.reader_prompt_rules),
@@ -32,4 +41,23 @@ fun readerPromptFor(context: Context, ui: AddRecipeUi.Chatbot): String {
         if (key.startsWith("c:")) key.removePrefix("c:") else APPLIANCE_LABELS[key]?.let(localized::getString) ?: key
     }
     return readerPrompt(texts, ui.promptText, names, ui.kitchen.mode, ui.lang)
+}
+
+/** The Fix prompt for [failed] in the Settings language [lang]. */
+fun fixPromptFor(context: Context, lang: String, failed: ReplyResult.Failed): String {
+    val localized = localizedContext(context, lang)
+    // Exhaustive `when`: a new ReplyError does not compile until it has a string.
+    val errors = ReplyError.entries.associateWith { error ->
+        localized.getString(
+            when (error) {
+                ReplyError.NoJson -> R.string.fix_prompt_error_no_json
+                ReplyError.CutOff -> R.string.fix_prompt_error_cut_off
+                ReplyError.NotValid -> R.string.fix_prompt_error_not_valid
+                ReplyError.NoTitle -> R.string.fix_prompt_error_no_title
+                ReplyError.NoIngredient -> R.string.fix_prompt_error_no_ingredient
+                ReplyError.NoStep -> R.string.fix_prompt_error_no_step
+            },
+        )
+    }
+    return fixPrompt(FixPromptTexts(localized.getString(R.string.fix_prompt_instruction), errors), failed.error, failed.detail)
 }

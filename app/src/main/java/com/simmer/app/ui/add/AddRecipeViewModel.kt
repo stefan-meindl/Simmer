@@ -1,5 +1,7 @@
 package com.simmer.app.ui.add
 
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,6 +24,8 @@ import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.PipelineStage
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.ReaderAction
+import com.simmer.app.domain.ReplyError
+import com.simmer.app.domain.ReplyResult
 import com.simmer.app.domain.addRecipeReview
 import com.simmer.app.domain.canConvert
 import com.simmer.app.domain.kitchenLine
@@ -30,6 +34,7 @@ import com.simmer.app.domain.newRecipeId
 import com.simmer.app.domain.readerAction
 import com.simmer.app.domain.usesExampleShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
@@ -42,6 +47,8 @@ import javax.inject.Inject
 
 private const val KEY_TEXT = "text"
 private const val KEY_REPLY = "reply"
+private const val KEY_REPLY_ERROR = "reply_error"
+private const val KEY_REPLY_ERROR_DETAIL = "reply_error_detail"
 private const val KEY_PROMPT_TEXT = "prompt_text"
 private const val KEY_STEP = "step"
 private const val KEY_TAB = "tab"
@@ -50,7 +57,7 @@ private const val KEY_DRAFT = "draft"
 /** The cook's Appliance keys in catalogue order (custom ones after) and Kitchen mode, as the Reader prompt needs them. */
 data class PromptKitchen(val appliances: List<String>, val mode: KitchenMode)
 
-private data class ChatbotInputs(val kitchen: PromptKitchen, val lang: String, val promptText: String, val reply: String)
+private data class ChatbotInputs(val kitchen: PromptKitchen, val lang: String, val promptText: String, val reply: String, val error: ReplyResult.Failed?)
 
 /** How the review shows amounts and labels. */
 private data class DisplayPrefs(val units: String, val spices: String, val lang: String)
@@ -74,6 +81,8 @@ sealed interface AddRecipeUi {
         val lang: String,
         val reply: String,
         val canAdd: Boolean,
+        /** Why the last "Add recipe" failed; shown with "Copy fix prompt" until the reply changes. */
+        val error: ReplyResult.Failed?,
     ) : AddRecipeUi
 
     /** The paste stage. */
@@ -116,6 +125,19 @@ class AddRecipeViewModel @Inject constructor(
     /** Straight from saved state, like [text]. */
     val reply: StateFlow<String> = savedState.getStateFlow(KEY_REPLY, "")
 
+    /**
+     * Why the last "Add recipe" failed, until the reply is edited (kept in saved state as the [ReplyError] name
+     * and the parser's detail). A saved name that is no longer a [ReplyError] (an older build) deliberately
+     * restores as no error: the cook simply taps Add recipe again to see the current one.
+     */
+    private val replyError: Flow<ReplyResult.Failed?> =
+        combine(
+            savedState.getStateFlow<String?>(KEY_REPLY_ERROR, null),
+            savedState.getStateFlow(KEY_REPLY_ERROR_DETAIL, ""),
+        ) { name, detail ->
+            ReplyError.entries.firstOrNull { it.name == name }?.let { ReplyResult.Failed(it, detail) }
+        }
+
     /** Straight from saved state, like [text]: the optional recipe text for the Reader prompt. */
     val promptText: StateFlow<String> = savedState.getStateFlow(KEY_PROMPT_TEXT, "")
 
@@ -135,14 +157,16 @@ class AddRecipeViewModel @Inject constructor(
         AddRecipeUi.Paste(text, readerAction(text, ready), canConvert(text), line)
     }
 
-    private val chatbotInputs = combine(prefs.appliances, prefs.kitchenMode, prefs.lang, promptText, reply) { appliances, mode, lang, promptText, reply ->
-        ChatbotInputs(PromptKitchen(orderAppliances(appliances), KitchenMode.fromKey(mode)), lang, promptText, reply)
+    private val replyAndError = combine(reply, replyError, ::Pair)
+
+    private val chatbotInputs = combine(prefs.appliances, prefs.kitchenMode, prefs.lang, promptText, replyAndError) { appliances, mode, lang, promptText, (reply, error) ->
+        ChatbotInputs(PromptKitchen(orderAppliances(appliances), KitchenMode.fromKey(mode)), lang, promptText, reply, error)
     }
 
     private val start = combine(step, paste, readerStatus, chatbotInputs) { step, paste, status, chatbot ->
         when (addStepFromKey(step)) {
             AddStep.Start -> AddRecipeUi.Start(status)
-            AddStep.Chatbot -> AddRecipeUi.Chatbot(chatbot.promptText, chatbot.kitchen, chatbot.lang, chatbot.reply, chatbot.reply.isNotBlank())
+            AddStep.Chatbot -> AddRecipeUi.Chatbot(chatbot.promptText, chatbot.kitchen, chatbot.lang, chatbot.reply, chatbot.reply.isNotBlank(), chatbot.error)
             AddStep.Phone -> paste
         }
     }
@@ -198,27 +222,41 @@ class AddRecipeViewModel @Inject constructor(
 
     fun setReply(reply: String) {
         savedState[KEY_REPLY] = reply
+        savedState[KEY_REPLY_ERROR] = null
+        savedState[KEY_REPLY_ERROR_DETAIL] = ""
     }
 
     fun clearReply() = setReply("")
 
     /**
      * Turns the pasted chatbot reply into the Add recipe draft, which shows the review. A reply that
-     * holds no usable recipe changes nothing (its error display comes later). No Pipeline or ImportJob.
+     * holds no usable recipe changes nothing but sets the [ReplyError] the chatbot screen shows, which
+     * the next edit of the reply clears. No Pipeline or ImportJob.
      * One add at a time, so a second tap cannot overwrite the draft.
      */
+    private val replyFailedEvents = Channel<Unit>(Channel.CONFLATED)
+
+    /** Fires each time Add recipe finds no usable recipe, so the screen can bring the error into view. */
+    val replyFailed: Flow<Unit> = replyFailedEvents.receiveAsFlow()
+
     fun addFromReply() {
         if (adding) return
         adding = true
         val reply = reply.value
         viewModelScope.launch {
             try {
-                session.addFromReply(
+                val error = session.addFromReply(
                     reply = reply,
                     id = newRecipeId(),
                     appliances = prefs.appliances.first(),
                     kitchenMode = KitchenMode.fromKey(prefs.kitchenMode.first()),
                 )
+                // An edit made meanwhile has already cleared the error of the reply that was read.
+                if (this@AddRecipeViewModel.reply.value == reply) {
+                    savedState[KEY_REPLY_ERROR_DETAIL] = error?.detail.orEmpty()
+                    savedState[KEY_REPLY_ERROR] = error?.error?.name
+                    if (error != null) replyFailedEvents.trySend(Unit)
+                }
             } finally {
                 adding = false
             }

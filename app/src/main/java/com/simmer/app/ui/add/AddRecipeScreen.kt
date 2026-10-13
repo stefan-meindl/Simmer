@@ -1,5 +1,7 @@
 package com.simmer.app.ui.add
 
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.withFrameNanos
 import android.content.ClipData
 import android.widget.Toast
 import androidx.activity.compose.BackHandler
@@ -273,13 +275,27 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
     val scope = rememberCoroutineScope()
     val copyLabel = stringResource(R.string.add_copy_prompt)
     val copiedText = stringResource(R.string.add_prompt_copied)
+    val fixCopyLabel = stringResource(R.string.add_copy_fix_prompt)
+    val fixCopiedText = stringResource(R.string.add_fix_prompt_copied)
+
+    val scrollState = rememberScrollState()
+    val errorText = stringResource(R.string.add_reply_error)
+    LaunchedEffect(viewModel) {
+        viewModel.replyFailed.collect {
+            Toast.makeText(context, errorText, Toast.LENGTH_SHORT).show()
+            // The error and Copy fix prompt sit below the reply field, often off screen; let them lay out first.
+            withFrameNanos { }
+            withFrameNanos { }
+            scrollState.animateScrollTo(scrollState.maxValue)
+        }
+    }
 
     TopRow(stringResource(R.string.add_choose_chatbot), onBack)
     Column(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier
             .weight(1f)
-            .verticalScroll(rememberScrollState())
+            .verticalScroll(scrollState)
             .padding(horizontal = 16.dp, vertical = 16.dp),
     ) {
         Text(
@@ -333,6 +349,26 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             onChange = viewModel::setReply,
             onClear = viewModel::clearReply,
         )
+        if (ui.error != null) {
+            Text(
+                text = stringResource(R.string.add_reply_error),
+                style = SimmerTextStyle_BodySm,
+                color = colors.textPrimary,
+                modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+            )
+            SecondaryButton(
+                text = stringResource(R.string.add_copy_fix_prompt),
+                onClick = {
+                    val prompt = fixPromptFor(context, ui.lang, ui.error)
+                    scope.launch {
+                        clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(fixCopyLabel, prompt)))
+                        Toast.makeText(context, fixCopiedText, Toast.LENGTH_SHORT).show()
+                    }
+                },
+                icon = { icon(R.drawable.ic_copy, 16) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 
     BottomBar {

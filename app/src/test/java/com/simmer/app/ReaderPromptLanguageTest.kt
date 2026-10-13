@@ -4,7 +4,8 @@ import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.READER_PROMPT_SCHEMA
 import com.simmer.app.domain.ReaderPromptTexts
 import com.simmer.app.domain.mapsIn
-import com.simmer.app.domain.parseChatbotReply
+import com.simmer.app.domain.ReplyResult
+import com.simmer.app.domain.readChatbotReply
 import com.simmer.app.domain.parseModelJson
 import com.simmer.app.domain.readerPrompt
 import com.simmer.app.domain.readerPromptExample
@@ -52,6 +53,9 @@ private fun texts(lang: String): ReaderPromptTexts {
 
 private fun prompt(lang: String, mode: KitchenMode, text: String = "", names: List<String> = listOf("Hob", "Oven")) =
     readerPrompt(texts(lang), text, names, mode, lang)
+
+private fun readRecipe(reply: String, id: String, appliances: Set<String>, mode: KitchenMode) =
+    (readChatbotReply(reply, id, appliances, mode) as? ReplyResult.Done)?.recipe
 
 /** Seam: the Reader prompt as built from the shipped English and German string resources. */
 class ReaderPromptLanguageTest {
@@ -156,7 +160,7 @@ class ReaderPromptLanguageTest {
         listOf("en", "de").forEach { lang ->
             val reply = "Sure, here you go:\n```json\n${readerPromptExample(lang)}\n```\nEnjoy!"
 
-            val recipe = parseChatbotReply(reply, "u-new", emptySet(), KitchenMode.Free)!!
+            val recipe = readRecipe(reply, "u-new", emptySet(), KitchenMode.Free)!!
 
             assertEquals(if (lang == "de") "Blech-Zitronenhähnchen" else "Sheet-pan lemon chicken", recipe.title)
             assertEquals(4, recipe.ingredients.size)
@@ -167,15 +171,15 @@ class ReaderPromptLanguageTest {
     }
 
     @Test fun `the example follows the Kitchen rule like any reply`() {
-        val oven = parseChatbotReply(readerPromptExample("en"), "u-new", setOf("oven"), KitchenMode.Strict)!!
-        val both = parseChatbotReply(readerPromptExample("en"), "u-new", setOf("oven", "airfryer"), KitchenMode.Medium)!!
+        val oven = readRecipe(readerPromptExample("en"), "u-new", setOf("oven"), KitchenMode.Strict)!!
+        val both = readRecipe(readerPromptExample("en"), "u-new", setOf("oven", "airfryer"), KitchenMode.Medium)!!
 
         assertTrue(oven.methods.isEmpty())
         assertEquals(2, both.methods.single().options.size)
     }
 
     @Test fun `text that is not the example gives no recipe`() {
-        assertNull(parseChatbotReply(READER_PROMPT_SCHEMA, "u-new", emptySet(), KitchenMode.Free))
-        assertNotNull(parseChatbotReply(readerPromptExample("de"), "u-new", emptySet(), KitchenMode.Free))
+        assertNull(readRecipe(READER_PROMPT_SCHEMA, "u-new", emptySet(), KitchenMode.Free))
+        assertNotNull(readRecipe(readerPromptExample("de"), "u-new", emptySet(), KitchenMode.Free))
     }
 }
