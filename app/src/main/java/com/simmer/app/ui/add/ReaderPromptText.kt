@@ -1,6 +1,8 @@
 package com.simmer.app.ui.add
 
+import android.content.ActivityNotFoundException
 import android.content.Context
+import android.content.Intent
 import android.content.res.Configuration
 import com.simmer.app.R
 import com.simmer.app.domain.FixPromptTexts
@@ -41,6 +43,28 @@ fun readerPromptFor(context: Context, ui: AddRecipeUi.Chatbot): String {
         if (key.startsWith("c:")) key.removePrefix("c:") else APPLIANCE_LABELS[key]?.let(localized::getString) ?: key
     }
     return readerPrompt(texts, ui.promptText, names, ui.kitchen.mode, ui.lang)
+}
+
+private const val GEMINI_PACKAGE = "com.google.android.apps.bard"
+
+/** Whether the Gemini app is installed (the manifest's `<queries>` entry makes it visible). */
+fun isGeminiInstalled(context: Context): Boolean =
+    context.packageManager.getLaunchIntentForPackage(GEMINI_PACKAGE) != null
+
+/** Opens the Gemini app with [prompt] shared as one text extra; false if it cannot be opened. Gemini waits for the user to send. */
+fun openInGemini(context: Context, prompt: String): Boolean {
+    val send = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, prompt)
+        setPackage(GEMINI_PACKAGE)
+        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    }
+    return try {
+        context.startActivity(send)
+        true
+    } catch (_: ActivityNotFoundException) {
+        false
+    }
 }
 
 /** The Fix prompt for [failed] in the Settings language [lang]. */
