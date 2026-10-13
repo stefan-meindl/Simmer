@@ -109,16 +109,3 @@ fun RecipeFlowPlaceholder(recipeId: String, onBack: () -> Unit, modifier: Modifi
 // ---------------------------------------------------------------------------
 // Add / Edit Recipe screens (hide tab bar, own top bar + sticky bottom action bar)
 // ---------------------------------------------------------------------------
-
-// ---------------------------------------------------------------------------
-// Your Kitchen screen (hides tab bar, back -> Settings)
-// ---------------------------------------------------------------------------
-
-@Composable
-fun YourKitchenPlaceholder(onBack: () -> Unit, modifier: Modifier = Modifier) {
-    RecipeFlowScaffold(
-        title = "Your Kitchen",
-        onBack = onBack,
-        modifier = modifier,
-    )
-}

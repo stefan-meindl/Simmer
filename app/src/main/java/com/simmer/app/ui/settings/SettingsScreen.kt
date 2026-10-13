@@ -372,7 +372,7 @@ internal fun applianceLabel(key: String): String {
     return stringResource(res)
 }
 
-private val APPLIANCE_LABELS: Map<String, Int> = mapOf(
+internal val APPLIANCE_LABELS: Map<String, Int> = mapOf(
     "hob" to R.string.appliance_hob,
     "oven" to R.string.appliance_oven,
     "microwave" to R.string.appliance_microwave,
