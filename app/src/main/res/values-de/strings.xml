@@ -64,7 +64,10 @@
 
     <!-- Flow phase 3 -->
     <string name="flow_cook_progress">%1$d von %2$d Schritten erledigt</string>
-    <string name="flow_tap_hint">Tippe auf eine unterstrichene Zutat für Menge und Tipps.</string>
+    <string name="flow_tap_hint">Tippe auf eine Zutat mit Glühbirne für ihre Tipps.</string>
+    <string name="flow_tips_title">Tipps</string>
+    <string name="flow_tips_close">Tipps schließen</string>
+    <string name="flow_link_tips_description">%1$s, Tipps zu %2$s</string>
     <string name="flow_prep_caption">Bereite alles vor, bevor du den Herd anschaltest.</string>
     <string name="flow_cook_caption">Schritte mit Warnhinweis brauchen zuerst einen Vorbereitungsschritt.</string>
     <string name="flow_needs_first">Erst %1$s erledigen</string>

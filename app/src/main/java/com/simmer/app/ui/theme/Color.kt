@@ -130,4 +130,7 @@ val DarkSimmerColors = SimmerColors(
 )
 
 // CompositionLocal provider — default to light
-val LocalSimmerColors = staticCompositionLocalOf { LightSimmerColors }
+/** True while [SimmerTheme] is in its dark (OLED) variant; for choices colour tokens can't express, like dropping shadows. */
+val LocalSimmerDarkTheme = staticCompositionLocalOf { false }
+
+val LocalSimmerColors =staticCompositionLocalOf { LightSimmerColors }

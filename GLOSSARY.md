@@ -129,7 +129,7 @@ The first Step in display order that is not yet done (`CookingView.activeId`). I
 _Avoid_: Current step, next step
 
 **Link**:
-An ingredient reference embedded in a step's body text, encoded as `{ingredientId:shown text}`. Renders as a tappable underlined span that shows the ingredient's amount and tips.
+An ingredient reference embedded in a step's body text, encoded as `{ingredientId:shown text}`. Renders in the step text as the shown word followed by the ingredient's scaled amount in parentheses ("garlic (3 cloves)", following servings and units; a blank amount shows the word only), with an orange underline under both. Only a Link whose ingredient has tips is tappable: it shows a lightbulb after the amount and opens a "Tips" tooltip with the tips list (no amount, note or tabs). Other Links are underlined with their amount and do nothing on tap.
 _Avoid_: Reference, tag, mention
 
 **Needs**:
