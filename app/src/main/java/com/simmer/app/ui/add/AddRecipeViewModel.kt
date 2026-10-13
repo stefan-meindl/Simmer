@@ -136,6 +136,7 @@ class AddRecipeViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddRecipeUi.Loading)
 
     private var saving = false
+    private var adding = false
 
     /** True once this screen has shown the review: only then is leaving it a decision to drop the recipe. */
     private var reviewShown = false
@@ -175,16 +176,23 @@ class AddRecipeViewModel @Inject constructor(
     /**
      * Turns the pasted chatbot reply into the Add recipe draft, which shows the review. A reply that
      * holds no usable recipe changes nothing (its error display comes later). No Pipeline or ImportJob.
+     * One add at a time, so a second tap cannot overwrite the draft.
      */
     fun addFromReply() {
+        if (adding) return
+        adding = true
         val reply = reply.value
         viewModelScope.launch {
-            session.addFromReply(
-                reply = reply,
-                id = newRecipeId(),
-                appliances = prefs.appliances.first(),
-                kitchenMode = KitchenMode.fromKey(prefs.kitchenMode.first()),
-            )
+            try {
+                session.addFromReply(
+                    reply = reply,
+                    id = newRecipeId(),
+                    appliances = prefs.appliances.first(),
+                    kitchenMode = KitchenMode.fromKey(prefs.kitchenMode.first()),
+                )
+            } finally {
+                adding = false
+            }
         }
     }
 

@@ -100,4 +100,18 @@ class ChatbotReplyTest {
         assertEquals(listOf("Season", "Roast"), recipe.steps.map { it.title })
         assertNull(recipe.steps.last().ifCondition)
     }
+
+    @Test fun `Medium drops options for missing appliances with their steps`() {
+        val recipe = parse(CHICKEN, setOf("oven", "hob"), KitchenMode.Medium)!!
+
+        assertEquals(listOf("Oven", "Hob"), recipe.methods.single().options.map { it.label })
+        assertEquals(listOf("Season", "Roast", "Pan-fry"), recipe.steps.map { it.title })
+    }
+
+    @Test fun `a Method with options for no owned appliance stays as it is`() {
+        val recipe = parse(CHICKEN, setOf("wok"), KitchenMode.Strict)!!
+
+        assertEquals(3, recipe.methods.single().options.size)
+        assertEquals(4, recipe.steps.size)
+    }
 }
