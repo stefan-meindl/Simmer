@@ -1,6 +1,9 @@
 package com.simmer.app.ui.add
 
+import android.content.ClipData
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
+import androidx.compose.ui.platform.ClipEntry
 import com.simmer.app.domain.AddStep
 import com.simmer.app.ui.components.readerStateText
 import androidx.compose.foundation.BorderStroke
@@ -258,13 +261,18 @@ private fun StartCard(iconRes: Int, title: String, body: String, detail: String?
     }
 }
 
-/** The chatbot path: paste the chatbot's reply, then "Add recipe" turns it into the draft for review. */
+/**
+ * The chatbot path. Step 1: an optional recipe text and "Copy prompt", which puts the Reader prompt on
+ * the clipboard. Step 2: paste the chatbot's reply, then "Add recipe" turns it into the draft for review.
+ */
 @Composable
 private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddRecipeViewModel, onBack: () -> Unit) {
     val colors = LocalSimmerColors.current
-    val focus = remember { FocusRequester() }
-    val replyLabel = stringResource(R.string.add_reply)
-    val pasteReply = rememberPasteAction(onPasted = viewModel::setReply, onEmpty = { focus.requestFocus() })
+    val context = LocalContext.current
+    val clipboard = LocalClipboard.current
+    val scope = rememberCoroutineScope()
+    val copyLabel = stringResource(R.string.add_copy_prompt)
+    val copiedText = stringResource(R.string.add_prompt_copied)
 
     TopRow(stringResource(R.string.add_choose_chatbot), onBack)
     Column(
@@ -280,36 +288,51 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             color = colors.textPrimary,
             modifier = Modifier.semantics { heading() },
         )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .defaultMinSize(minHeight = 44.dp),
-            ) {
-                Text(text = replyLabel, style = SimmerTextStyle_BodySmMedium, color = colors.textPrimary)
-                if (ui.reply.isNotEmpty()) {
-                    LinkButton(text = stringResource(R.string.add_clear), onClick = viewModel::clearReply)
-                } else {
-                    SecondaryButton(
-                        text = stringResource(R.string.add_paste),
-                        onClick = pasteReply,
-                        icon = { icon(R.drawable.ic_copy, 16) },
-                    )
+        Text(
+            text = stringResource(R.string.add_step_prompt),
+            style = SimmerTextStyle_Heading5,
+            color = colors.textPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
+        PasteField(
+            label = stringResource(R.string.add_prompt_text),
+            value = ui.promptText,
+            placeholder = stringResource(R.string.add_prompt_text_placeholder),
+            minLines = 6,
+            onChange = viewModel::setPromptText,
+            onClear = viewModel::clearPromptText,
+        )
+        Text(
+            text = stringResource(R.string.add_prompt_text_note),
+            style = SimmerTextStyle_BodySm,
+            color = colors.textSecondary,
+        )
+        SecondaryButton(
+            text = stringResource(R.string.add_copy_prompt),
+            onClick = {
+                val prompt = readerPromptFor(context, ui)
+                scope.launch {
+                    clipboard.setClipEntry(ClipEntry(ClipData.newPlainText(copyLabel, prompt)))
+                    Toast.makeText(context, copiedText, Toast.LENGTH_SHORT).show()
                 }
-            }
-            SimmerTextArea(
-                value = ui.reply,
-                onValueChange = viewModel::setReply,
-                placeholder = stringResource(R.string.add_reply_placeholder),
-                minLines = 13,
-                fieldModifier = Modifier
-                    .fillMaxWidth()
-                    .focusRequester(focus)
-                    .semantics { contentDescription = replyLabel },
-            )
-        }
+            },
+            icon = { icon(R.drawable.ic_copy, 16) },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Text(
+            text = stringResource(R.string.add_step_reply),
+            style = SimmerTextStyle_Heading5,
+            color = colors.textPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
+        PasteField(
+            label = stringResource(R.string.add_reply),
+            value = ui.reply,
+            placeholder = stringResource(R.string.add_reply_placeholder),
+            minLines = 13,
+            onChange = viewModel::setReply,
+            onClear = viewModel::clearReply,
+        )
     }
 
     BottomBar {
@@ -318,6 +341,51 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             onClick = viewModel::addFromReply,
             enabled = ui.canAdd,
             modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** A labelled text area with Paste (empty) or Clear (filled) beside the label. */
+@Composable
+private fun PasteField(
+    label: String,
+    value: String,
+    placeholder: String,
+    minLines: Int,
+    onChange: (String) -> Unit,
+    onClear: () -> Unit,
+) {
+    val colors = LocalSimmerColors.current
+    val focus = remember { FocusRequester() }
+    val paste = rememberPasteAction(onPasted = onChange, onEmpty = { focus.requestFocus() })
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier
+                .fillMaxWidth()
+                .defaultMinSize(minHeight = 44.dp),
+        ) {
+            Text(text = label, style = SimmerTextStyle_BodySmMedium, color = colors.textPrimary)
+            if (value.isNotEmpty()) {
+                LinkButton(text = stringResource(R.string.add_clear), onClick = onClear)
+            } else {
+                SecondaryButton(
+                    text = stringResource(R.string.add_paste),
+                    onClick = paste,
+                    icon = { icon(R.drawable.ic_copy, 16) },
+                )
+            }
+        }
+        SimmerTextArea(
+            value = value,
+            onValueChange = onChange,
+            placeholder = placeholder,
+            minLines = minLines,
+            fieldModifier = Modifier
+                .fillMaxWidth()
+                .focusRequester(focus)
+                .semantics { contentDescription = label },
         )
     }
 }

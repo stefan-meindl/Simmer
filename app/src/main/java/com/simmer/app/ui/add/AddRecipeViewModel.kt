@@ -25,6 +25,7 @@ import com.simmer.app.domain.ReaderAction
 import com.simmer.app.domain.addRecipeReview
 import com.simmer.app.domain.canConvert
 import com.simmer.app.domain.kitchenLine
+import com.simmer.app.domain.orderAppliances
 import com.simmer.app.domain.newRecipeId
 import com.simmer.app.domain.readerAction
 import com.simmer.app.domain.usesExampleShortcut
@@ -41,9 +42,15 @@ import javax.inject.Inject
 
 private const val KEY_TEXT = "text"
 private const val KEY_REPLY = "reply"
+private const val KEY_PROMPT_TEXT = "prompt_text"
 private const val KEY_STEP = "step"
 private const val KEY_TAB = "tab"
 private const val KEY_DRAFT = "draft"
+
+/** The cook's Appliance keys in catalogue order (custom ones after) and Kitchen mode, as the Reader prompt needs them. */
+data class PromptKitchen(val appliances: List<String>, val mode: KitchenMode)
+
+private data class ChatbotInputs(val kitchen: PromptKitchen, val lang: String, val promptText: String, val reply: String)
 
 /** How the review shows amounts and labels. */
 private data class DisplayPrefs(val units: String, val spices: String, val lang: String)
@@ -57,8 +64,17 @@ sealed interface AddRecipeUi {
     /** The start stage: how to add the recipe. [reader] is the Reader model's state, shown on "On this phone". */
     data class Start(val reader: ReaderStatus) : AddRecipeUi
 
-    /** The chatbot path: the pasted [reply] and whether "Add recipe" is offered (it needs some text). */
-    data class Chatbot(val reply: String, val canAdd: Boolean) : AddRecipeUi
+    /**
+     * The chatbot path: the optional recipe text for the Reader prompt, what the prompt needs besides it
+     * (the Kitchen and the Settings language), the pasted [reply] and whether "Add recipe" is offered (it needs some text).
+     */
+    data class Chatbot(
+        val promptText: String,
+        val kitchen: PromptKitchen,
+        val lang: String,
+        val reply: String,
+        val canAdd: Boolean,
+    ) : AddRecipeUi
 
     /** The paste stage. */
     data class Paste(
@@ -100,6 +116,9 @@ class AddRecipeViewModel @Inject constructor(
     /** Straight from saved state, like [text]. */
     val reply: StateFlow<String> = savedState.getStateFlow(KEY_REPLY, "")
 
+    /** Straight from saved state, like [text]: the optional recipe text for the Reader prompt. */
+    val promptText: StateFlow<String> = savedState.getStateFlow(KEY_PROMPT_TEXT, "")
+
     private val tab = savedState.getStateFlow(KEY_TAB, ReviewTab.Ingredients.name)
 
     private val display = combine(prefs.units, prefs.spices, prefs.lang, ::DisplayPrefs)
@@ -116,10 +135,14 @@ class AddRecipeViewModel @Inject constructor(
         AddRecipeUi.Paste(text, readerAction(text, ready), canConvert(text), line)
     }
 
-    private val start = combine(step, paste, readerStatus, reply) { step, paste, status, reply ->
+    private val chatbotInputs = combine(prefs.appliances, prefs.kitchenMode, prefs.lang, promptText, reply) { appliances, mode, lang, promptText, reply ->
+        ChatbotInputs(PromptKitchen(orderAppliances(appliances), KitchenMode.fromKey(mode)), lang, promptText, reply)
+    }
+
+    private val start = combine(step, paste, readerStatus, chatbotInputs) { step, paste, status, chatbot ->
         when (addStepFromKey(step)) {
             AddStep.Start -> AddRecipeUi.Start(status)
-            AddStep.Chatbot -> AddRecipeUi.Chatbot(reply, reply.isNotBlank())
+            AddStep.Chatbot -> AddRecipeUi.Chatbot(chatbot.promptText, chatbot.kitchen, chatbot.lang, chatbot.reply, chatbot.reply.isNotBlank())
             AddStep.Phone -> paste
         }
     }
@@ -166,6 +189,12 @@ class AddRecipeViewModel @Inject constructor(
     }
 
     fun clear() = setText("")
+
+    fun setPromptText(text: String) {
+        savedState[KEY_PROMPT_TEXT] = text
+    }
+
+    fun clearPromptText() = setPromptText("")
 
     fun setReply(reply: String) {
         savedState[KEY_REPLY] = reply

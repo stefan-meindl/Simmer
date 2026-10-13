@@ -200,6 +200,19 @@ Recipes tab, tap +. Every Add recipe item below that mentions the paste stage st
 - Process death: on the chatbot screen run `adb shell am kill com.simmer.app` and reopen from Recents: still on the chatbot screen. Same on the start stage and the paste stage.
 - English and German: strings above in both.
 
+### Add recipe: copy the Reader prompt (#49)
+
+Recipes tab, + , "With a chatbot". Step 1 is on top of the chatbot screen, step 2 (the reply, #48 below) under it. Needs a way to read the clipboard (paste into any app's text field, or into a real chatbot).
+- Layout: title "Add with a chatbot." (de: "Mit einem Chatbot hinzufügen."), heading "1. Copy the prompt" (de: "1. Prompt kopieren"), field "Recipe text (optional)" (de: "Rezepttext (optional)") with Paste/Clear, the note "You can also attach a photo or a link in the chatbot instead." (de: "Du kannst im Chatbot stattdessen auch ein Foto oder einen Link anhängen."), button "Copy prompt" (de: "Prompt kopieren"), heading "2. Paste the reply", then the reply field.
+- Copy prompt with the text field empty: a "Prompt copied" toast, and pasting elsewhere gives the full prompt: instructions, "Reply in this shape:" with the schema, "Example of a finished reply:" with the sheet-pan chicken example, a "Kitchen:" line, and "The recipe is not written here: it is in a photo or a link I attach to this message."
+- Recipe text: type or Paste "Pancakes: flour, milk, egg. Whisk and fry." and Copy prompt: the pasted prompt ends with "Recipe text:" and that text, and has no "not written here" line.
+- Kitchen line: Settings > Your kitchen with Hob, Oven ticked. Strict: "Kitchen: the cook owns only these appliances: Hob, Oven. ..." plus "Be strict: ...". Medium: the same list plus "Common small tools ...". Free for all: "Kitchen: the cook can use any appliance." and no "Never offer" sentence. Add a custom appliance: it appears by name. Untick all: "none".
+- Language: Settings > Language Deutsch, copy again: the whole prompt is German (instructions, "Küche: ...", appliance names such as Herd, Backofen, "Rezepttext:"), while JSON keys, ids and category/tag/icon words stay English. Do it with the device language English and the app language German, and the other way round.
+- Real chatbot: paste the prompt (with a recipe text, and again with a photo or link attached and an empty field) into a real chatbot, copy its reply, paste it into "Chatbot reply", Add recipe: the review shows the recipe. Try English and German.
+- Rotate with text in the recipe field: it stays. Process death (`adb shell am kill com.simmer.app`, reopen from Recents): still on the chatbot screen with the recipe text. Back to the start stage and "With a chatbot" again: the text is still there.
+- Large font: nothing clipped, the keyboard does not cover the focused field or the bottom bar.
+- Automated (JVM): `ReaderPromptTest` (builder: Kitchen line and rule per mode, recipe text, empty field, schema and example), `ReaderPromptLanguageTest` (the shipped English and German strings, and that the prompt's example parses with the #48 parser and follows the Kitchen rule). Not covered by tests: the clipboard write, the Toast and the saved-state wiring (this checklist).
+
 ### Add recipe: paste a chatbot reply (#48)
 
 Recipes tab, + , "With a chatbot". Needs a way to put text on the clipboard (type it into any app and copy, or `adb shell input text`). Valid reply to paste:
