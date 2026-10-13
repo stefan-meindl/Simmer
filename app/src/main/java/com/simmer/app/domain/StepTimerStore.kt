@@ -61,6 +61,21 @@ class StepTimerStore(
         put(key, current.pauseFromNotification(clock()))
     }
 
+    /** The notification's Resume action; ignored unless the timer is paused. */
+    fun resume(key: String) {
+        val current = state.value[key] ?: return
+        if (current.status != TimerStatus.Paused) return
+        put(key, current.toggle(clock()))
+        host.ensureRunning()
+    }
+
+    /** The notification's Reset action; ignored unless the timer is paused with the notification's Pause. */
+    fun resetFromNotification(key: String) {
+        val current = state.value[key] ?: return
+        if (current.status != TimerStatus.Paused || !current.pausedFromNotification) return
+        put(key, current.reset())
+    }
+
     /** Tap on the timer button; [durationSecs] and [title] are used when the timer is not kept yet. */
     fun toggle(key: String, title: String, durationSecs: Int, recipeTitle: String = "") {
         val current = state.value[key] ?: TimerState.idle(durationSecs, title, recipeTitle)

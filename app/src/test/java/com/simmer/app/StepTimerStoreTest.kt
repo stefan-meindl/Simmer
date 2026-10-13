@@ -237,7 +237,7 @@ class StepTimerStoreTest {
         now += 100_000
         store.pauseFromNotification("chilli/s1")
         now += 3_000_000 // paused for a long while
-        store.toggle("chilli/s1", "Simmer", 600) // Resume button, or the in-app button
+        store.resume("chilli/s1")
 
         val timer = store.timers.value.getValue("chilli/s1")
         assertEquals(TimerStatus.Running, timer.status)
@@ -251,7 +251,7 @@ class StepTimerStoreTest {
         val store = store()
         store.toggle("chilli/s1", "Simmer", 600)
         store.pauseFromNotification("chilli/s1")
-        store.reset("chilli/s1")
+        store.resetFromNotification("chilli/s1")
 
         assertTrue(store.timers.value.isEmpty())
         assertTrue(store.activeKeys().isEmpty())
@@ -294,5 +294,45 @@ class StepTimerStoreTest {
         val requests = host.serviceRequests
         store()
         assertEquals(requests, host.serviceRequests)
+    }
+
+    @Test
+    fun staleResumeTapDoesNothingUnlessThePauseIsStillThere() {
+        val store = store()
+        store.resume("chilli/none")
+        assertTrue(store.timers.value.isEmpty())
+
+        store.toggle("chilli/s1", "Simmer", 600)
+        val running = store.timers.value.getValue("chilli/s1")
+        store.resume("chilli/s1") // already running
+        assertEquals(running, store.timers.value.getValue("chilli/s1"))
+        assertEquals(1, host.serviceRequests)
+
+        now += 700_000
+        store.tick() // Done
+        store.resume("chilli/s1")
+        assertEquals(TimerStatus.Done, store.timers.value.getValue("chilli/s1").status)
+    }
+
+    @Test
+    fun staleResetTapDoesNothingUnlessPausedFromTheNotification() {
+        val store = store()
+        store.resetFromNotification("chilli/none")
+        assertTrue(store.timers.value.isEmpty())
+
+        store.toggle("chilli/s1", "Simmer", 600)
+        store.resetFromNotification("chilli/s1") // running
+        assertEquals(TimerStatus.Running, store.timers.value.getValue("chilli/s1").status)
+
+        store.toggle("chilli/s1", "Simmer", 600) // paused in the app
+        store.resetFromNotification("chilli/s1")
+        assertEquals(TimerStatus.Paused, store.timers.value.getValue("chilli/s1").status)
+
+        store.toggle("chilli/s1", "Simmer", 600)
+        now += 700_000
+        store.tick() // Done
+        store.resetFromNotification("chilli/s1")
+        assertEquals(TimerStatus.Done, store.timers.value.getValue("chilli/s1").status)
+        assertTrue(host.dismissed.isEmpty())
     }
 }
