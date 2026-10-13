@@ -95,4 +95,12 @@ class ShoppingListViewTest {
 
         assertEquals(listOf("Batteries"), view.manual.map { it.name })
     }
+
+    @Test fun `an item just unticked shows unchecked in its place while Room still says checked`() {
+        val view = shoppingListView(listOf(manual("Batteries", checked = true)), unticked = setOf("manual-Batteries"))
+
+        assertEquals(listOf("Batteries"), view.manual.map { it.name })
+        assertEquals(false, view.manual.single().checked)
+        assertEquals(emptyList<String>(), view.basket.map { it.name })
+    }
 }

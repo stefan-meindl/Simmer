@@ -40,10 +40,16 @@ fun uncheckedCount(items: List<ShoppingItem>): Int = items.count { !it.checked }
 /**
  * Arranges [items] into aisle groups (shop walk order), manual items and the basket. Checked items whose id is in
  * [lingering] (still in their grace period) stay in their aisle or manual section, still marked checked.
- * Display only: the tab badge counts persisted state via [uncheckedCount].
+ * Items in [unticked] were just unticked and Room has not caught up yet: they show unchecked, so the row does not
+ * jump to the basket and back. Display only: the tab badge counts persisted state via [uncheckedCount].
  */
-fun shoppingListView(items: List<ShoppingItem>, lingering: Set<String> = emptySet()): ShoppingListView {
-    val (basket, open) = items.partition { it.checked && it.id !in lingering }
+fun shoppingListView(
+    items: List<ShoppingItem>,
+    lingering: Set<String> = emptySet(),
+    unticked: Set<String> = emptySet(),
+): ShoppingListView {
+    val shown = if (unticked.isEmpty()) items else items.map { if (it.id in unticked) it.copy(checked = false) else it }
+    val (basket, open) = shown.partition { it.checked && it.id !in lingering }
     val (recipeItems, manual) = open.partition { it.recipeId != null }
     return ShoppingListView(
         aisles = recipeItems.groupBy { it.aisle }.toSortedMap(aisleComparator).map { (aisle, group) -> AisleGroup(aisle, group) },
