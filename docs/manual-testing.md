@@ -229,5 +229,18 @@ Settings tab, scroll to "Recipe reader". The download is a real 2.0 GB file from
 - SHA mismatch: temporarily change `ReaderModel.SHA256` in `domain/ReaderStatus.kt` (flip one hex digit), install, download to 100%: the file and `.part` are deleted, the state reads "Download failed: the file was damaged and was deleted. Try again." with Download shown again. Do not commit the change. (A shorter variant: serve a different file by pointing `ReaderModel.URL` at a small file.)
 - Not supported on this phone: reported when the phone has no 64-bit ABI or under about 3.5 GB RAM. Emulator: start with `-memory 2048` (the AVD default of 4 GB passes). Expect "Not supported on this phone" and no buttons or switch.
 - German (Settings language Deutsch): "Rezept-Leser", "Nicht geladen · 2,6 GB", "Wird geladen · n %", "Warte auf Verbindung · n %", "Bereit", "Nicht genug Speicher. 3,5 GB frei benötigt.", "Auf diesem Handy nicht unterstützt", "Laden", "Download abbrechen", "Modell entfernen", "Nur über WLAN laden"; the notification is German as well. Light and dark theme, large font (the state line and German texts wrap, nothing clipped), TalkBack (the switch reads "Download on Wi-Fi only, switch, on"; the state line is announced when it changes). Touch targets: buttons and the switch row >= 44dp / 56dp.
-- Add recipe still shows the inactive "Download recipe reader (2.6 GB)" button: wiring it is #16.
+- Add recipe still shows the inactive "Download recipe reader (2.6 GB)" button: the reader engine exists since #16 but is not wired to the UI yet (#17).
 - Automated: `ReaderStatusTest` (which state shows), `ModelDownloaderTest` (resume, SHA, storage; no network), and `ReaderControllerTest` in `connectedDebugAndroidTest` (Wi-Fi-only persistence, installed => Ready, Remove).
+
+### Recipe reader — GemmaReader engine (#16)
+
+No screen calls `generate()` yet (that is #17), so on a device the engine can only be exercised from a throwaway branch or a debug test that calls `GemmaReader.generate("You answer in one word.", "Say hello", 32)` and collects the flow. Needs the model Ready (see #15 above). Watch `adb logcat | grep -i litert`.
+- Manifest: `aapt dump xmltree app/build/outputs/apk/debug/app-debug.apk AndroidManifest.xml | grep -i native-library` lists `libvndksupport.so` and `libOpenCL.so`, both `required=false`.
+- First call: returns within seconds without freezing the UI (init is off the main thread; check no "Skipped frames" / ANR). Tokens arrive one by one, not all at once; output is stable across runs (temperature 0.2).
+- GPU first: on a phone with OpenCL (Pixel 7 Pro) the log shows the GPU backend; on an emulator or a phone without it generation still works (CPU fallback).
+- Single instance: call generate twice in a row; the second starts at once (no reload) and memory stays flat (`adb shell dumpsys meminfo com.simmer.app`).
+- Idle unload: wait 60 s after the last call, memory drops by about the model size; the next call reloads and works.
+- onTrimMemory: with the engine loaded run `adb shell am send-trim-memory com.simmer.app MODERATE`; memory drops and the next call reloads.
+- Thermal: `adb shell cmd thermalservice override-status 4` (severe): a generate call does not start until `adb shell cmd thermalservice reset`; it then runs. Needs Android 10+.
+- Not covered on device: Gemini Nano selection (no GeminiNanoReader yet, so Gemma is always used).
+- Automated (JVM, fakes for engine, thermal, time): `GemmaReaderTest` (temperature, GPU to CPU fallback, single instance, off-thread init, idle unload, trim, thermal wait, download progress) and `ReaderSelectorTest`.

@@ -34,6 +34,10 @@
             </intent-filter>
         </activity>
 
+        <!-- LiteRT-LM GPU backend loads these vendor libraries; optional so CPU-only phones still install. -->
+        <uses-native-library android:name="libvndksupport.so" android:required="false" />
+        <uses-native-library android:name="libOpenCL.so" android:required="false" />
+
         <!-- Keeps step timers counting and shows one ongoing notification per running timer. -->
         <service
             android:name=".timer.TimerService"
