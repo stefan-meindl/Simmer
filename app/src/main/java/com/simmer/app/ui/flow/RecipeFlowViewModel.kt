@@ -238,6 +238,16 @@ class RecipeFlowViewModel @Inject constructor(
         toast.value = null
     }
 
+    /** Takes the recipe off the Shopping list (ticked items too) and clears its Planned state; cooking progress is untouched. */
+    fun removeFromList() {
+        val state = (ui.value as? Phase1Ui.Content)?.state ?: return
+        viewModelScope.launch {
+            shopping.removeRecipe(state.recipe.id)
+            phase1.update { it?.copy(added = null) }
+            toast.value = null
+        }
+    }
+
     fun addToList() {
         val content = ui.value as? Phase1Ui.Content ?: return
         val state = content.state

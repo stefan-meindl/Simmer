@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.os.SystemClock
 import com.simmer.app.data.ShoppingRepository
+import com.simmer.app.data.ShoppingSnapshot
 import com.simmer.app.domain.GracePeriod
 import com.simmer.app.domain.GracePhase
 import com.simmer.app.domain.ShoppingListView
@@ -24,6 +25,9 @@ import javax.inject.Inject
 
 private const val KEY_DRAFT = "draft"
 private const val KEY_BASKET_OPEN = "basketOpen"
+
+/** A clear action just done, held so the snackbar can offer Undo. */
+data class ClearedItems(val count: Int, val snapshot: ShoppingSnapshot)
 
 /** The typed-but-unsent item and the basket's open state live in [SavedStateHandle]; the list itself is in Room. */
 @HiltViewModel
@@ -46,6 +50,42 @@ class ShoppingListViewModel @Inject constructor(
     val listView: StateFlow<ShoppingListView?> = combine(shopping.items, grace.phases, unticked) { items, phases, unticked ->
         shoppingListView(items, phases.keys, unticked)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Whether the header menu offers "Clear ticked off". */
+    val canClearTicked: StateFlow<Boolean> = shopping.items.map { all -> all.any { it.checked } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Whether the header menu offers "Clear all". */
+    val canClearAll: StateFlow<Boolean> = shopping.items.map { it.isNotEmpty() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    private val _cleared = MutableStateFlow<ClearedItems?>(null)
+
+    /** The last clear, until its snackbar is dismissed or undone. */
+    val cleared: StateFlow<ClearedItems?> = _cleared
+
+    fun clearTicked() {
+        viewModelScope.launch { announce(shopping.clearTicked()) }
+    }
+
+    fun clearAll() {
+        viewModelScope.launch { announce(shopping.clearAll()) }
+    }
+
+    private fun announce(snapshot: ShoppingSnapshot) {
+        if (!snapshot.isEmpty) _cleared.value = ClearedItems(snapshot.items.size, snapshot)
+    }
+
+    /** Snackbar Undo: items, `checked` states and Planned choices come back. */
+    fun undoClear() {
+        val last = _cleared.value ?: return
+        _cleared.value = null
+        viewModelScope.launch { shopping.restore(last.snapshot) }
+    }
+
+    fun dismissCleared() {
+        _cleared.value = null
+    }
 
     val draft: StateFlow<String> = savedState.getStateFlow(KEY_DRAFT, "")
 

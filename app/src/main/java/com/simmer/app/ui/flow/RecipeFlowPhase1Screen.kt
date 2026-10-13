@@ -181,20 +181,16 @@ private fun Phase1Content(
                 .background(colors.surfacePage)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
-            if (s.isOnList) {
-                SecondaryButton(
-                    text = stringResource(R.string.flow_on_your_list),
-                    onClick = onViewList,
-                    icon = { Icon(painterResource(R.drawable.ic_check), null, Modifier.size(20.dp)) },
-                    modifier = Modifier.weight(1f),
-                )
-            } else {
-                SecondaryButton(
-                    text = stringResource(R.string.flow_add_to_list),
-                    onClick = viewModel::addToList,
-                    modifier = Modifier.weight(1f),
-                )
-            }
+            val servingsText = pluralStringResource(R.plurals.flow_servings_count, s.servings, s.servings)
+            SecondaryButton(
+                text = if (s.isOnList) {
+                    stringResource(R.string.flow_remove_from_list, servingsText)
+                } else {
+                    stringResource(R.string.flow_add_to_list, servingsText)
+                },
+                onClick = if (s.isOnList) viewModel::removeFromList else viewModel::addToList,
+                modifier = Modifier.weight(1f),
+            )
             // Nothing to pick on Flow Phase 2, so this button goes straight to Flow Phase 3.
             val skipsMethods = !hasSelectableMethod(recipe)
             PrimaryButton(

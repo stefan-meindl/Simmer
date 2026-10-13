@@ -28,11 +28,22 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import com.simmer.app.ui.components.MenuAction
+import com.simmer.app.ui.components.OverflowMenu
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
@@ -76,6 +87,28 @@ fun ShoppingListScreen(
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val basketOpen by viewModel.basketOpen.collectAsStateWithLifecycle()
     val phases by viewModel.gracePhases.collectAsStateWithLifecycle()
+    val canClearTicked by viewModel.canClearTicked.collectAsStateWithLifecycle()
+    val canClearAll by viewModel.canClearAll.collectAsStateWithLifecycle()
+    val cleared by viewModel.cleared.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+
+    // "Cleared N items · Undo" for about 5 seconds; Undo restores the snapshot.
+    val clearedMessage = cleared?.let { pluralStringResource(R.plurals.shopping_cleared, it.count, it.count) }
+    val undoLabel = stringResource(R.string.shopping_undo)
+    LaunchedEffect(cleared) {
+        val c = cleared ?: return@LaunchedEffect
+        val dismisser = launch {
+            delay(CLEARED_SNACKBAR_MS)
+            snackbar.currentSnackbarData?.dismiss()
+        }
+        val result = snackbar.showSnackbar(
+            message = clearedMessage.orEmpty(),
+            actionLabel = undoLabel,
+            duration = SnackbarDuration.Indefinite,
+        )
+        dismisser.cancel()
+        if (result == SnackbarResult.ActionPerformed) viewModel.undoClear() else if (viewModel.cleared.value === c) viewModel.dismissCleared()
+    }
 
     // The system "remove animations" setting (animator duration scale 0): keep the strikethrough, skip fade and collapse.
     // Read on each recomposition, not observed live: a change made while the tab is open applies after the next tick or recomposition.
@@ -103,14 +136,28 @@ fun ShoppingListScreen(
             modifier = Modifier.fillMaxSize(),
         ) {
             item(key = "title") {
-                Text(
-                    text = stringResource(R.string.shopping_title),
-                    style = SimmerTextStyle_ScreenTitle,
-                    color = colors.textPrimary,
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier
-                        .padding(horizontal = 16.dp)
-                        .semantics { heading() },
-                )
+                        .fillMaxWidth()
+                        .padding(start = 16.dp, end = 8.dp),
+                ) {
+                    Text(
+                        text = stringResource(R.string.shopping_title),
+                        style = SimmerTextStyle_ScreenTitle,
+                        color = colors.textPrimary,
+                        modifier = Modifier
+                            .weight(1f)
+                            .semantics { heading() },
+                    )
+                    val actions = buildList {
+                        if (canClearTicked) add(MenuAction(stringResource(R.string.shopping_clear_ticked), viewModel::clearTicked))
+                        if (canClearAll) add(MenuAction(stringResource(R.string.shopping_clear_all), viewModel::clearAll))
+                    }
+                    if (actions.isNotEmpty()) {
+                        OverflowMenu(contentDescription = stringResource(R.string.shopping_menu), actions = actions)
+                    }
+                }
             }
             item(key = "add") {
                 AddItemRow(
@@ -156,8 +203,11 @@ fun ShoppingListScreen(
                 }
             }
         }
+        SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp))
     }
 }
+
+private const val CLEARED_SNACKBAR_MS = 5_000L
 
 private fun Context.findActivity(): Activity {
     var c = this
