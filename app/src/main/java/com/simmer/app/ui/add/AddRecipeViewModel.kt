@@ -1,5 +1,7 @@
 package com.simmer.app.ui.add
 
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -232,6 +234,11 @@ class AddRecipeViewModel @Inject constructor(
      * the next edit of the reply clears. No Pipeline or ImportJob.
      * One add at a time, so a second tap cannot overwrite the draft.
      */
+    private val replyFailedEvents = Channel<Unit>(Channel.CONFLATED)
+
+    /** Fires each time Add recipe finds no usable recipe, so the screen can bring the error into view. */
+    val replyFailed: Flow<Unit> = replyFailedEvents.receiveAsFlow()
+
     fun addFromReply() {
         if (adding) return
         adding = true
@@ -248,6 +255,7 @@ class AddRecipeViewModel @Inject constructor(
                 if (this@AddRecipeViewModel.reply.value == reply) {
                     savedState[KEY_REPLY_ERROR_DETAIL] = error?.detail.orEmpty()
                     savedState[KEY_REPLY_ERROR] = error?.error?.name
+                    if (error != null) replyFailedEvents.trySend(Unit)
                 }
             } finally {
                 adding = false

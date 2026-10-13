@@ -235,6 +235,7 @@ Recipes tab, + , "With a chatbot". No throwaway branch needed. Step 2, reply fie
 - Not valid: `{"title":"Pancakes","ingredients": }`. "The JSON object is not valid JSON (parser message: ...)." with the real parser message (offset and token)
 - No title: the #48 JSON with `"title"` removed or `""`. "The \"title\" is missing or empty."
 - No Ingredient: `"ingredients":[]`. No Step: `"steps":[]`. They name "ingredients" and "steps".
+- Every failed tap on Add recipe, even a repeat of the same failure, shows a toast with the error and scrolls down so the error and "Copy fix prompt" are in view (check with a small window or large font so they start off screen).
 - Copy fix prompt: a "Fix prompt copied" toast; paste elsewhere: it holds the error line for that failure, "Return only valid JSON matching this shape:" and the schema, "Reply with one JSON object and nothing else.". Set Settings > Language to German and repeat: the same in German ("Gib nur gültiges JSON in dieser Form zurück:").
 - Editing, pasting or clearing the reply hides the error and the button. Paste the corrected #48 JSON and Add recipe: the review opens.
 - Error shown, rotate, and `adb shell am kill com.simmer.app` + reopen: still on the chatbot screen with the error and the text.
