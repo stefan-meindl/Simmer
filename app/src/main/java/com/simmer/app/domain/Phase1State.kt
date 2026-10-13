@@ -38,6 +38,9 @@ data class Phase1State(
     fun withSwap(variationId: String, value: String) =
         copy(selection = selection.copy(choice = selection.choice + (variationId to value)))
 
+    /** The servings and Selection as a [PlannedChoice]. */
+    fun toChoice() = PlannedChoice(servings, selection)
+
     /** True when [other] cooks differently, so Cooking Progress made on this state no longer applies. */
     fun changesCookingPlan(other: Phase1State): Boolean =
         servings != other.servings || selection.normalised() != other.selection.normalised()

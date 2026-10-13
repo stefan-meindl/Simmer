@@ -56,6 +56,7 @@ fun SimmerNavHost(
                 onThemeToggle = onThemeToggle,
                 onAddRecipe = { navController.navigate(AddRecipe) },
                 onOpenRecipe = { navController.navigate(RecipeFlow(it)) },
+                onContinueCooking = { navController.continueCooking(it) },
             )
         }
 

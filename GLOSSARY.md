@@ -121,8 +121,21 @@ One of the three ordered screens of the cooking flow, shown as the progress indi
 _Avoid_: Stage, page, screen number
 
 **Cooking Progress**:
-The Steps a user has marked done while cooking a recipe (`CookingProgressStore`). Kept in memory per recipe and mirrored into the flow's saved state so it survives process death (saved state wins over stale memory on restore). Reset on any change to servings or the Selection, since the Steps themselves change.
+The Steps a user has marked done while cooking a recipe (`CookingProgressStore`), together with the servings and Selection they were marked under. Kept in memory per recipe, written to SharedPreferences on every change (so it survives process death even after the flow was left) and mirrored into the flow's saved state (saved state wins over stale memory on restore). Marked Steps are reset on any change to servings or the Selection, since the Steps themselves change, and by Stop cooking; the servings and Selection are kept.
 _Avoid_: Done state, checklist
+
+**In-progress recipe**:
+A recipe with at least one StepTimer running or paused, or at least one Step marked done (Cooking Progress), and not every Step done (that is a finished recipe: the success panel). Leaving Flow Phase 3 backwards asks what to do while the recipe is in progress (Stop cooking, Keep cooking, Go to recipes); Stop cooking cancels its timers and clears its Cooking Progress. The Recipes tab lists every in-progress recipe in a "Cooking now" card; Continue opens Flow Phase 3 with the servings and Selection the Steps were marked under (`CookingSessions`).
+A recipe whose last Step gets marked done is finished and leaves progress even if a StepTimer is still running; that timer keeps running and alerting, only the card is hidden.
+_Avoid_: Active recipe, running recipe
+
+**Cooking now card**:
+The Recipes tab card for an In-progress recipe: "Cooking now" heading, Planned-card look (title, servings and picks, Continue). Continue opens Flow Phase 3 directly. Disappears when the recipe is finished or Stop cooking is chosen.
+_Avoid_: Resume card
+
+**Stop cooking**:
+The destructive answer of the leave-cooking dialog: cancels all of the recipe's StepTimers (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps).
+_Avoid_: Reset, abandon
 
 **Active Step**:
 The first Step in display order that is not yet done (`CookingView.activeId`). It gets the highlighted card and the dark Mark as done button on Flow Phase 3; when none is left, the success panel shows.

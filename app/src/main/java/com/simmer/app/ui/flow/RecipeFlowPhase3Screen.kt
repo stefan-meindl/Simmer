@@ -1,5 +1,6 @@
 package com.simmer.app.ui.flow
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -160,6 +162,23 @@ fun RecipeFlowPhase3Screen(
         onTick = viewModel::tickTimers,
     )
 
+    // Leaving backwards while cooking is in progress asks first; otherwise it goes straight back.
+    var askLeave by rememberSaveable { mutableStateOf(false) }
+    fun leaveTo(go: () -> Unit) = if (viewModel.needsLeaveConfirm()) askLeave = true else go()
+    BackHandler { leaveTo(onBack) }
+    if (askLeave) {
+        // Every answer closes the dialog; Keep cooking and dismissing do nothing else.
+        fun answer(then: () -> Unit = {}) {
+            askLeave = false
+            then()
+        }
+        LeaveCookingDialog(
+            onStop = { answer { viewModel.stopCooking(); onBack() } },
+            onKeep = { answer() },
+            onGoToRecipes = { answer(onBackToRecipes) },
+        )
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -169,8 +188,8 @@ fun RecipeFlowPhase3Screen(
         when (val content = ui) {
             Phase3Ui.Loading -> Unit
             is Phase3Ui.Content -> Column(modifier = Modifier.fillMaxSize()) {
-                FlowTopBar(title = content.recipe.title, phase = 3, skipsMethods = !hasSelectableMethod(content.recipe), onBack = onBack, onEdit = onEdit)
-                FlowProgress(current = 3, skipsMethods = !hasSelectableMethod(content.recipe), onSegmentClick = onPhaseClick)
+                FlowTopBar(title = content.recipe.title, phase = 3, skipsMethods = !hasSelectableMethod(content.recipe), onBack = { leaveTo(onBack) }, onEdit = onEdit)
+                FlowProgress(current = 3, skipsMethods = !hasSelectableMethod(content.recipe), onSegmentClick = { phase -> leaveTo { onPhaseClick(phase) } })
                 CookingList(
                     content = content,
                     onMarkDone = viewModel::markStepDone,

@@ -9,8 +9,11 @@ import com.simmer.app.data.ShoppingRepository
 import com.simmer.app.data.decodeSelection
 import com.simmer.app.data.encodeSelection
 import com.simmer.app.domain.CookingProgressStore
+import com.simmer.app.domain.CookingSessions
 import com.simmer.app.domain.CookingView
 import com.simmer.app.domain.StepTimerStore
+import com.simmer.app.domain.isTimerOf
+import com.simmer.app.domain.timerKey
 import com.simmer.app.domain.TimerState
 import com.simmer.app.domain.cookingView
 import com.simmer.app.domain.model.ResolvedIngredient
@@ -85,6 +88,7 @@ class RecipeFlowViewModel @Inject constructor(
     private val shopping: ShoppingRepository,
     private val progress: CookingProgressStore,
     private val stepTimers: StepTimerStore,
+    private val sessions: CookingSessions,
     private val prefs: PrefsRepository,
 ) : ViewModel() {
 
@@ -164,6 +168,8 @@ class RecipeFlowViewModel @Inject constructor(
             phase1.filterNotNull().collect {
                 savedState[KEY_SERVINGS] = it.servings
                 savedState[KEY_SELECTION] = encodeSelection(it.selection)
+                // Persisted with the marked Steps, so a recipe left mid-cooking resumes with the same plan.
+                progress.setChoice(recipeId, it.toChoice())
             }
         }
         viewModelScope.launch {
@@ -174,7 +180,7 @@ class RecipeFlowViewModel @Inject constructor(
                 phase1.update { current ->
                     when {
                         recipe == null -> null
-                        current == null -> Phase1State.initial(recipe, planned, draft = savedDraft())
+                        current == null -> Phase1State.initial(recipe, planned, draft = savedDraft() ?: sessions.resumeChoice(recipe))
                         else -> current.copy(recipe = recipe)
                     }
                 }
@@ -203,21 +209,30 @@ class RecipeFlowViewModel @Inject constructor(
     /** This recipe's StepTimers by step id. Running timers continue after the flow is left. */
     val timers: StateFlow<Map<String, TimerState>> = stepTimers.timers
         .map { all ->
-            all.filterKeys { it.startsWith("$recipeId/") }.mapKeys { it.key.removePrefix("$recipeId/") }
+            all.filterKeys { isTimerOf(recipeId, it) }.mapKeys { it.key.removePrefix("$recipeId/") }
         }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun toggleTimer(stepId: String, title: String, durationSecs: Int) =
-        stepTimers.toggle("$recipeId/$stepId", title, durationSecs)
+        stepTimers.toggle(timerKey(recipeId, stepId), title, durationSecs)
 
     /** Called by visible running timers, so they finish even without the foreground service. */
     fun tickTimers() = stepTimers.tick()
 
-    fun resetTimer(stepId: String) = stepTimers.reset("$recipeId/$stepId")
+    fun resetTimer(stepId: String) = stepTimers.reset(timerKey(recipeId, stepId))
 
     fun markStepDone(stepId: String) = progress.markDone(recipeId, stepId)
 
     fun undoStep(stepId: String) = progress.undo(recipeId, stepId)
+
+    /** Whether leaving Phase 3 backwards should ask first: this recipe is in progress. */
+    fun needsLeaveConfirm(): Boolean {
+        val state = phase1.value ?: return false
+        return sessions.isInProgress(state.recipe, state.toChoice())
+    }
+
+    /** Stop cooking: cancels this recipe's timers and clears its Cooking Progress; servings and Selection stay. */
+    fun stopCooking() = sessions.stop(recipeId)
 
     fun dismissToast() {
         toast.value = null
@@ -227,7 +242,7 @@ class RecipeFlowViewModel @Inject constructor(
         val content = ui.value as? Phase1Ui.Content ?: return
         val state = content.state
         val entries = state.shoppingEntries(content.units, content.spices, content.lang)
-        val choice = PlannedChoice(state.servings, state.selection)
+        val choice = state.toChoice()
         viewModelScope.launch {
             shopping.addRecipeToList(state.recipe.id, entries, choice)
             phase1.update { it?.copy(added = choice) }

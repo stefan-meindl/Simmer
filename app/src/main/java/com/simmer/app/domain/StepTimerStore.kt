@@ -5,6 +5,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 
+/** Key of a StepTimer: `recipeId/stepId`. */
+fun timerKey(recipeId: String, stepId: String) = "$recipeId/$stepId"
+
+/** Whether the StepTimer under [key] belongs to [recipeId]. */
+fun isTimerOf(recipeId: String, key: String) = key.startsWith("$recipeId/")
+
 /** Where timers survive process death. */
 interface TimerPersistence {
     fun load(): Map<String, TimerState>
@@ -57,6 +63,18 @@ class StepTimerStore(
         val current = state.value[key] ?: return
         put(key, current.reset())
         if (current.status == TimerStatus.Done) host.dismissFinished(key)
+    }
+
+    /**
+     * Drops every timer of [recipeId], whatever its state (Stop cooking). The service sees the
+     * running ones go, removes their notifications and stops itself when none is left; the finished
+     * alerts of Done ones are dismissed here.
+     */
+    fun cancelRecipe(recipeId: String) {
+        val mine = state.value.filterKeys { isTimerOf(recipeId, it) }
+        if (mine.isEmpty()) return
+        change { it - mine.keys }
+        mine.filterValues { it.status == TimerStatus.Done }.keys.forEach(host::dismissFinished)
     }
 
     /**
