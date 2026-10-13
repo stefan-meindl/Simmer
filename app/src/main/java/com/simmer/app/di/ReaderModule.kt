@@ -4,6 +4,7 @@ import android.content.Context
 import com.simmer.app.data.ReaderController
 import com.simmer.app.reader.AndroidThermalMonitor
 import com.simmer.app.reader.GemmaReader
+import com.simmer.app.reader.GemmaReaderRegistry
 import com.simmer.app.reader.LiteRtEngineFactory
 import com.simmer.app.reader.NoNanoAvailability
 import com.simmer.app.reader.ReaderSelector
@@ -24,14 +25,18 @@ object ReaderModule {
     /** The one [GemmaReader] (and so one engine) for the app's lifetime. */
     @Provides
     @Singleton
-    fun provideGemmaReader(@ApplicationContext context: Context, controller: ReaderController): GemmaReader =
+    fun provideGemmaReader(
+        @ApplicationContext context: Context,
+        controller: ReaderController,
+        registry: GemmaReaderRegistry,
+    ): GemmaReader =
         GemmaReader(
             source = controller,
             factory = LiteRtEngineFactory(context),
             thermal = AndroidThermalMonitor(context),
             scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
             engineDispatcher = Dispatchers.IO,
-        )
+        ).also { registry.reader = it }
 
     @Provides
     @Singleton

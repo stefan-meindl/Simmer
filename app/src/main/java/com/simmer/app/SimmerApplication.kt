@@ -2,7 +2,8 @@ package com.simmer.app
 
 import android.app.Application
 import com.simmer.app.data.RecipeRepository
-import com.simmer.app.reader.GemmaReader
+import com.simmer.app.reader.GemmaReaderRegistry
+import com.simmer.app.reader.shouldUnloadOnTrim
 import com.simmer.app.timer.TimerNotifications
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
@@ -19,7 +20,7 @@ class SimmerApplication : Application() {
     @InstallIn(SingletonComponent::class)
     interface AppEntryPoint {
         fun recipeRepository(): RecipeRepository
-        fun gemmaReader(): GemmaReader
+        fun gemmaReaderRegistry(): GemmaReaderRegistry
     }
 
     override fun onCreate() {
@@ -31,9 +32,10 @@ class SimmerApplication : Application() {
         }
     }
 
-    /** Low memory: give the Gemma engine's memory back (it reloads on the next use). */
+    /** Real memory pressure: give the Gemma engine's memory back (it reloads on the next use). */
     override fun onTrimMemory(level: Int) {
         super.onTrimMemory(level)
-        EntryPointAccessors.fromApplication(this, AppEntryPoint::class.java).gemmaReader().unload()
+        if (!shouldUnloadOnTrim(level)) return
+        EntryPointAccessors.fromApplication(this, AppEntryPoint::class.java).gemmaReaderRegistry().unload()
     }
 }

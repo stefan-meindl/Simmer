@@ -1,7 +1,6 @@
 package com.simmer.app.reader
 
 import com.simmer.app.domain.RecipeReader
-import kotlinx.coroutines.CancellationException
 
 /**
  * Picks the [RecipeReader] at runtime: Gemini Nano when ML Kit reports it Available or Downloadable,
@@ -16,13 +15,7 @@ class ReaderSelector(
 ) {
     suspend fun current(): RecipeReader {
         if (nano == null) return gemma
-        val nanoAvailability = try {
-            availability.check()
-        } catch (e: CancellationException) {
-            throw e
-        } catch (_: Exception) {
-            NanoAvailability.Unavailable
-        }
+        val nanoAvailability = attempt { availability.check() }.getOrDefault(NanoAvailability.Unavailable)
         return when (nanoAvailability) {
             NanoAvailability.Available, NanoAvailability.Downloadable -> nano
             NanoAvailability.Unavailable -> gemma

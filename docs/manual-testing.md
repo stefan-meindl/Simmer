@@ -240,7 +240,8 @@ No screen calls `generate()` yet (that is #17), so on a device the engine can on
 - GPU first: on a phone with OpenCL (Pixel 7 Pro) the log shows the GPU backend; on an emulator or a phone without it generation still works (CPU fallback).
 - Single instance: call generate twice in a row; the second starts at once (no reload) and memory stays flat (`adb shell dumpsys meminfo com.simmer.app`).
 - Idle unload: wait 60 s after the last call, memory drops by about the model size; the next call reloads and works.
-- onTrimMemory: with the engine loaded run `adb shell am send-trim-memory com.simmer.app MODERATE`; memory drops and the next call reloads.
-- Thermal: `adb shell cmd thermalservice override-status 4` (severe): a generate call does not start until `adb shell cmd thermalservice reset`; it then runs. Needs Android 10+.
+- onTrimMemory: with the engine loaded run `adb shell am send-trim-memory com.simmer.app MODERATE`; memory drops and the next call reloads. Switching to another app and back (UI_HIDDEN) must NOT unload: `adb shell am send-trim-memory com.simmer.app HIDDEN` leaves memory unchanged. Before the first generate call, a trim must not create the reader (no model load, no log line).
+- Thermal: `adb shell cmd thermalservice override-status 4` (severe): a generate call does not start until `adb shell cmd thermalservice reset`; it then runs. If left severe for 5 minutes the call fails with "The phone stayed too hot". A trim sent while it waits unloads at once. Needs Android 10+.
+- Not covered by an androidTest: `AndroidThermalMonitor` (the device's real thermal status cannot be set from a test without shell access); the severe-or-worse mapping is a JVM test, the real service is the manual check above.
 - Not covered on device: Gemini Nano selection (no GeminiNanoReader yet, so Gemma is always used).
 - Automated (JVM, fakes for engine, thermal, time): `GemmaReaderTest` (temperature, GPU to CPU fallback, single instance, off-thread init, idle unload, trim, thermal wait, download progress) and `ReaderSelectorTest`.
