@@ -91,4 +91,18 @@ class GracePeriodTest {
 
         assertEquals(emptyMap<String, GracePhase>(), grace.phases.value)
     }
+
+    @Test fun `an advance that runs early leaves the phase and reports how long until it changes`() {
+        grace.tick("a", fadeMs = 200)
+
+        after(2_990) // the scheduler's delay woke up 10ms early
+        assertEquals(mapOf("a" to GracePhase.Ticked), grace.phases.value)
+        assertEquals(10L, grace.msUntilChange("a"))
+
+        after(10)
+        assertEquals(200L, grace.msUntilChange("a"))
+
+        after(200)
+        assertEquals(null, grace.msUntilChange("a"))
+    }
 }

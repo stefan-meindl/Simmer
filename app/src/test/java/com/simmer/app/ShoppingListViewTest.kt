@@ -64,18 +64,10 @@ class ShoppingListViewTest {
     }
 
     @Test fun `unchecked count covers recipe and manual items but not the basket`() {
-        val view = shoppingListView(
-            listOf(recipeItem("onions", "Produce"), recipeItem("rice", "Pantry", checked = true), manual("Batteries")),
-        )
-
-        assertEquals(2, view.uncheckedCount)
-        assertEquals(0, shoppingListView(emptyList()).uncheckedCount)
-    }
-
-    @Test fun `unchecked count of the raw items matches the view`() {
         val items = listOf(recipeItem("onions", "Produce"), recipeItem("rice", "Pantry", checked = true), manual("Batteries"))
 
-        assertEquals(shoppingListView(items).uncheckedCount, uncheckedCount(items))
+        assertEquals(2, uncheckedCount(items))
+        assertEquals(0, uncheckedCount(emptyList()))
     }
 
     @Test fun `a lingering checked recipe item keeps its aisle, struck through, and stays out of the basket`() {

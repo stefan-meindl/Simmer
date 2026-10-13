@@ -20,8 +20,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** `duration-base`: how long a row takes to fade out and collapse. */
-private const val FADE_MS = 200L
 private const val KEY_DRAFT = "draft"
 private const val KEY_BASKET_OPEN = "basketOpen"
 
@@ -33,10 +31,8 @@ class ShoppingListViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val grace = GracePeriod(clock = SystemClock::elapsedRealtime)
+    /** Main thread only, like [grace]. */
     private val graceJobs = HashMap<String, Job>()
-
-    /** Set by the screen from the system "remove animations" setting; ticked rows then skip the fade. */
-    var reducedMotion: Boolean = false
 
     /** Phase of each recently ticked item still held in its aisle; absent items follow Room. */
     val gracePhases: StateFlow<Map<String, GracePhase>> = grace.phases
@@ -66,17 +62,21 @@ class ShoppingListViewModel @Inject constructor(
         viewModelScope.launch { shopping.addManualItem(name) }
     }
 
-    /** Writes to Room at once; ticking additionally holds the row in place for the grace period. Unticking is the undo. */
-    fun setChecked(id: String, checked: Boolean) {
+    /**
+     * Writes to Room at once; ticking additionally holds the row in place for the grace period. Unticking is the undo.
+     * With [reducedMotion] (system "remove animations") the row skips the fade. Main thread only.
+     */
+    fun setChecked(id: String, checked: Boolean, reducedMotion: Boolean = false) {
         graceJobs.remove(id)?.cancel()
         if (checked) {
-            val fadeMs = if (reducedMotion) 0L else FADE_MS
+            val fadeMs = if (reducedMotion) 0L else GracePeriod.FADE_MS
             grace.tick(id, fadeMs)
             graceJobs[id] = viewModelScope.launch {
-                delay(GracePeriod.GRACE_MS)
-                grace.advance()
-                delay(fadeMs)
-                grace.advance()
+                // Wait exactly as long as the injected clock says, so an early wake-up cannot skip a phase.
+                while (true) {
+                    delay(grace.msUntilChange(id) ?: break)
+                    grace.advance()
+                }
                 graceJobs.remove(id)
             }
         } else {

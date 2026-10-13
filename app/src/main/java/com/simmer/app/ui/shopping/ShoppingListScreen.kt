@@ -1,5 +1,8 @@
 package com.simmer.app.ui.shopping
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.provider.Settings
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ExitTransition
@@ -48,6 +51,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simmer.app.R
+import com.simmer.app.domain.GracePeriod
 import com.simmer.app.domain.GracePhase
 import com.simmer.app.domain.ShoppingItem
 import com.simmer.app.ui.components.CheckRow
@@ -60,9 +64,6 @@ import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
 import com.simmer.app.ui.theme.SimmerTextStyle_BodySm
 import com.simmer.app.ui.theme.SimmerTextStyle_MicroUppercase
 import com.simmer.app.ui.theme.SimmerTextStyle_ScreenTitle
-
-/** `duration-base`. */
-private const val FADE_OUT_MS = 200
 
 /** The Shopping list tab: aisle groups, manual items, and a collapsed "In your basket" section. */
 @Composable
@@ -77,13 +78,18 @@ fun ShoppingListScreen(
     val phases by viewModel.gracePhases.collectAsStateWithLifecycle()
 
     // The system "remove animations" setting (animator duration scale 0): keep the strikethrough, skip fade and collapse.
-    val resolver = LocalContext.current.contentResolver
-    val reducedMotion = Settings.Global.getFloat(resolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
-    viewModel.reducedMotion = reducedMotion
+    // Read on each recomposition, not observed live: a change made while the tab is open applies after the next tick or recomposition.
+    val context = LocalContext.current
+    val reducedMotion = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    val onChecked: (String, Boolean) -> Unit = { id, checked -> viewModel.setChecked(id, checked, reducedMotion) }
 
-    // Leaving the tab or backgrounding the app releases every held row to the basket.
-    DisposableEffect(Unit) { onDispose { viewModel.leaveScreen() } }
-    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.leaveScreen() }
+    // Leaving the tab or backgrounding the app releases every held row to the basket; a rotation does not.
+    DisposableEffect(Unit) {
+        onDispose { if (!context.findActivity().isChangingConfigurations) viewModel.leaveScreen() }
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        if (!context.findActivity().isChangingConfigurations) viewModel.leaveScreen()
+    }
 
     Box(
         modifier = modifier
@@ -125,7 +131,7 @@ fun ShoppingListScreen(
             }
             view.aisles.forEach { group ->
                 item(key = "aisle-${group.aisle}") {
-                    ItemGroup(label = group.aisle, items = group.items, onChecked = viewModel::setChecked, phases = phases, reducedMotion = reducedMotion)
+                    ItemGroup(label = group.aisle, items = group.items, onChecked = onChecked, phases = phases, reducedMotion = reducedMotion)
                 }
             }
             if (view.manual.isNotEmpty()) {
@@ -133,7 +139,7 @@ fun ShoppingListScreen(
                     ItemGroup(
                         label = stringResource(R.string.shopping_other_items),
                         items = view.manual,
-                        onChecked = viewModel::setChecked,
+                        onChecked = onChecked,
                         phases = phases,
                         reducedMotion = reducedMotion,
                     )
@@ -145,12 +151,21 @@ fun ShoppingListScreen(
                 }
                 if (basketOpen) {
                     item(key = "basket-items") {
-                        ItemGroup(label = null, items = view.basket, onChecked = viewModel::setChecked)
+                        ItemGroup(label = null, items = view.basket, onChecked = onChecked)
                     }
                 }
             }
         }
     }
+}
+
+private fun Context.findActivity(): Activity {
+    var c = this
+    while (c is ContextWrapper) {
+        if (c is Activity) return c
+        c = c.baseContext
+    }
+    error("No Activity in context")
 }
 
 @Composable
@@ -211,7 +226,7 @@ private fun ItemGroup(
                         exit = if (reducedMotion) {
                             ExitTransition.None
                         } else {
-                            fadeOut(tween(FADE_OUT_MS)) + shrinkVertically(tween(FADE_OUT_MS))
+                            fadeOut(tween(GracePeriod.FADE_MS.toInt())) + shrinkVertically(tween(GracePeriod.FADE_MS.toInt()))
                         },
                     ) {
                         Column {

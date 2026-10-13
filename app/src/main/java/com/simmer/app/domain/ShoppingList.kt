@@ -19,10 +19,7 @@ data class ShoppingListView(
     val aisles: List<AisleGroup>,
     val manual: List<ShoppingItem>,
     val basket: List<ShoppingItem>,
-) {
-    /** Items still shown outside the basket (includes lingering ticked rows; the badge uses [uncheckedCount]). */
-    val uncheckedCount: Int get() = aisles.sumOf { it.items.size } + manual.size
-}
+)
 
 /**
  * Aisles in the order a shopper walks the shop, so the list reads the same whichever recipes were added first.

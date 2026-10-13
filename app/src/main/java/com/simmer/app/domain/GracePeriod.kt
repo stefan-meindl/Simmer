@@ -16,6 +16,7 @@ enum class GracePhase {
  * The UI-only grace period after ticking a Shopping Item: the row keeps its place for [graceMs], then fades for
  * its own `fadeMs`, then is gone. Every item runs its own countdown from its own tick. Pure state: the caller
  * schedules [advance] calls; this reads the [clock] and moves each item to the phase it is in by now.
+ * Main thread only: [entries] is not synchronised.
  */
 class GracePeriod(
     private val clock: () -> Long,
@@ -32,6 +33,13 @@ class GracePeriod(
     fun tick(id: String, fadeMs: Long) {
         entries[id] = Entry(clock(), fadeMs)
         advance()
+    }
+
+    /** Milliseconds until [id] next changes phase (or disappears), or null when it is not held. Lets a scheduler wait exactly long enough. */
+    fun msUntilChange(id: String): Long? {
+        val e = entries[id] ?: return null
+        val age = clock() - e.tickedAt
+        return if (age < graceMs) graceMs - age else graceMs + e.fadeMs - age
     }
 
     /** Undo: the item is released at once and its countdown is dropped. */
@@ -57,5 +65,8 @@ class GracePeriod(
 
     companion object {
         const val GRACE_MS = 3_000L
+
+        /** `duration-base`: how long a row takes to fade out and collapse. */
+        const val FADE_MS = 200L
     }
 }

@@ -165,6 +165,7 @@ Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to li
   - Tick an item and watch the tab badge: it drops by 1 immediately, not after the 3s.
   - Tick an item, then at once `adb shell am kill com.simmer.app` and reopen: the tick is saved (item in the basket).
   - Tick an item, switch to another tab within 3s and come back: the item is already in the basket, nothing lingers. Repeat with Home (backgrounding) instead of switching tab.
+  - Tick an item and rotate the device within 3s: the row keeps its place and still leaves on its own timer (rotation does not clear).
   - Expand "In your basket" and untick an item: it returns to its aisle instantly, no fade or delay.
   - Turn on reduced motion (Settings > Accessibility > Remove animations, or `adb shell settings put global animator_duration_scale 0`): tick an item, it stays struck through for 3s, then jumps to the basket with no fade or collapse. Restore with `... animator_duration_scale 1`.
   - TalkBack: during the 3s the row still reads as a checked checkbox and a double tap unticks it.
