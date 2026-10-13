@@ -95,6 +95,11 @@
     <string name="timer_channel_done">Abgelaufene Timer</string>
     <string name="timer_channel_done_description">Ton und Vibration, wenn ein Schritt-Timer abläuft.</string>
     <string name="timer_notification_running">Timer läuft</string>
+    <string name="timer_notification_paused">Timer pausiert</string>
+    <string name="timer_notification_with_recipe">%1$s · %2$s</string>
+    <string name="timer_action_pause">Pause</string>
+    <string name="timer_action_resume">Fortsetzen</string>
+    <string name="timer_action_reset">Zurücksetzen</string>
     <string name="timer_notification_done">Timer abgelaufen</string>
     <string name="timer_notification_fallback_title">Schritt-Timer</string>
 

@@ -197,6 +197,15 @@ class StepTimerStoreTest {
     }
 
     @Test
+    fun timerKeepsTheRecipeTitleForTheNotificationAcrossProcessDeath() {
+        store().toggle("chilli/s1", "Simmer", 600, recipeTitle = "Chilli con carne")
+
+        val timer = store().timers.value.getValue("chilli/s1")
+        assertEquals("Chilli con carne", timer.recipeTitle)
+        assertEquals("Simmer", timer.title)
+    }
+
+    @Test
     fun pausingFromTheNotificationKeepsTheTimerActiveForTheService() {
         val store = store()
         store.toggle("chilli/s1", "Simmer", 600)

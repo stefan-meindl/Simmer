@@ -210,6 +210,19 @@ Open `chilli`, Preparation, Start cooking (no throwaway branch needed). Prep 2 "
 - Light and dark, German (button "Fertig", reset "Timer zurücksetzen"), large font (the title column shrinks, the timer button stays 44dp tall), TalkBack: button reads "Start 2 min timer", "Pause timer, 1:12 left", "Resume timer, 1:12 left", "Timer finished, tap to reset"; "Done" is announced.
 - `connectedDebugAndroidTest` includes `StepTimerAndroidTest` (button states, reset position, channels, SharedPreferences round trip).
 
+### Timer notification (#37)
+
+Set up as in StepTimer (#8) above: `chilli`, Preparation, Start cooking, start Prep 2 (2 min) and Prep 3 (1 min).
+- Running: each ongoing notification shows the step title, "Chilli con carne · Timer running" (de: "Timer läuft"), a countdown, a progress bar that fills (about once a second) and one action, Pause (de: "Pause"). Done notification is unchanged: tap opens the app, no buttons.
+- Tap Pause on one: the notification stays, text "Timer paused", the remaining time as subtext, no countdown ticking, actions Resume and Reset (de: "Fortsetzen", "Zurücksetzen"). The app's timer button shows the paused state (play icon, frozen time) at once. `adb shell dumpsys activity services com.simmer.app` still lists TimerService while any timer runs or is paused this way.
+- Resume: counts down again from the frozen time; notification back to Pause. Reset: notification gone, the app's timer is back to idle at the full duration. With no other timer active, TimerService stops.
+- Pause in the app instead: the notification goes (as before), and Resume/Reset never appear for it.
+- Pause via notification, then tap the timer button in the app: it resumes, the notification returns to Pause.
+- Pause via notification, `adb shell run-as com.simmer.app kill -9 $(adb shell pidof com.simmer.app)`: the service restarts, the notification returns with Resume and Reset, the app shows the paused time. Same with a running timer.
+- Lockscreen (`adb shell input keyevent 26` or lock the device): the notification shows on the lockscreen with step and recipe title (not hidden as "sensitive content", also with a secure lock if the setting shows all notifications).
+- Android 16 / API 36+ Live Updates (the API 37 emulator does this): the timer shows as a chip with the remaining time in the status bar, the shade entry has a progress bar, and the lockscreen shows the same. Settings > Apps > Simmer > Notifications > "Live updates" can be toggled; with it off the notification falls back to the plain form. Below API 36 (test an API 26 to 35 image): a plain ongoing notification with progress bar and chronometer, no chip.
+- Always-on display (cannot be verified on the emulator, check on a device running Android 16 or newer that has an always-on display, e.g. a Pixel with Always-on display enabled in Settings > Display > Lock screen): start a timer, press the power button so the screen goes to the always-on display, wait a few seconds. Expect the Live Update (chip with the countdown and the progress bar) on the always-on display, counting down and filling without waking the screen; Pause/Resume/Reset are only available after waking and unlocking the shade. Then pause via the notification and check the always-on display now shows the frozen time. On a device without Live Updates (below Android 16) the always-on display shows only the small icon of the notification, which is expected.
+
 ### Edit recipe (#13)
 
 Open `chilli`, tap Edit (top right of any flow phase). Editing the Add recipe draft is under Add recipe (#14) below; Delete recipe needs a User Recipe (save the Add recipe example first).

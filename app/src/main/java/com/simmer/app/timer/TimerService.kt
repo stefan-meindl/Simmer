@@ -21,8 +21,8 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 /**
- * Keeps the process alive while any StepTimer runs, ticks the store, and shows one ongoing
- * notification per running timer. One of them is the foreground notification; the rest are
+ * Keeps the process alive while any StepTimer runs or is paused with the notification's Pause
+ * action, ticks the store, and shows one ongoing notification per such timer. One of them is the foreground notification; the rest are
  * posted beside it. Stops itself when nothing runs. START_STICKY: after process death the system
  * restarts it and the store restores the timers.
  */
@@ -34,8 +34,11 @@ class TimerService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val manager by lazy { getSystemService(NotificationManager::class.java) }
 
-    /** Running timers that have a notification, by key, with the end time it was posted for. */
-    private val posted = mutableMapOf<String, Long>()
+    /** What a posted notification shows; it is posted again when this changes (about once a second while running). */
+    private data class Posted(val status: TimerStatus, val endAtMs: Long, val elapsedSecs: Int)
+
+    /** Active timers that have a notification, by key. */
+    private val posted = mutableMapOf<String, Posted>()
     private var foregroundKey: String? = null
     private var started = false
 
@@ -47,14 +50,24 @@ class TimerService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        intent?.getStringExtra(TimerNotifications.EXTRA_KEY)?.let { key ->
+            when (intent.action) {
+                TimerNotifications.ACTION_PAUSE -> store.pauseFromNotification(key)
+                TimerNotifications.ACTION_RESUME -> store.timers.value[key]?.let {
+                    store.toggle(key, it.title, it.durationSecs, it.recipeTitle)
+                }
+                TimerNotifications.ACTION_RESET -> store.reset(key)
+            }
+        }
         if (!started) {
             started = true
             // startForeground must follow startForegroundService soon, even if nothing runs any more.
-            reconcile(runningTimers(), forcePromote = true)
-            scope.launch { store.timers.collect { reconcile(runningTimers()) } }
+            reconcile(activeTimers(), forcePromote = true)
+            scope.launch { store.timers.collect { reconcile(activeTimers()) } }
             scope.launch {
                 while (true) {
                     store.tick()
+                    reconcile(activeTimers()) // refreshes the progress bars
                     delay(TIMER_TICK_MS)
                 }
             }
@@ -67,8 +80,16 @@ class TimerService : Service() {
         super.onDestroy()
     }
 
-    private fun runningTimers(): Map<String, TimerState> =
-        store.timers.value.filterValues { it.status == TimerStatus.Running }
+    private fun activeTimers(): Map<String, TimerState> {
+        val active = store.activeKeys()
+        return store.timers.value.filterKeys { it in active }
+    }
+
+    private fun postedOf(timer: TimerState, now: Long) = Posted(
+        timer.status,
+        timer.endAtMs,
+        (timer.progressAt(now) * timer.durationSecs).toInt(),
+    )
 
     private fun reconcile(running: Map<String, TimerState>, forcePromote: Boolean = false) {
         if (running.isEmpty()) {
@@ -89,14 +110,16 @@ class TimerService : Service() {
         if (foregroundKey !in running) {
             val oldId = foregroundKey?.let(TimerNotifications::runningId)
             val key = running.keys.first()
-            promote(key, TimerNotifications.running(this, running.getValue(key)))
-            posted[key] = running.getValue(key).endAtMs
+            promote(key, TimerNotifications.running(this, key, running.getValue(key)))
+            posted[key] = postedOf(running.getValue(key), System.currentTimeMillis())
             oldId?.let(manager::cancel)
         }
+        val now = System.currentTimeMillis()
         running.forEach { (key, timer) ->
-            if (posted[key] != timer.endAtMs) {
-                manager.notify(TimerNotifications.runningId(key), TimerNotifications.running(this, timer))
-                posted[key] = timer.endAtMs
+            val shown = postedOf(timer, now)
+            if (posted[key] != shown) {
+                manager.notify(TimerNotifications.runningId(key), TimerNotifications.running(this, key, timer, now))
+                posted[key] = shown
             }
         }
     }

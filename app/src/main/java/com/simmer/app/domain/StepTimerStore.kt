@@ -62,8 +62,8 @@ class StepTimerStore(
     }
 
     /** Tap on the timer button; [durationSecs] and [title] are used when the timer is not kept yet. */
-    fun toggle(key: String, title: String, durationSecs: Int) {
-        val current = state.value[key] ?: TimerState.idle(durationSecs, title)
+    fun toggle(key: String, title: String, durationSecs: Int, recipeTitle: String = "") {
+        val current = state.value[key] ?: TimerState.idle(durationSecs, title, recipeTitle)
         val next = current.toggle(clock())
         put(key, next)
         if (current.status == TimerStatus.Done) host.dismissFinished(key)

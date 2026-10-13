@@ -10,6 +10,7 @@ enum class TimerStatus { Idle, Running, Paused, Done }
  * passed in by the caller, so a running timer keeps counting while the process is gone.
  *
  * @param title Step title, shown on the ongoing notification.
+ * @param recipeTitle Recipe title, shown beside the step title on the notification.
  * @param remainingMs Time left while Idle or Paused; stale while Running (see [remainingMsAt]).
  * @param endAtMs When a Running timer finishes.
  * @param pausedFromNotification A Paused timer was paused with the notification's Pause action, so
@@ -23,6 +24,7 @@ data class TimerState(
     val endAtMs: Long = 0,
     val title: String = "",
     val pausedFromNotification: Boolean = false,
+    val recipeTitle: String = "",
 ) {
     private val durationMs get() = durationSecs * 1000L
 
@@ -56,7 +58,8 @@ data class TimerState(
         if (status == TimerStatus.Running && now >= endAtMs) copy(status = TimerStatus.Done, remainingMs = 0) else this
 
     companion object {
-        fun idle(durationSecs: Int, title: String = "") = TimerState(durationSecs, title = title)
+        fun idle(durationSecs: Int, title: String = "", recipeTitle: String = "") =
+            TimerState(durationSecs, title = title, recipeTitle = recipeTitle)
     }
 }
 
