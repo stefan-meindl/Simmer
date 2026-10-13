@@ -3,6 +3,7 @@ package com.simmer.app
 import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.READER_PROMPT_SCHEMA
 import com.simmer.app.domain.ReaderPromptTexts
+import com.simmer.app.domain.mapsIn
 import com.simmer.app.domain.parseChatbotReply
 import com.simmer.app.domain.parseModelJson
 import com.simmer.app.domain.readerPrompt
@@ -122,6 +123,33 @@ class ReaderPromptLanguageTest {
 
         assertEquals(en, de)
         assertTrue(en.size >= 11)
+    }
+
+    @Test fun `every icon the example uses is allowed by the rules`() {
+        listOf("en", "de").forEach { lang ->
+            val rules = texts(lang).rules
+            val example = parseModelJson(readerPromptExample(lang))!!
+            val methodIcons = mapsIn(mapsIn(example["methods"]).single()["options"]).map { it["icon"] as String }
+
+            methodIcons.forEach { assertTrue("$lang $it", rules.contains(it)) }
+            assertTrue(rules.contains(example["icon"] as String))
+        }
+    }
+
+    @Test fun `the rules say fields can be left out and steps of different options share an id`() {
+        assertTrue(texts("en").rules.contains("Leave out any field"))
+        assertTrue(texts("en").rules.contains("share an id"))
+        assertTrue(texts("de").rules.contains("weglassen"))
+        assertTrue(texts("de").rules.contains("dieselbe ID"))
+    }
+
+    @Test fun `the example is said to show the shape only, so the Kitchen line decides the methods`() {
+        assertTrue(texts("en").exampleHeading.contains("shape only"))
+        assertTrue(texts("de").exampleHeading.contains("nur die Form"))
+    }
+
+    @Test fun `German rules ask for German text values`() {
+        assertTrue(texts("de").rules.contains("Schreibe jeden Textwert auf Deutsch"))
     }
 
     @Test fun `a reply holding the prompt's example parses with the paste-a-reply parser`() {
