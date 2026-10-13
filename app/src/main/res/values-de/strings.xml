@@ -310,6 +310,9 @@
     <string name="add_choose_chatbot">Mit einem Chatbot</string>
     <string name="add_choose_chatbot_body">Nimm einen beliebigen leistungsfähigen Chatbot und füge seine Antwort hier wieder ein.</string>
     <string name="add_chatbot_title">Mit einem Chatbot hinzufügen.</string>
+    <string name="add_reply">Chatbot-Antwort</string>
+    <string name="add_reply_placeholder">Füge hier die Antwort des Chatbots ein</string>
+    <string name="add_reply_add">Rezept hinzufügen</string>
     <string name="add_caption_new">Neues Rezept</string>
     <string name="add_caption_review">Neues Rezept · noch nicht gespeichert</string>
     <string name="add_title">Rezept hinzufügen.</string>

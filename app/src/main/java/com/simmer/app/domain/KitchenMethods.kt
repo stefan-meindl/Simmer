@@ -57,8 +57,7 @@ fun filterMethodsByKitchen(
     var keptSteps = steps
     for (method in methods) {
         val id = method["id"].toString()
-        val options = (method["options"] as? List<*>).orEmpty().filterIsInstance<Map<*, *>>()
-            .map { o -> o.entries.associate { it.key.toString() to it.value } }
+        val options = mapsIn(method["options"])
         val (allowed, missing) = options.partition {
             val appliance = applianceOfOption(it["v"].toString(), it["l"].toString())
             appliance == null || appliance in owned
@@ -78,3 +77,7 @@ fun filterMethodsByKitchen(
     }
     return keptMethods to keptSteps
 }
+
+/** The objects of a JSON array [value] as string-keyed maps; anything else is skipped. */
+internal fun mapsIn(value: Any?): List<Map<String, Any?>> =
+    (value as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().map { m -> m.entries.associate { it.key.toString() to it.value } }

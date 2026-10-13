@@ -40,6 +40,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val KEY_TEXT = "text"
+private const val KEY_REPLY = "reply"
 private const val KEY_STEP = "step"
 private const val KEY_TAB = "tab"
 private const val KEY_DRAFT = "draft"
@@ -56,8 +57,8 @@ sealed interface AddRecipeUi {
     /** The start stage: how to add the recipe. [reader] is the Reader model's state, shown on "On this phone". */
     data class Start(val reader: ReaderStatus) : AddRecipeUi
 
-    /** The chatbot path (empty for now). */
-    data object Chatbot : AddRecipeUi
+    /** The chatbot path: the pasted [reply] and whether "Add recipe" is offered (it needs some text). */
+    data class Chatbot(val reply: String, val canAdd: Boolean) : AddRecipeUi
 
     /** The paste stage. */
     data class Paste(
@@ -80,7 +81,7 @@ sealed interface AddRecipeUi {
 }
 
 /**
- * The pasted text, the review tab and the converted recipe (the [RecipeDraftStore] draft, as JSON)
+ * The pasted text, the pasted chatbot reply, the review tab and the converted recipe (the [RecipeDraftStore] draft, as JSON)
  * live in [SavedStateHandle], so the screen comes back at the same stage after process death.
  */
 @HiltViewModel
@@ -95,6 +96,9 @@ class AddRecipeViewModel @Inject constructor(
 
     /** Straight from saved state so typing never lags behind the screen state. */
     val text: StateFlow<String> = savedState.getStateFlow(KEY_TEXT, "")
+
+    /** Straight from saved state, like [text]. */
+    val reply: StateFlow<String> = savedState.getStateFlow(KEY_REPLY, "")
 
     private val tab = savedState.getStateFlow(KEY_TAB, ReviewTab.Ingredients.name)
 
@@ -112,10 +116,10 @@ class AddRecipeViewModel @Inject constructor(
         AddRecipeUi.Paste(text, readerAction(text, ready), canConvert(text), line)
     }
 
-    private val start = combine(step, paste, readerStatus) { step, paste, status ->
+    private val start = combine(step, paste, readerStatus, reply) { step, paste, status, reply ->
         when (addStepFromKey(step)) {
             AddStep.Start -> AddRecipeUi.Start(status)
-            AddStep.Chatbot -> AddRecipeUi.Chatbot
+            AddStep.Chatbot -> AddRecipeUi.Chatbot(reply, reply.isNotBlank())
             AddStep.Phone -> paste
         }
     }
@@ -132,6 +136,7 @@ class AddRecipeViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddRecipeUi.Loading)
 
     private var saving = false
+    private var adding = false
 
     /** True once this screen has shown the review: only then is leaving it a decision to drop the recipe. */
     private var reviewShown = false
@@ -161,6 +166,35 @@ class AddRecipeViewModel @Inject constructor(
     }
 
     fun clear() = setText("")
+
+    fun setReply(reply: String) {
+        savedState[KEY_REPLY] = reply
+    }
+
+    fun clearReply() = setReply("")
+
+    /**
+     * Turns the pasted chatbot reply into the Add recipe draft, which shows the review. A reply that
+     * holds no usable recipe changes nothing (its error display comes later). No Pipeline or ImportJob.
+     * One add at a time, so a second tap cannot overwrite the draft.
+     */
+    fun addFromReply() {
+        if (adding) return
+        adding = true
+        val reply = reply.value
+        viewModelScope.launch {
+            try {
+                session.addFromReply(
+                    reply = reply,
+                    id = newRecipeId(),
+                    appliances = prefs.appliances.first(),
+                    kitchenMode = KitchenMode.fromKey(prefs.kitchenMode.first()),
+                )
+            } finally {
+                adding = false
+            }
+        }
+    }
 
     fun useExample() = setText(EXAMPLE_TEXT)
 

@@ -1,7 +1,9 @@
 package com.simmer.app.data
 
+import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.RecipeDraft
 import com.simmer.app.domain.model.Recipe
+import com.simmer.app.domain.parseChatbotReply
 import com.simmer.app.domain.stubConvert
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +46,13 @@ class AddRecipeSession @Inject constructor(
         val recipe = stubConvert(text, id)
         drafts.set(recipe)
         return recipe != null
+    }
+
+    /** Puts the chatbot [reply] in the draft store as recipe [id]; false (draft untouched) when it holds no usable recipe. */
+    fun addFromReply(reply: String, id: String, appliances: Set<String>, kitchenMode: KitchenMode): Boolean {
+        val recipe = parseChatbotReply(reply, id, appliances, kitchenMode) ?: return false
+        drafts.set(recipe)
+        return true
     }
 
     /** Drops the draft; the pasted text is not kept here. */

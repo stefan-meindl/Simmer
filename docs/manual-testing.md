@@ -194,11 +194,25 @@ Recipes tab, tap +. Every Add recipe item below that mentions the paste stage st
 - Start stage on every visit: title "How do you want to add this recipe?" (de: "Wie möchtest du dieses Rezept hinzufügen?"), two cards. Open Add recipe, leave (Back), open it again: the start stage shows, never the paste stage (the ViewModel is new for each visit). Exception, as before this change: a conversion still running or a finished recipe never reviewed (the "Recipe ready to review" notification) is picked up, so the screen opens on Working or Review instead.
 - "On this phone" card: line "Paste the recipe and your phone reads it..." and the Reader model's state under it, the same text as Settings > Recipe reader (e.g. "Not downloaded · 2.6 GB", "Ready"). Download the reader in Settings, come back: it reads "Ready".
 - Tap "On this phone": the paste stage, unchanged: "Download recipe reader (2.6 GB)" for other text, Try an example then Convert recipe, the Working stage, review and Save recipe as under Add recipe (#14) below.
-- Tap "With a chatbot": an empty screen with a back button and the title "Add with a chatbot." (de: "Mit einem Chatbot hinzufügen."). Card text names no specific chatbot.
+- Tap "With a chatbot": the chatbot screen with a back button and the title "Add with a chatbot." (de: "Mit einem Chatbot hinzufügen."); its reply field is under "Add recipe: paste a chatbot reply (#48)" below. Card text names no specific chatbot.
 - Back: from the paste stage (arrow and system back) and from the chatbot screen (arrow and system back) returns to the start stage; the paste text is kept when you pick "On this phone" again. Back from the start stage closes Add recipe. Working, error and review stages keep their own Back.
 - Rotate on the start stage, the chatbot screen and the paste stage: you stay on the same step.
 - Process death: on the chatbot screen run `adb shell am kill com.simmer.app` and reopen from Recents: still on the chatbot screen. Same on the start stage and the paste stage.
 - English and German: strings above in both.
+
+### Add recipe: paste a chatbot reply (#48)
+
+Recipes tab, + , "With a chatbot". Needs a way to put text on the clipboard (type it into any app and copy, or `adb shell input text`). Valid reply to paste:
+`{"title":"Pancakes","summary":"Thin and easy.","category":"Breakfast","time":20,"base":4,"ingredients":[{"id":"i1","name":"Flour","q":200,"u":"g"},{"id":"i2","name":"Milk","q":300,"u":"ml"}],"steps":[{"id":"p1","ph":"prep","t":"Whisk","b":"Whisk the {i1:flour} with the {i2:milk}."},{"id":"c1","ph":"cook","t":"Fry","b":"Fry until golden.","d":300,"needs":["p1"]}]}`
+- Empty field: label "Chatbot reply" (de: "Chatbot-Antwort"), Paste button, placeholder, and a disabled "Add recipe" (de: "Rezept hinzufügen"). Paste fills the field and the button to Clear; "Add recipe" enables. Clear empties it again.
+- Valid JSON, Add recipe: the review shows "Pancakes" at once (no Working stage, no notification), Ingredients and Steps tabs filled, "Whisk the flour..." links work. Save recipe stores it; it is first in Recipes, tagged "Added by you", and opens in the cooking flow.
+- Same JSON inside a ```json fence, and wrapped in prose ("Sure! Here is your recipe: ... Enjoy!"): the same review.
+- Kitchen rule: reply with a Method "m1" of options Oven (`oven`), Air fryer (`air`), Hob (`hob`) and steps tagged `"if":"m1=oven"` etc. In Settings > Your kitchen set Strict or Medium with no air fryer: the review shows Oven and Hob only, and no air fryer step. With only the oven: no Method is shown and the oven steps carry no condition. Free for all keeps all three.
+- Not a recipe: "hello", a cut-off JSON, `{"title":"X"}`, or a reply with an empty title, empty `ingredients` or empty `steps`: Add recipe does nothing, the screen stays on the chatbot screen with the text kept (an error message is a later ticket).
+- Back from review (Edit text): returns to the chatbot screen with the reply still in the field. Back from the chatbot screen goes to the start stage; picking "With a chatbot" again still shows the reply.
+- Rotate with a reply in the field, and after Add recipe on the review: both are restored.
+- Process death: with a reply in the field `adb shell am kill com.simmer.app`, reopen from Recents: still on the chatbot screen with the reply. Same on the review stage (the draft is restored).
+- English and German strings. Large font: nothing clipped. Keyboard does not cover the field or the bottom bar.
 
 ### Add recipe (#14)
 
