@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -58,6 +59,8 @@ import com.simmer.app.ui.components.BadgeVariant
 import com.simmer.app.ui.components.FilterChip
 import com.simmer.app.ui.components.GradientHeroCard
 import com.simmer.app.ui.components.OptionCard
+import com.simmer.app.ui.components.MenuAction
+import com.simmer.app.ui.components.OverflowMenu
 import com.simmer.app.ui.components.PrimaryButton
 import com.simmer.app.ui.components.SecondaryButton
 import com.simmer.app.ui.components.SimmerTextField
@@ -142,13 +145,17 @@ fun RecipesScreen(
                     item(key = "cooking-title") { SectionTitle(stringResource(R.string.recipes_cooking_now)) }
                     items(content.cooking, key = { "cooking-" + it.recipe.id }) { entry ->
                         // Same look as a Planned card; the choice is the one the Steps were marked under.
-                        PlannedCard(PlannedEntry(entry.recipe, entry.choice), onContinue = { onContinueCooking(entry.recipe) })
+                        PlannedCard(PlannedEntry(entry.recipe, entry.choice), onContinue = { onContinueCooking(entry.recipe) }, onRemove = null)
                     }
                 }
                 if (overview.planned.isNotEmpty()) {
                     item(key = "planned-title") { SectionTitle(stringResource(R.string.recipes_planned)) }
                     items(overview.planned, key = { "planned-" + it.recipe.id }) { entry ->
-                        PlannedCard(entry, onContinue = { onOpenRecipe(entry.recipe.id) })
+                        PlannedCard(
+                            entry,
+                            onContinue = { onOpenRecipe(entry.recipe.id) },
+                            onRemove = { viewModel.removeFromList(entry.recipe.id) },
+                        )
                     }
                 }
                 item(key = "count") {
@@ -224,8 +231,9 @@ private fun SectionTitle(text: String) {
     )
 }
 
+/** [onRemove] adds a three-dot menu with "Unplan"; null for Cooking-now cards. */
 @Composable
-private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit) {
+private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit, onRemove: (() -> Unit)?) {
     val colors = LocalSimmerColors.current
     val servings = pluralStringResource(R.plurals.flow_servings_count, entry.choice.servings, entry.choice.servings)
     val summary = selectionSummary(entry.recipe, entry.choice.selection, servings)
@@ -249,6 +257,13 @@ private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit) {
             onClick = onContinue,
             modifier = Modifier.semantics { contentDescription = continueLabel },
         )
+        if (onRemove != null) {
+            OverflowMenu(
+                contentDescription = stringResource(R.string.recipes_planned_menu, entry.recipe.title),
+                actions = listOf(MenuAction(stringResource(R.string.recipes_remove_from_list), onRemove)),
+                modifier = Modifier.offset(x = 8.dp),
+            )
+        }
     }
 }
 

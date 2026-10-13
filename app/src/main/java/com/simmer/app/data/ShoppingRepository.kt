@@ -48,6 +48,18 @@ private fun ShoppingItemEntity.toDomain() = ShoppingItem(
     checked = checked,
 )
 
+/**
+ * What a clear action removed, kept so Undo can [ShoppingRepository.restore] it.
+ * [order] is the id order of the whole list before the clear.
+ */
+data class ShoppingSnapshot(
+    val items: List<ShoppingItemEntity>,
+    val planned: List<PlannedRecipeEntity>,
+    val order: List<String> = items.map { it.id },
+) {
+    val isEmpty: Boolean get() = items.isEmpty() && planned.isEmpty()
+}
+
 /** Shopping list and Planned Recipe persistence (Room). */
 @Singleton
 class ShoppingRepository @Inject constructor(
@@ -102,6 +114,15 @@ class ShoppingRepository @Inject constructor(
 
     /** Drops a deleted recipe's Shopping list items and its Planned state; manual items stay. */
     suspend fun removeRecipe(recipeId: String) = dao.removeRecipe(recipeId)
+
+    /** Removes every ticked item, recipe or manual. Planned goes only for recipes left with no items. Returns what went. */
+    suspend fun clearTicked(): ShoppingSnapshot = dao.clearTicked()
+
+    /** Removes every item and all Planned state. Returns what went. */
+    suspend fun clearAll(): ShoppingSnapshot = dao.clearAll()
+
+    /** Puts a cleared [snapshot] back: items in their original order with their `checked` state, and the Planned choices. */
+    suspend fun restore(snapshot: ShoppingSnapshot) = dao.putBack(snapshot)
 
     suspend fun setChecked(id: String, checked: Boolean) = dao.setChecked(id, checked)
 

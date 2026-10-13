@@ -33,8 +33,8 @@
         <item quantity="other">%1$d servings</item>
     </plurals>
     <string name="flow_ingredients_caption">%1$s · %2$s</string>
-    <string name="flow_add_to_list">Add to list</string>
-    <string name="flow_on_your_list">On your list</string>
+    <string name="flow_add_to_list">Add to list · %1$s</string>
+    <string name="flow_remove_from_list">Unplan · %1$s</string>
     <string name="flow_preparation_next">Preparation</string>
     <string name="flow_toast_added">Added %1$s for %2$s.</string>
     <string name="flow_toast_find">Find it under Planned on Recipes.</string>
@@ -109,6 +109,8 @@
     <string name="recipes_search_placeholder">Recipes or ingredients</string>
     <string name="recipes_all">All</string>
     <string name="recipes_planned">Planned</string>
+    <string name="recipes_planned_menu">More options for %1$s</string>
+    <string name="recipes_remove_from_list">Unplan</string>
     <string name="recipes_cooking_now">Cooking now</string>
     <string name="recipes_continue">Continue</string>
     <string name="recipes_continue_description">Continue %1$s</string>
@@ -257,6 +259,15 @@
         <item quantity="one">%1$d item to buy</item>
         <item quantity="other">%1$d items to buy</item>
     </plurals>
+
+    <string name="shopping_menu">More options</string>
+    <string name="shopping_clear_ticked">Clear ticked off</string>
+    <string name="shopping_clear_all">Clear all</string>
+    <plurals name="shopping_cleared">
+        <item quantity="one">Cleared %1$d item</item>
+        <item quantity="other">Cleared %1$d items</item>
+    </plurals>
+    <string name="shopping_undo">Undo</string>
 
     <!-- Edit recipe -->
     <string name="category_soups">Soups</string>

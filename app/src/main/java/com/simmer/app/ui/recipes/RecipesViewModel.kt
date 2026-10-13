@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val KEY_QUERY = "query"
@@ -37,7 +38,7 @@ sealed interface RecipesUi {
 class RecipesViewModel @Inject constructor(
     private val savedState: SavedStateHandle,
     recipes: RecipeRepository,
-    shopping: ShoppingRepository,
+    private val shopping: ShoppingRepository,
     sessions: CookingSessions,
 ) : ViewModel() {
 
@@ -59,6 +60,11 @@ class RecipesViewModel @Inject constructor(
     ) { all, planned, cooking, filters ->
         RecipesUi.Content(recipesOverview(all, planned, filters), cooking)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecipesUi.Loading)
+
+    /** Unplans a recipe: its Shopping list items and Planned state go. Cooking progress is separate and stays. */
+    fun removeFromList(recipeId: String) {
+        viewModelScope.launch { shopping.removeRecipe(recipeId) }
+    }
 
     fun setQuery(query: String) {
         savedState[KEY_QUERY] = query

@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import android.os.SystemClock
 import com.simmer.app.data.ShoppingRepository
+import com.simmer.app.data.ShoppingSnapshot
 import com.simmer.app.domain.GracePeriod
 import com.simmer.app.domain.GracePhase
 import com.simmer.app.domain.ShoppingListView
@@ -24,6 +25,9 @@ import javax.inject.Inject
 
 private const val KEY_DRAFT = "draft"
 private const val KEY_BASKET_OPEN = "basketOpen"
+
+/** How long "Cleared N items · Undo" stays offered. */
+private const val CLEARED_UNDO_MS = 5_000L
 
 /** The typed-but-unsent item and the basket's open state live in [SavedStateHandle]; the list itself is in Room. */
 @HiltViewModel
@@ -46,6 +50,56 @@ class ShoppingListViewModel @Inject constructor(
     val listView: StateFlow<ShoppingListView?> = combine(shopping.items, grace.phases, unticked) { items, phases, unticked ->
         shoppingListView(items, phases.keys, unticked)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
+    /** Whether the header menu offers "Clear ticked off". */
+    val canClearTicked: StateFlow<Boolean> = shopping.items.map { all -> all.any { it.checked } }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** Whether the header menu offers "Clear all": any item, or Planned state left without items. */
+    val canClearAll: StateFlow<Boolean> = combine(shopping.items, shopping.planned) { items, planned ->
+        items.isNotEmpty() || planned.isNotEmpty()
+    }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    private val _cleared = MutableStateFlow<ShoppingSnapshot?>(null)
+    private var clearedJob: Job? = null
+
+    /** What the last clear removed, for the snackbar. Null after Undo, after [CLEARED_UNDO_MS], or once the tab is left. */
+    val cleared: StateFlow<ShoppingSnapshot?> = _cleared
+
+    fun clearTicked() {
+        viewModelScope.launch { announce(shopping.clearTicked()) }
+    }
+
+    fun clearAll() {
+        viewModelScope.launch { announce(shopping.clearAll()) }
+    }
+
+    /** Only a clear that removed list items is announced: "Cleared 0 items" would be wrong for Planned state alone. */
+    private fun announce(snapshot: ShoppingSnapshot) {
+        clearedJob?.cancel()
+        if (snapshot.items.isEmpty()) {
+            _cleared.value = null
+            return
+        }
+        _cleared.value = snapshot
+        clearedJob = viewModelScope.launch {
+            delay(CLEARED_UNDO_MS)
+            _cleared.value = null
+        }
+    }
+
+    /** Snackbar Undo: items, `checked` states and Planned choices come back. */
+    fun undoClear() {
+        val last = _cleared.value ?: return
+        dismissCleared()
+        viewModelScope.launch { shopping.restore(last) }
+    }
+
+    fun dismissCleared() {
+        clearedJob?.cancel()
+        _cleared.value = null
+    }
 
     val draft: StateFlow<String> = savedState.getStateFlow(KEY_DRAFT, "")
 
@@ -98,5 +152,6 @@ class ShoppingListViewModel @Inject constructor(
         graceJobs.clear()
         grace.clear()
         unticked.value = emptySet()
+        dismissCleared()
     }
 }

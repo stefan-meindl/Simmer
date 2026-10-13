@@ -19,11 +19,11 @@ A recipe created by importing text through the AI pipeline. Marked `mine = true`
 _Avoid_: Custom recipe, imported recipe, my recipe
 
 **Planned Recipe**:
-A recipe the user has added to the Shopping List. Stored with its chosen servings and selection so the user can return to the cooking flow.
+A recipe the user has added to the Shopping List. Stored with its chosen servings and selection so the user can return to the cooking flow. Leaves the Planned state when the user taps "Unplan" (flow button or the Planned card's three-dot menu, both `removeRecipe`: its Shopping Items go too, ticked ones included), or when a clear action empties the recipe's items ("Clear ticked off" keeps Planned for recipes that still have items; "Clear all" drops all). Cooking progress is separate and never touched.
 _Avoid_: Saved recipe, queued recipe
 
 **Planned Choice**:
-The servings and Selection saved with a Planned Recipe when the user taps "Add to list" (`PlannedChoice`). The flow shows "On your list" only while the current servings and Selection equal it; an add-in toggled off counts as never toggled.
+The servings and Selection saved with a Planned Recipe when the user taps "Add to list" (`PlannedChoice`). The flow button reads "Unplan · N servings" (otherwise "Add to list · N servings") only while the current servings and Selection equal it; an add-in toggled off counts as never toggled.
 _Avoid_: Saved choice, plan
 
 **Edit recipe**:
@@ -254,7 +254,7 @@ _Avoid_: Model state, download state
 ### Shopping
 
 **Shopping List**:
-The persisted list of ingredients the user intends to buy. Has two distinct sections: recipe items (grouped by aisle, each carrying the source recipe's title as a note) and a separate manual section for items the user adds by hand. Populated from Planned Recipes via "Add to list"; checked-off items move to an "In your basket" section.
+The persisted list of ingredients the user intends to buy. Has two distinct sections: recipe items (grouped by aisle, each carrying the source recipe's title as a note) and a separate manual section for items the user adds by hand. Populated from Planned Recipes via "Add to list"; checked-off items move to an "In your basket" section. The header three-dot menu offers "Clear ticked off" and "Clear all" (each hidden when there is nothing to clear); both show a ~5s "Cleared N items · Undo" snackbar, and Undo restores items, their `checked` state and Planned choices from a repository snapshot (`ShoppingSnapshot`, `restore`).
 _Avoid_: Grocery list, cart
 
 **Shopping Item**:

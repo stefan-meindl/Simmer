@@ -31,8 +31,8 @@
         <item quantity="other">%1$d Portionen</item>
     </plurals>
     <string name="flow_ingredients_caption">%1$s · %2$s</string>
-    <string name="flow_add_to_list">Auf die Liste</string>
-    <string name="flow_on_your_list">Auf der Liste</string>
+    <string name="flow_add_to_list">Auf die Liste · %1$s</string>
+    <string name="flow_remove_from_list">Planung aufheben · %1$s</string>
     <string name="flow_preparation_next">Vorbereitung</string>
     <string name="flow_toast_added">%1$s für %2$s hinzugefügt.</string>
     <string name="flow_toast_find">Du findest es unter Geplant bei den Rezepten.</string>
@@ -107,6 +107,8 @@
     <string name="recipes_search_placeholder">Rezepte oder Zutaten</string>
     <string name="recipes_all">Alle</string>
     <string name="recipes_planned">Geplant</string>
+    <string name="recipes_planned_menu">Weitere Optionen für %1$s</string>
+    <string name="recipes_remove_from_list">Planung aufheben</string>
     <string name="recipes_cooking_now">Gerade am Kochen</string>
     <string name="recipes_continue">Weiter</string>
     <string name="recipes_continue_description">%1$s fortsetzen</string>
@@ -239,6 +241,14 @@
 
     <!-- Shopping list -->
     <string name="shopping_title">Einkaufsliste.</string>
+    <string name="shopping_menu">Weitere Optionen</string>
+    <string name="shopping_clear_ticked">Abgehakte entfernen</string>
+    <string name="shopping_clear_all">Alles entfernen</string>
+    <plurals name="shopping_cleared">
+        <item quantity="one">%1$d Artikel entfernt</item>
+        <item quantity="other">%1$d Artikel entfernt</item>
+    </plurals>
+    <string name="shopping_undo">Rückgängig</string>
     <string name="shopping_add_label">Artikel hinzufügen</string>
     <string name="shopping_add_placeholder">Milch, Batterien…</string>
     <string name="shopping_add_button">Hinzufügen</string>

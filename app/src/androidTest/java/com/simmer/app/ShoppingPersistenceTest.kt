@@ -65,4 +65,30 @@ class ShoppingPersistenceTest {
             assertEquals("6", after.getValue("Onions").amount)
         }
     }
+
+    @Test fun clearAllAndRestoreRoundTripOnRealSqlite() {
+        val choice = PlannedChoice(4, Selection(emptyMap(), emptyMap()))
+        withDb { db ->
+            val repo = ShoppingRepository(db.shoppingDao())
+            repo.addRecipeToList("chilli", listOf(entry("onions", "Produce"), entry("rice", "Pantry")), choice)
+            repo.addManualItem("Batteries")
+            repo.setChecked("chilli-rice", true)
+
+            val ticked = repo.clearTicked()
+            assertEquals(1, ticked.items.size)
+            assertEquals(setOf("Onions", "Batteries"), repo.items.first().map { it.name }.toSet())
+            assertEquals(choice, repo.getPlanned("chilli"))
+
+            repo.restore(ticked)
+            assertEquals(listOf("Onions", "Rice", "Batteries"), repo.items.first().map { it.name })
+            val all = repo.clearAll()
+            assertEquals(0, repo.items.first().size)
+            assertEquals(null, repo.getPlanned("chilli"))
+
+            repo.restore(all)
+            assertEquals(listOf("Onions", "Rice", "Batteries"), repo.items.first().map { it.name })
+            assertEquals(true, repo.items.first().first { it.name == "Rice" }.checked)
+            assertEquals(choice, repo.getPlanned("chilli"))
+        }
+    }
 }
