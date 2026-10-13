@@ -195,4 +195,95 @@ class StepTimerStoreTest {
         store.cancelRecipe("chilli")
         assertEquals(setOf("chilli-vegan/s1"), store.timers.value.keys)
     }
+
+    @Test
+    fun pausingFromTheNotificationKeepsTheTimerActiveForTheService() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 600)
+        now += 100_000
+        store.pauseFromNotification("chilli/s1")
+
+        val timer = store.timers.value.getValue("chilli/s1")
+        assertEquals(TimerStatus.Paused, timer.status)
+        assertTrue(timer.pausedFromNotification)
+        assertEquals(500_000, timer.remainingMsAt(now))
+        assertEquals(setOf("chilli/s1"), store.activeKeys())
+        assertTrue(store.runningKeys().isEmpty())
+    }
+
+    @Test
+    fun pausingInTheAppIsNotActiveForTheService() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 600)
+        store.toggle("chilli/s1", "Simmer", 600)
+
+        assertTrue(!store.timers.value.getValue("chilli/s1").pausedFromNotification)
+        assertTrue(store.activeKeys().isEmpty())
+    }
+
+    @Test
+    fun resumingContinuesFromTheRemainingTime() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 600)
+        now += 100_000
+        store.pauseFromNotification("chilli/s1")
+        now += 3_000_000 // paused for a long while
+        store.toggle("chilli/s1", "Simmer", 600) // Resume button, or the in-app button
+
+        val timer = store.timers.value.getValue("chilli/s1")
+        assertEquals(TimerStatus.Running, timer.status)
+        assertTrue(!timer.pausedFromNotification)
+        assertEquals(500_000, timer.remainingMsAt(now))
+        assertEquals(2, host.serviceRequests)
+    }
+
+    @Test
+    fun resettingFromTheNotificationReturnsToIdleAndLeavesNothingActive() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 600)
+        store.pauseFromNotification("chilli/s1")
+        store.reset("chilli/s1")
+
+        assertTrue(store.timers.value.isEmpty())
+        assertTrue(store.activeKeys().isEmpty())
+    }
+
+    @Test
+    fun pausingFromTheNotificationOnlyAppliesToARunningTimer() {
+        val store = store()
+        store.toggle("chilli/s1", "Simmer", 600)
+        store.toggle("chilli/s1", "Simmer", 600) // paused in the app
+        store.pauseFromNotification("chilli/s1")
+        store.pauseFromNotification("chilli/none")
+
+        assertTrue(!store.timers.value.getValue("chilli/s1").pausedFromNotification)
+        assertTrue(store.activeKeys().isEmpty())
+    }
+
+    @Test
+    fun notificationPausedTimerSurvivesProcessDeathAndStillAsksForTheService() {
+        val first = store()
+        first.toggle("chilli/s1", "Simmer", 600)
+        now += 200_000
+        first.pauseFromNotification("chilli/s1")
+
+        now += 5_000_000
+        val requests = host.serviceRequests
+        val reopened = store()
+        val timer = reopened.timers.value.getValue("chilli/s1")
+        assertTrue(timer.pausedFromNotification)
+        assertEquals(400_000, timer.remainingMsAt(now))
+        assertEquals(requests + 1, host.serviceRequests)
+    }
+
+    @Test
+    fun inAppPausedTimerAfterProcessDeathDoesNotAskForTheService() {
+        val first = store()
+        first.toggle("chilli/s1", "Simmer", 600)
+        first.toggle("chilli/s1", "Simmer", 600)
+
+        val requests = host.serviceRequests
+        store()
+        assertEquals(requests, host.serviceRequests)
+    }
 }

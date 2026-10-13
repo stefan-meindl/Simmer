@@ -23,6 +23,7 @@ class SharedPrefsTimerPersistence(context: Context) : TimerPersistence {
         val status: String,
         val remainingMs: Long,
         val endAtMs: Long,
+        val pausedFromNotification: Boolean = false,
     )
 
     override fun load(): Map<String, TimerState> {
@@ -35,6 +36,7 @@ class SharedPrefsTimerPersistence(context: Context) : TimerPersistence {
                     remainingMs = it.remainingMs,
                     endAtMs = it.endAtMs,
                     title = it.title,
+                    pausedFromNotification = it.pausedFromNotification,
                 )
             }
         }.getOrDefault(emptyMap())
@@ -42,7 +44,7 @@ class SharedPrefsTimerPersistence(context: Context) : TimerPersistence {
 
     override fun save(timers: Map<String, TimerState>) {
         val saved = timers.map { (key, t) ->
-            Saved(key, t.title, t.durationSecs, t.status.name, t.remainingMs, t.endAtMs)
+            Saved(key, t.title, t.durationSecs, t.status.name, t.remainingMs, t.endAtMs, t.pausedFromNotification)
         }
         prefs.edit().putString(KEY, Json.encodeToString(saved)).apply()
     }
