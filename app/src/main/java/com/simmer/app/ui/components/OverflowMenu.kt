@@ -1,6 +1,9 @@
 package com.simmer.app.ui.components
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
@@ -16,7 +19,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.simmer.app.R
 import com.simmer.app.ui.theme.LocalSimmerColors
+import com.simmer.app.ui.theme.LocalSimmerDarkTheme
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
+
+private val MenuShape = RoundedCornerShape(12.dp)
 
 /** One entry of an [OverflowMenu]. */
 data class MenuAction(val label: String, val onClick: () -> Unit)
@@ -33,7 +39,17 @@ fun OverflowMenu(contentDescription: String, actions: List<MenuAction>, modifier
             tint = colors.textPrimary,
             modifier = Modifier.size(24.dp),
         )
-        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+        // Same surface as the ingredient tooltip: card fill, 2dp strong outline, 12dp corners; shadow-4 is
+        // light theme only, dark relies on the outline.
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            shape = MenuShape,
+            containerColor = colors.surfaceCard,
+            tonalElevation = 0.dp,
+            shadowElevation = if (LocalSimmerDarkTheme.current) 0.dp else 16.dp,
+            border = BorderStroke(2.dp, colors.borderStrong),
+        ) {
             actions.forEach { action ->
                 DropdownMenuItem(
                     text = { Text(action.label, style = SimmerTextStyle_BodyMd, color = colors.textPrimary) },
@@ -41,6 +57,7 @@ fun OverflowMenu(contentDescription: String, actions: List<MenuAction>, modifier
                         open = false
                         action.onClick()
                     },
+                    contentPadding = PaddingValues(horizontal = 16.dp),
                 )
             }
         }
