@@ -94,6 +94,14 @@ class CookingSessionsTest {
     }
 
     @Test
+    fun aFinishedRecipeStaysHiddenWhileATimerStillRuns() {
+        timers.toggle("chilli/s", "Simmer", 600)
+        chilliSteps.forEach { progress.markDone("chilli", it) }
+        assertFalse(sessions.isInProgress(chilli, choice))
+        assertTrue(timers.runningKeys().isNotEmpty())
+    }
+
+    @Test
     fun stoppingClearsTimersAndProgressButKeepsTheChoice() {
         progress.setChoice("chilli", choice)
         progress.markDone("chilli", chilliSteps.first())

@@ -164,20 +164,18 @@ fun RecipeFlowPhase3Screen(
 
     // Leaving backwards while cooking is in progress asks first; otherwise it goes straight back.
     var askLeave by rememberSaveable { mutableStateOf(false) }
-    val leave = { if (viewModel.needsLeaveConfirm()) askLeave = true else onBack() }
-    BackHandler(onBack = leave)
+    fun leaveTo(go: () -> Unit) = if (viewModel.needsLeaveConfirm()) askLeave = true else go()
+    BackHandler { leaveTo(onBack) }
     if (askLeave) {
+        // Every answer closes the dialog; Keep cooking and dismissing do nothing else.
+        fun answer(then: () -> Unit = {}) {
+            askLeave = false
+            then()
+        }
         LeaveCookingDialog(
-            onStop = {
-                askLeave = false
-                viewModel.stopCooking()
-                onBack()
-            },
-            onKeep = { askLeave = false },
-            onGoToRecipes = {
-                askLeave = false
-                onBackToRecipes()
-            },
+            onStop = { answer { viewModel.stopCooking(); onBack() } },
+            onKeep = { answer() },
+            onGoToRecipes = { answer(onBackToRecipes) },
         )
     }
 
@@ -190,8 +188,8 @@ fun RecipeFlowPhase3Screen(
         when (val content = ui) {
             Phase3Ui.Loading -> Unit
             is Phase3Ui.Content -> Column(modifier = Modifier.fillMaxSize()) {
-                FlowTopBar(title = content.recipe.title, phase = 3, skipsMethods = !hasSelectableMethod(content.recipe), onBack = leave, onEdit = onEdit)
-                FlowProgress(current = 3, skipsMethods = !hasSelectableMethod(content.recipe), onSegmentClick = { phase -> if (viewModel.needsLeaveConfirm()) askLeave = true else onPhaseClick(phase) })
+                FlowTopBar(title = content.recipe.title, phase = 3, skipsMethods = !hasSelectableMethod(content.recipe), onBack = { leaveTo(onBack) }, onEdit = onEdit)
+                FlowProgress(current = 3, skipsMethods = !hasSelectableMethod(content.recipe), onSegmentClick = { phase -> leaveTo { onPhaseClick(phase) } })
                 CookingList(
                     content = content,
                     onMarkDone = viewModel::markStepDone,

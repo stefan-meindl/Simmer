@@ -43,7 +43,7 @@ class CookingSessions(
     }
 
     private fun choiceOf(recipe: Recipe, snapshot: CookingSnapshot): PlannedChoice =
-        snapshot.choices[recipe.id] ?: Phase1State.initial(recipe, planned = null).let { PlannedChoice(it.servings, it.selection) }
+        snapshot.choices[recipe.id] ?: Phase1State.initial(recipe, planned = null).toChoice()
 
     private fun inProgress(
         recipe: Recipe,
@@ -55,7 +55,7 @@ class CookingSessions(
         val done = snapshot.done[recipe.id].orEmpty().count { it in stepIds }
         val finished = stepIds.isNotEmpty() && done == stepIds.size
         val ticking = timerStates.any { (key, t) ->
-            key.startsWith("${recipe.id}/") && (t.status == TimerStatus.Running || t.status == TimerStatus.Paused)
+            isTimerOf(recipe.id, key) && (t.status == TimerStatus.Running || t.status == TimerStatus.Paused)
         }
         return !finished && (done > 0 || ticking)
     }

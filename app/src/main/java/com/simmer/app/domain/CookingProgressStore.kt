@@ -6,7 +6,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.updateAndGet
 
 /**
  * Everything the store keeps: the Steps marked done per recipe, and the servings and Selection
@@ -65,7 +65,10 @@ class CookingProgressStore(private val persistence: CookingPersistence? = null) 
         change { it.copy(done = it.done + (recipeId to transform(it.done[recipeId].orEmpty()))) }
 
     private fun change(transform: (CookingSnapshot) -> CookingSnapshot) {
-        state.update(transform)
-        persistence?.save(state.value)
+        // Save what this update produced, under one lock, so a concurrent change cannot write an older snapshot after a newer one.
+        synchronized(this) {
+            val updated = state.updateAndGet(transform)
+            persistence?.save(updated)
+        }
     }
 }
