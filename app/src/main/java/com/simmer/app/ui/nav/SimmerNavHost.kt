@@ -1,11 +1,17 @@
 package com.simmer.app.ui.nav
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,6 +34,7 @@ import com.simmer.app.ui.kitchen.YourKitchenScreen
  * @param navController the nav controller shared with [BottomTabBar] and callers
  * @param isDarkTheme   current resolved dark-theme state (for theme toggle icon)
  * @param onThemeToggle callback to toggle the theme
+ * @param badgeCount    Shopping list badge shown on the tab bar of each tab screen
  * @param modifier      applied to the [NavHost]
  */
 @Composable
@@ -35,20 +42,34 @@ fun SimmerNavHost(
     navController: NavHostController,
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
+    badgeCount: Int,
     modifier: Modifier = Modifier,
 ) {
-    BackBannerHost(navController, modifier) {
-        NavHost(
+    // Each tab screen frames itself (Back banner above, tab bar below), so both move with its transition
+    // instead of switching instantly beside it.
+    @Composable
+    fun TabFrame(entry: NavBackStackEntry, content: @Composable () -> Unit) {
+        BackBannerFrame(
             navController = navController,
-            startDestination = RecipesTab,
-        ) {
-            // ----------------------------------------------------------------
-            // Bottom tab destinations
-            // ----------------------------------------------------------------
+            entry = entry,
+            bottomBar = { BottomTabBar(navController, badgeCount, currentRoute = entry.destination.route) },
+            content = content,
+        )
+    }
+    NavHost(
+        navController = navController,
+        startDestination = RecipesTab,
+        // Screens pad for the status and navigation bars themselves; only the sides are padded here.
+        modifier = modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
+    ) {
+        // ----------------------------------------------------------------
+        // Bottom tab destinations
+        // ----------------------------------------------------------------
 
-            composable<RecipesTab> { backStackEntry ->
-                val saved by backStackEntry.savedStateHandle
-                    .getStateFlow(RECIPE_SAVED_KEY, false).collectAsStateWithLifecycle()
+        composable<RecipesTab> { backStackEntry ->
+            val saved by backStackEntry.savedStateHandle
+                .getStateFlow(RECIPE_SAVED_KEY, false).collectAsStateWithLifecycle()
+            TabFrame(backStackEntry) {
                 RecipesScreen(
                     recipeSaved = saved,
                     onRecipeSavedShown = { backStackEntry.savedStateHandle[RECIPE_SAVED_KEY] = false },
@@ -59,113 +80,115 @@ fun SimmerNavHost(
                     onContinueCooking = { navController.continueCooking(it) },
                 )
             }
+        }
 
-            composable<ShoppingListTab> {
-                ShoppingListScreen()
-            }
+        composable<ShoppingListTab> { backStackEntry ->
+            TabFrame(backStackEntry) { ShoppingListScreen() }
+        }
 
-            composable<SettingsTab> { backStackEntry ->
-                val scrollToCreator by backStackEntry.savedStateHandle
-                    .getStateFlow(SCROLL_TO_CREATOR_KEY, false).collectAsStateWithLifecycle()
+        composable<SettingsTab> { backStackEntry ->
+            val scrollToCreator by backStackEntry.savedStateHandle
+                .getStateFlow(SCROLL_TO_CREATOR_KEY, false).collectAsStateWithLifecycle()
+            TabFrame(backStackEntry) {
                 SettingsScreen(
                     onEditKitchen = { navController.navigate(YourKitchen) },
                     scrollToCreator = scrollToCreator,
                     onScrolledToCreator = { backStackEntry.savedStateHandle[SCROLL_TO_CREATOR_KEY] = false },
                 )
             }
+        }
 
-            // ----------------------------------------------------------------
-            // Recipe flow (hides tab bar)
-            // ----------------------------------------------------------------
+        // ----------------------------------------------------------------
+        // Recipe flow (hides tab bar)
+        // ----------------------------------------------------------------
 
-            composable<RecipeFlow> { backStackEntry ->
-                val route: RecipeFlow = backStackEntry.toRoute()
-                RecipeFlowPhase1Screen(
-                    onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
-                    // The flow stays underneath, so Shopping list shows "Back to recipe".
-                    onViewList = { navController.openShoppingFromFlow() },
-                    onPreparation = { navController.navigate(RecipeFlowPhase2(route.recipeId)) },
-                    // No Method to pick: Phase 3 sits directly on Phase 1, so Back returns here.
-                    onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
-                )
-            }
+        composable<RecipeFlow> { backStackEntry ->
+            val route: RecipeFlow = backStackEntry.toRoute()
+            RecipeFlowPhase1Screen(
+                onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
+                // The flow stays underneath, so Shopping list shows "Back to recipe".
+                onViewList = { navController.openShoppingFromFlow() },
+                onPreparation = { navController.navigate(RecipeFlowPhase2(route.recipeId)) },
+                // No Method to pick: Phase 3 sits directly on Phase 1, so Back returns here.
+                onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
+            )
+        }
 
-            composable<RecipeFlowPhase2> { backStackEntry ->
-                val route: RecipeFlowPhase2 = backStackEntry.toRoute()
-                // Phases 1 and 2 edit one selection, so share the phase 1 entry's ViewModel.
-                val flowEntry = remember(backStackEntry) { navController.getBackStackEntry<RecipeFlow>() }
-                RecipeFlowPhase2Screen(
-                    viewModel = hiltViewModel(flowEntry),
-                    onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
-                    onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
-                    onNothingToPick = { navController.popBackStack() },
-                    // Phase 3 is reached only via Start cooking.
-                    onPhaseClick = { phase -> if (phase == 1) navController.popBackStack() },
-                )
-            }
+        composable<RecipeFlowPhase2> { backStackEntry ->
+            val route: RecipeFlowPhase2 = backStackEntry.toRoute()
+            // Phases 1 and 2 edit one selection, so share the phase 1 entry's ViewModel.
+            val flowEntry = remember(backStackEntry) { navController.getBackStackEntry<RecipeFlow>() }
+            RecipeFlowPhase2Screen(
+                viewModel = hiltViewModel(flowEntry),
+                onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
+                onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
+                onNothingToPick = { navController.popBackStack() },
+                // Phase 3 is reached only via Start cooking.
+                onPhaseClick = { phase -> if (phase == 1) navController.popBackStack() },
+            )
+        }
 
-            composable<RecipeFlowPhase3> { backStackEntry ->
-                val route: RecipeFlowPhase3 = backStackEntry.toRoute()
-                val flowEntry = remember(backStackEntry) { navController.getBackStackEntry<RecipeFlow>() }
-                RecipeFlowPhase3Screen(
-                    viewModel = hiltViewModel(flowEntry),
-                    onBack = { navController.popBackStack() },
-                    onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
-                    onBackToRecipes = {
-                        navController.navigate(RecipesTab) {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                    },
-                    onPhaseClick = { phase ->
-                        when (phase) {
-                            1 -> navController.popBackStack<RecipeFlow>(inclusive = false)
-                            2 -> navController.popBackStack()
-                        }
-                    },
-                )
-            }
+        composable<RecipeFlowPhase3> { backStackEntry ->
+            val route: RecipeFlowPhase3 = backStackEntry.toRoute()
+            val flowEntry = remember(backStackEntry) { navController.getBackStackEntry<RecipeFlow>() }
+            RecipeFlowPhase3Screen(
+                viewModel = hiltViewModel(flowEntry),
+                onBack = { navController.popBackStack() },
+                onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
+                onBackToRecipes = {
+                    navController.navigate(RecipesTab) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                },
+                onPhaseClick = { phase ->
+                    when (phase) {
+                        1 -> navController.popBackStack<RecipeFlow>(inclusive = false)
+                        2 -> navController.popBackStack()
+                    }
+                },
+            )
+        }
 
-            // ----------------------------------------------------------------
-            // Add / Edit Recipe (hides tab bar)
-            // ----------------------------------------------------------------
+        // ----------------------------------------------------------------
+        // Add / Edit Recipe (hides tab bar)
+        // ----------------------------------------------------------------
 
-            composable<AddRecipe> {
-                AddRecipeScreen(
-                    onBack = { navController.popBackStack() },
-                    // Settings opens on top (with a Back banner), so back returns here with the pasted text.
-                    onChangeKitchen = { navController.openSettingsOnTop() },
-                    onEditDetails = { navController.navigate(EditRecipe()) },
-                    // The new recipe is listed first on the Recipes tab, which scrolls there.
-                    onSaved = { navController.finishAddRecipe() },
-                )
-            }
+        composable<AddRecipe> {
+            AddRecipeScreen(
+                onBack = { navController.popBackStack() },
+                // Settings opens on top (with a Back banner), so back returns here with the pasted text.
+                onChangeKitchen = { navController.openSettingsOnTop() },
+                onEditDetails = { navController.navigate(EditRecipe()) },
+                // The new recipe is listed first on the Recipes tab, which scrolls there.
+                onSaved = { navController.finishAddRecipe() },
+            )
+        }
 
-            composable<EditRecipe> { backStackEntry ->
-                // Back to the screen that opened Edit: the recipe flow at the same phase, or the Add recipe review.
-                EditRecipeScreen(
-                    onClose = { navController.popBackStack() },
-                    onSaved = { navController.popBackStack() },
-                    onDeleted = {
-                        // The recipe is gone, so the flow underneath would have nothing to show.
-                        navController.navigate(RecipesTab) {
-                            popUpTo(navController.graph.startDestinationId)
-                            launchSingleTop = true
-                        }
-                    },
-                )
-            }
+        composable<EditRecipe> { backStackEntry ->
+            // Back to the screen that opened Edit: the recipe flow at the same phase, or the Add recipe review.
+            EditRecipeScreen(
+                onClose = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() },
+                onDeleted = {
+                    // The recipe is gone, so the flow underneath would have nothing to show.
+                    navController.navigate(RecipesTab) {
+                        popUpTo(navController.graph.startDestinationId)
+                        launchSingleTop = true
+                    }
+                },
+            )
+        }
 
-            // ----------------------------------------------------------------
-            // Your Kitchen (hides tab bar; back -> Settings)
-            // ----------------------------------------------------------------
+        // ----------------------------------------------------------------
+        // Your Kitchen (hides tab bar; back -> Settings)
+        // ----------------------------------------------------------------
 
-            composable<YourKitchen> {
-                // Settings is always underneath (also when it was opened on top of Add recipe), so Back and Done pop to it.
-                YourKitchenScreen(onDone = { navController.popBackStack() })
-            }
+        composable<YourKitchen> {
+            // Settings is always underneath (also when it was opened on top of Add recipe), so Back and Done pop to it.
+            YourKitchenScreen(onDone = { navController.popBackStack() })
         }
     }
 }

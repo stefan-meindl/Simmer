@@ -18,15 +18,15 @@ import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.simmer.app.R
 import com.simmer.app.ui.theme.LocalSimmerColors
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMdMedium
@@ -58,23 +58,38 @@ fun NavHostController.backOrigin(): BackOrigin? =
     backOriginFor(currentDestination?.route, previousBackStackEntry?.destination?.route)
 
 /**
- * Wraps the nav host: the pinned Back banner sits above it when a [BackOrigin] sits underneath the
- * shown tab. The banner pops to the origin, as device Back does; the origin keeps its state.
+ * The origin of the tab [entry], from the entry that sits directly underneath it, or null for no banner.
+ * Only the shown entry has a known entry underneath; an entry is composed first while it is shown.
+ */
+private fun NavHostController.backOriginOf(entry: NavBackStackEntry): BackOrigin? {
+    val below = if (currentBackStackEntry == entry) previousBackStackEntry else null
+    return backOriginFor(entry.destination.route, below?.destination?.route)
+}
+
+/**
+ * Frames one tab screen: the pinned Back banner sits above it when a [BackOrigin] sits underneath the
+ * tab [entry], and [bottomBar] below it. The banner pops to the origin, as device Back does; the origin
+ * keeps its state.
+ *
+ * Every tab entry draws its own frame inside the nav host's transition, so the banner and the tab bar fade
+ * with the screen instead of switching instantly beside it. The origin is captured once per entry, so the
+ * outgoing screen keeps its own banner while it fades out.
  */
 @Composable
-fun BackBannerHost(
+fun BackBannerFrame(
     navController: NavHostController,
+    entry: NavBackStackEntry,
     modifier: Modifier = Modifier,
+    bottomBar: @Composable () -> Unit = {},
     content: @Composable () -> Unit,
 ) {
-    // Read so the banner follows every back stack change.
-    val entry by navController.currentBackStackEntryAsState()
-    val origin = if (entry != null) navController.backOrigin() else null
+    val origin = remember(entry) { navController.backOriginOf(entry) }
     Column(modifier) {
         if (origin != null) BackBanner(origin, onClick = { navController.popBackStack() })
         // The banner already sits below the status bar, so the screen must not pad for it again.
         val below = if (origin != null) Modifier.consumeWindowInsets(WindowInsets.statusBars) else Modifier
         Box(Modifier.weight(1f).then(below)) { content() }
+        bottomBar()
     }
 }
 

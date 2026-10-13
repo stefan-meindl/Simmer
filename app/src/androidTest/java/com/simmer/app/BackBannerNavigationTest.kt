@@ -13,6 +13,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -20,7 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.simmer.app.ui.nav.AddRecipe
-import com.simmer.app.ui.nav.BackBannerHost
+import com.simmer.app.ui.nav.BackBannerFrame
 import com.simmer.app.ui.nav.EditRecipe
 import com.simmer.app.ui.nav.RecipeFlow
 import com.simmer.app.ui.nav.RecipesTab
@@ -37,7 +38,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 
 /**
- * The seam is the real routes, nav helpers and [BackBannerHost] on stub screens: the back stack and the
+ * The seam is the real routes, nav helpers and [BackBannerFrame] on stub screens: the back stack and the
  * banner are what matter. The stub Add recipe and recipe flow keep a counter in saved state, standing for
  * the draft text and the flow selection.
  */
@@ -56,19 +57,23 @@ class BackBannerNavigationTest {
     fun setUp() {
         compose.setContent {
             nav = rememberNavController()
-            BackBannerHost(nav) {
-                NavHost(nav, startDestination = RecipesTab) {
-                    composable<RecipesTab> { Text("recipes") }
-                    composable<ShoppingListTab> { Text("shopping") }
-                    composable<SettingsTab> { Text("settings") }
-                    composable<AddRecipe> { Counter("add") }
-                    composable<RecipeFlow> { Counter("flow") }
-                    composable<EditRecipe> { Text("edit") }
-                    composable<YourKitchen> { Text("kitchen") }
-                }
+            NavHost(nav, startDestination = RecipesTab) {
+                composable<RecipesTab> { Tab(it, "recipes") }
+                composable<ShoppingListTab> { Tab(it, "shopping") }
+                composable<SettingsTab> { Tab(it, "settings") }
+                composable<AddRecipe> { Counter("add") }
+                composable<RecipeFlow> { Counter("flow") }
+                composable<EditRecipe> { Text("edit") }
+                composable<YourKitchen> { Text("kitchen") }
             }
         }
         compose.waitForIdle()
+    }
+
+    /** A tab screen framed like the real app: its own Back banner above it. */
+    @androidx.compose.runtime.Composable
+    private fun Tab(entry: NavBackStackEntry, name: String) {
+        BackBannerFrame(nav, entry) { Text(name) }
     }
 
     @androidx.compose.runtime.Composable
