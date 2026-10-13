@@ -20,7 +20,7 @@ data class ShoppingListView(
     val manual: List<ShoppingItem>,
     val basket: List<ShoppingItem>,
 ) {
-    /** Items still to buy; drives the tab badge. */
+    /** Items still shown outside the basket (includes lingering ticked rows; the badge uses [uncheckedCount]). */
     val uncheckedCount: Int get() = aisles.sumOf { it.items.size } + manual.size
 }
 
@@ -40,9 +40,13 @@ private val aisleComparator = compareBy<String>(
 /** Items still to buy. */
 fun uncheckedCount(items: List<ShoppingItem>): Int = items.count { !it.checked }
 
-/** Arranges [items] into aisle groups (shop walk order), manual items and the basket. */
-fun shoppingListView(items: List<ShoppingItem>): ShoppingListView {
-    val (basket, open) = items.partition { it.checked }
+/**
+ * Arranges [items] into aisle groups (shop walk order), manual items and the basket. Checked items whose id is in
+ * [lingering] (still in their grace period) stay in their aisle or manual section, still marked checked.
+ * Display only: the tab badge counts persisted state via [uncheckedCount].
+ */
+fun shoppingListView(items: List<ShoppingItem>, lingering: Set<String> = emptySet()): ShoppingListView {
+    val (basket, open) = items.partition { it.checked && it.id !in lingering }
     val (recipeItems, manual) = open.partition { it.recipeId != null }
     return ShoppingListView(
         aisles = recipeItems.groupBy { it.aisle }.toSortedMap(aisleComparator).map { (aisle, group) -> AisleGroup(aisle, group) },

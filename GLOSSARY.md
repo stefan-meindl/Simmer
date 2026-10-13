@@ -269,6 +269,10 @@ _Avoid_: Section (reserved for Manual Items and the basket)
 The collapsed Shopping List section holding every checked Shopping Item, recipe or manual. Unchecking an item returns it to its aisle or the manual section. Only unchecked items count toward the Shopping list tab badge, which is hidden at 0.
 _Avoid_: Done, bought, cart
 
+**Grace period**:
+The 3-second UI-only delay after ticking a Shopping Item: the row stays in its aisle or Other items card, struck through, then fades out into In your basket. The tick is saved and the tab badge updated at once; only the row's move is delayed. Unticking during it is the undo. Each item has its own countdown, and leaving the tab or backgrounding the app ends all of them. Held by `GracePeriod`.
+_Avoid_: Undo window, debounce
+
 **Manual Item**:
 A shopping list entry created directly by the user rather than sourced from a recipe. Displayed in its own section, separate from recipe items grouped by aisle.
 _Avoid_: Custom item, free item
