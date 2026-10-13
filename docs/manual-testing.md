@@ -265,6 +265,17 @@ Recipes tab, tap + (no throwaway branch needed), then "On this phone" (#47). The
 - Compare against Design/ (Add recipe screens in `Recipe App.dc.html`; the design uses segmented tabs, this app uses underline tabs per the ticket).
 - `connectedDebugAndroidTest` includes `RecipeOrderTest` (Recipes list order and that editing keeps a recipe's place, Room) and `TabNavigationTest` (back stack when a bottom tab is tapped over Add recipe > Settings, Save recipe landing).
 
+### Chatbot path: full device run (#51)
+
+End-to-end check of the whole chatbot path on a real phone with a real chatbot (any chatbot; the app names none). Run it twice, once with the Settings language English and once with Deutsch, from `adb shell pm clear com.simmer.app` or at least a fresh Add recipe visit. Individual items are under #47, #48, #49 and #50 above.
+- Recipes tab, +, "With a chatbot" (de: "Mit einem Chatbot"). Type or paste a real recipe text (a blog-style one is a good test) into "Recipe text (optional)". Tap "Copy prompt". The prompt prose follows the Settings language; JSON keys stay English.
+- Paste the prompt into the chatbot (second run: attach a photo or link with an empty recipe text field). Copy the chatbot's whole reply, including any chatter or code fence.
+- Back in the app, "Chatbot reply" > Paste, "Add recipe": the review opens at once with title, Ingredients, Steps, Methods and timers that match the source. Check amounts, units (Settings Units) and that step links work.
+- Save recipe: lands on Recipes, the new card is first with "Added by you", it opens in the cooking flow and the timers work.
+- Broken reply: take a good reply and delete its last few lines (cut-off), or replace it with prose. Paste, "Add recipe": error "That doesn't look like a recipe from the prompt." (de: "Das sieht nicht nach einem Rezept aus dem Prompt aus.") and "Copy fix prompt". Tap it, paste the fix prompt into the same chatbot, paste its new reply, "Add recipe": the review opens.
+- Note anything wrong (prompt wording the chatbot ignores, parser rejecting a good reply, German strings) as a GitHub issue, or fix it in the PR.
+- Result log: record chatbot used, language, and pass/fail per row in the PR for #51.
+
 ### Recipe reader — model download (#15)
 
 Settings tab, scroll to "Recipe reader". The download is a real 2.0 GB file from Hugging Face, so use Wi-Fi and an emulator or phone with 3.5 GB free (emulator: at least 4 GB RAM, see "Not supported" below). The model lives in `files/models/` (`adb shell run-as com.simmer.app ls -l files/models`: `*.part` while downloading, `gemma-4-E2B-it-web.litertlm` once verified). `adb shell am start -n com.simmer.app/.MainActivity --ez open_settings true` opens Settings directly. Start from `adb shell pm clear com.simmer.app`.
