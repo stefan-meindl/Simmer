@@ -1,6 +1,7 @@
 package com.simmer.app.data
 
 import android.content.Context
+import androidx.annotation.VisibleForTesting
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
@@ -17,7 +18,7 @@ private val Context.dataStore: DataStore<Preferences> by preferencesDataStore(na
 /**
  * Repository for user preferences stored in DataStore.
  * Covers all settings from the design: lang, units, spices, appliances,
- * customApps, kitchenMode, theme, and readerWifiOnly.
+ * kitchen (appliances and the ones the user added), kitchenMode, theme, and readerWifiOnly.
  */
 @Singleton
 class PrefsRepository @Inject constructor(
@@ -50,16 +51,13 @@ class PrefsRepository @Inject constructor(
     /** Spices display: "spoons" | "grams". Defaults to "spoons". */
     val spices: Flow<String> = store.data.map { it[KEY_SPICES] ?: "spoons" }
 
-    /** Set of appliance keys the user owns. Hob, Oven and Microwave until the user first saves a choice. */
-    val appliances: Flow<Set<String>> = store.data.map { it[KEY_APPLIANCES] ?: DEFAULT_APPLIANCES }
-
-    /** Set of custom appliance names added by the user. */
-    val customApps: Flow<Set<String>> = store.data.map { it[KEY_CUSTOM_APPS] ?: emptySet() }
-
     /** The owned appliances together with the ones the user added (shown in Your kitchen even when unticked). */
     val kitchen: Flow<KitchenChoice> = store.data.map {
         KitchenChoice(it[KEY_APPLIANCES] ?: DEFAULT_APPLIANCES, it[KEY_CUSTOM_APPS] ?: emptySet())
     }
+
+    /** Appliance keys the user owns. Hob, Oven and Microwave until the user first saves a choice. */
+    val appliances: Flow<Set<String>> = kitchen.map { it.selected }
 
     /** Kitchen mode: "free" | "medium" | "strict". Defaults to "medium". */
     val kitchenMode: Flow<String> = store.data.map { it[KEY_KITCHEN_MODE] ?: "medium" }
@@ -73,8 +71,6 @@ class PrefsRepository @Inject constructor(
     suspend fun setLang(value: String) = store.edit { it[KEY_LANG] = value }
     suspend fun setUnits(value: String) = store.edit { it[KEY_UNITS] = value }
     suspend fun setSpices(value: String) = store.edit { it[KEY_SPICES] = value }
-    suspend fun setAppliances(value: Set<String>) = store.edit { it[KEY_APPLIANCES] = value }
-    suspend fun setCustomApps(value: Set<String>) = store.edit { it[KEY_CUSTOM_APPS] = value }
 
     /** Writes both kitchen sets in one edit. */
     suspend fun setKitchen(choice: KitchenChoice) = store.edit {
@@ -82,7 +78,8 @@ class PrefsRepository @Inject constructor(
         it[KEY_CUSTOM_APPS] = choice.custom
     }
 
-    /** Back to the first-run kitchen: default appliances, nothing added. */
+    /** Back to the first-run kitchen: default appliances, nothing added. Used by tests. */
+    @VisibleForTesting
     suspend fun resetKitchen() = store.edit {
         it.remove(KEY_APPLIANCES)
         it.remove(KEY_CUSTOM_APPS)

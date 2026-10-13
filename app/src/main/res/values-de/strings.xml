@@ -214,7 +214,7 @@
 
     <!-- Your kitchen -->
     <string name="kitchen_title">Deine Küche.</string>
-    <string name="kitchen_intro">Wähle die Geräte, die du besitzt. Neue Rezepte nutzen nur diese, je nachdem, wie genau du deine Küche befolgst. Ein Rezept, das du schon hast, wird beim Kochen nie eingeschränkt.</string>
+    <string name="kitchen_intro">Wähle die Geräte, die du besitzt. Neue Rezepte nutzen nur diese. Beim Kochen eines Rezepts, das du schon hast, wird nie etwas eingeschränkt.</string>
     <string name="kitchen_back_to_settings">Einstellungen</string>
     <string name="kitchen_search_label">Geräte suchen</string>
     <string name="kitchen_search_placeholder">Geräte suchen</string>

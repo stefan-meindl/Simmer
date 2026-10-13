@@ -6,8 +6,22 @@ val DEFAULT_APPLIANCES: Set<String> = setOf("hob", "oven", "microwave")
 /** Shortest query for which Your kitchen offers to add an appliance of the user's own. */
 const val MIN_ADD_QUERY_LENGTH = 2
 
+/** Prefix of the key of an appliance the user added: "c:Name". */
+private const val CUSTOM_PREFIX = "c:"
+
+/** The key of the appliance the user added under [name]. */
+fun customKey(name: String): String = CUSTOM_PREFIX + name
+
 /** One row of the Your kitchen checklist: [key] (catalogue key or "c:Name"), its name in the UI language and in English. */
-data class ApplianceRow(val key: String, val label: String, val english: String)
+data class ApplianceRow(val key: String, val label: String, val english: String) {
+    /** True for an appliance the user added. */
+    val isCustom: Boolean get() = key.startsWith(CUSTOM_PREFIX)
+
+    companion object {
+        /** The row of an appliance the user added: it has one name in every language. */
+        fun custom(name: String) = ApplianceRow(customKey(name), label = name, english = name)
+    }
+}
 
 /** Rows whose current-language or English name contains [query] (case-insensitive); all rows for a blank query. */
 fun matchingAppliances(rows: List<ApplianceRow>, query: String): List<ApplianceRow> {
@@ -39,14 +53,10 @@ data class KitchenChoice(val selected: Set<String>, val custom: Set<String>) {
     /** Adds [name] (trimmed) to the checklist and ticks it. */
     fun addCustom(name: String): KitchenChoice {
         val n = name.trim()
-        return copy(selected = selected + "c:$n", custom = custom + n)
-    }
-
-    companion object {
-        val initial = KitchenChoice(DEFAULT_APPLIANCES, emptySet())
+        return copy(selected = selected + customKey(n), custom = custom + n)
     }
 }
 
-/** Checklist keys: the catalogue in order, then the added appliances ("c:Name") alphabetically. */
-fun kitchenKeys(custom: Set<String>): List<String> =
-    APPLIANCE_CATALOGUE + custom.sorted().map { "c:$it" }
+/** Checklist rows: the catalogue in order (each built by [catalogueRow] from its key), then the added appliances alphabetically. */
+fun kitchenRows(custom: Set<String>, catalogueRow: (key: String) -> ApplianceRow): List<ApplianceRow> =
+    APPLIANCE_CATALOGUE.map(catalogueRow) + custom.sorted().map(ApplianceRow::custom)

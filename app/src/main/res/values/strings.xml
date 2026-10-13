@@ -216,7 +216,7 @@
 
     <!-- Your kitchen -->
     <string name="kitchen_title">Your kitchen.</string>
-    <string name="kitchen_intro">Pick the appliances you own. New recipes only use these, depending on how closely you follow your kitchen. Cooking a recipe you already have is never limited.</string>
+    <string name="kitchen_intro">Pick the appliances you own. New recipes only use these. Cooking a recipe you already have is never limited.</string>
     <string name="kitchen_back_to_settings">Settings</string>
     <string name="kitchen_search_label">Search appliances</string>
     <string name="kitchen_search_placeholder">Search appliances</string>

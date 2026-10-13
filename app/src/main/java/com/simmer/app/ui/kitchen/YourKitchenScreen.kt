@@ -50,7 +50,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simmer.app.R
 import com.simmer.app.domain.ApplianceRow
 import com.simmer.app.domain.addOffer
-import com.simmer.app.domain.kitchenKeys
+import com.simmer.app.domain.kitchenRows
 import com.simmer.app.domain.matchingAppliances
 import com.simmer.app.ui.components.CheckRow
 import com.simmer.app.ui.components.PrimaryButton
@@ -98,14 +98,9 @@ fun YourKitchenScreen(
         if (current == null) {
             Box(Modifier.weight(1f))
         } else {
-            val rows = kitchenKeys(current.custom).map { key ->
-                if (key.startsWith("c:")) {
-                    val name = key.removePrefix("c:")
-                    ApplianceRow(key, label = name, english = name)
-                } else {
-                    val res = APPLIANCE_LABELS.getValue(key)
-                    ApplianceRow(key, label = stringResource(res), english = english.getString(res))
-                }
+            val rows = kitchenRows(current.custom) { key ->
+                val res = APPLIANCE_LABELS.getValue(key)
+                ApplianceRow(key, label = stringResource(res), english = english.getString(res))
             }
             val shown = matchingAppliances(rows, query)
             val offer = addOffer(rows, query)
@@ -159,7 +154,7 @@ fun YourKitchenScreen(
                                 label = row.label,
                                 checked = row.key in current.selected,
                                 onCheckedChange = { viewModel.toggle(row.key) },
-                                subtitle = if (row.key.startsWith("c:")) stringResource(R.string.kitchen_added_by_you) else null,
+                                subtitle = if (row.isCustom) stringResource(R.string.kitchen_added_by_you) else null,
                             )
                         }
                     }

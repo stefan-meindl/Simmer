@@ -3,13 +3,17 @@ package com.simmer.app
 import com.simmer.app.domain.APPLIANCE_CATALOGUE
 import com.simmer.app.domain.DEFAULT_APPLIANCES
 import com.simmer.app.domain.KitchenChoice
-import com.simmer.app.domain.kitchenKeys
+import com.simmer.app.domain.ApplianceRow
+import com.simmer.app.domain.kitchenRows
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-/** Seam: [KitchenChoice], what the user owns and the appliances they added, plus [kitchenKeys], the checklist order. */
+/** Seam: [KitchenChoice], what the user owns and the appliances they added, plus [kitchenRows], the checklist order. */
 class YourKitchenChoiceTest {
+
+    private fun keys(custom: Set<String>) =
+        kitchenRows(custom) { ApplianceRow(it, it, it) }.map { it.key }
 
     @Test fun `catalogue has the 28 appliances of the spec`() {
         assertEquals(28, APPLIANCE_CATALOGUE.size)
@@ -18,7 +22,6 @@ class YourKitchenChoiceTest {
 
     @Test fun `first run ticks hob, oven and microwave`() {
         assertEquals(setOf("hob", "oven", "microwave"), DEFAULT_APPLIANCES)
-        assertEquals(3, KitchenChoice.initial.selected.size)
     }
 
     @Test fun `toggling ticks then unticks an appliance`() {
@@ -38,10 +41,10 @@ class YourKitchenChoiceTest {
         val c = KitchenChoice(emptySet(), emptySet()).addCustom("Bamix").toggle("c:Bamix")
         assertTrue(c.selected.isEmpty())
         assertEquals(setOf("Bamix"), c.custom)
-        assertEquals(APPLIANCE_CATALOGUE + "c:Bamix", kitchenKeys(c.custom))
+        assertEquals(APPLIANCE_CATALOGUE + "c:Bamix", keys(c.custom))
     }
 
     @Test fun `custom appliances follow the catalogue alphabetically`() {
-        assertEquals(APPLIANCE_CATALOGUE + listOf("c:Bamix", "c:Thermomix"), kitchenKeys(setOf("Thermomix", "Bamix")))
+        assertEquals(APPLIANCE_CATALOGUE + listOf("c:Bamix", "c:Thermomix"), keys(setOf("Thermomix", "Bamix")))
     }
 }
