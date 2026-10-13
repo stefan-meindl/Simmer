@@ -8,8 +8,9 @@ import android.content.pm.ServiceInfo
 import android.os.IBinder
 import com.simmer.app.domain.StepTimerStore
 import com.simmer.app.domain.TIMER_TICK_MS
+import com.simmer.app.domain.TimerNotificationContent
 import com.simmer.app.domain.TimerState
-import com.simmer.app.domain.TimerStatus
+import com.simmer.app.domain.timerNotificationContent
 import androidx.core.app.ServiceCompat
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -34,11 +35,8 @@ class TimerService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val manager by lazy { getSystemService(NotificationManager::class.java) }
 
-    /** What a posted notification shows; it is posted again when this changes (about once a second while running). */
-    private data class Posted(val status: TimerStatus, val endAtMs: Long, val elapsedSecs: Int)
-
-    /** Active timers that have a notification, by key. */
-    private val posted = mutableMapOf<String, Posted>()
+    /** What each active timer's notification shows now, by key; posted again when it changes. */
+    private val posted = mutableMapOf<String, TimerNotificationContent>()
     private var foregroundKey: String? = null
     private var started = false
 
@@ -53,10 +51,8 @@ class TimerService : Service() {
         intent?.getStringExtra(TimerNotifications.EXTRA_KEY)?.let { key ->
             when (intent.action) {
                 TimerNotifications.ACTION_PAUSE -> store.pauseFromNotification(key)
-                TimerNotifications.ACTION_RESUME -> store.timers.value[key]?.let {
-                    store.toggle(key, it.title, it.durationSecs, it.recipeTitle)
-                }
-                TimerNotifications.ACTION_RESET -> store.reset(key)
+                TimerNotifications.ACTION_RESUME -> store.resume(key)
+                TimerNotifications.ACTION_RESET -> store.resetFromNotification(key)
             }
         }
         if (!started) {
@@ -85,14 +81,9 @@ class TimerService : Service() {
         return store.timers.value.filterKeys { it in active }
     }
 
-    private fun postedOf(timer: TimerState, now: Long) = Posted(
-        timer.status,
-        timer.endAtMs,
-        (timer.progressAt(now) * timer.durationSecs).toInt(),
-    )
-
-    private fun reconcile(running: Map<String, TimerState>, forcePromote: Boolean = false) {
-        if (running.isEmpty()) {
+    /** Brings the notifications in line with the [active] timers (running, or paused with the notification's Pause). */
+    private fun reconcile(active: Map<String, TimerState>, forcePromote: Boolean = false) {
+        if (active.isEmpty()) {
             if (forcePromote) promote(null, TimerNotifications.placeholder(this))
             stopForeground(STOP_FOREGROUND_REMOVE)
             posted.keys.forEach { manager.cancel(TimerNotifications.runningId(it)) }
@@ -101,25 +92,26 @@ class TimerService : Service() {
             stopSelf()
             return
         }
-        // Timers that stopped running lose their notification.
-        (posted.keys - running.keys).forEach { key ->
+        // Timers that are no longer active lose their notification.
+        (posted.keys - active.keys).forEach { key ->
             posted.remove(key)
             if (key != foregroundKey) manager.cancel(TimerNotifications.runningId(key))
         }
-        // The foreground notification belongs to a timer that still runs.
-        if (foregroundKey !in running) {
+        val now = System.currentTimeMillis()
+        val contents = active.mapValues { (_, timer) -> timerNotificationContent(timer, now) }
+        // The foreground notification belongs to a timer that is still active.
+        if (foregroundKey !in active) {
             val oldId = foregroundKey?.let(TimerNotifications::runningId)
-            val key = running.keys.first()
-            promote(key, TimerNotifications.running(this, key, running.getValue(key)))
-            posted[key] = postedOf(running.getValue(key), System.currentTimeMillis())
+            val key = active.keys.first()
+            val content = contents.getValue(key)
+            promote(key, TimerNotifications.ongoing(this, key, content))
+            posted[key] = content
             oldId?.let(manager::cancel)
         }
-        val now = System.currentTimeMillis()
-        running.forEach { (key, timer) ->
-            val shown = postedOf(timer, now)
-            if (posted[key] != shown) {
-                manager.notify(TimerNotifications.runningId(key), TimerNotifications.running(this, key, timer, now))
-                posted[key] = shown
+        contents.forEach { (key, content) ->
+            if (posted[key] != content) {
+                manager.notify(TimerNotifications.runningId(key), TimerNotifications.ongoing(this, key, content))
+                posted[key] = content
             }
         }
     }
