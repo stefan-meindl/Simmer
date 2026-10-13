@@ -214,6 +214,22 @@
     <string name="appliance_icecream">Ice cream maker</string>
     <string name="appliance_dehydrator">Dehydrator</string>
 
+    <!-- Your kitchen -->
+    <string name="kitchen_title">Your kitchen.</string>
+    <string name="kitchen_intro">Pick the appliances you own. New recipes only use these. Cooking a recipe you already have is never limited.</string>
+    <string name="kitchen_back_to_settings">Settings</string>
+    <string name="kitchen_search_label">Search appliances</string>
+    <string name="kitchen_search_placeholder">Search appliances</string>
+    <plurals name="kitchen_selected_count">
+        <item quantity="one">%1$d selected</item>
+        <item quantity="other">%1$d selected</item>
+    </plurals>
+    <string name="kitchen_add">Add \'%1$s\'</string>
+    <string name="kitchen_add_helper">Not in the list? Add it as your own.</string>
+    <string name="kitchen_added_by_you">Added by you</string>
+    <string name="kitchen_no_match">No appliance matches.</string>
+    <string name="kitchen_done">Done</string>
+
     <!-- Shopping list -->
     <string name="shopping_title">Shopping list.</string>
     <string name="shopping_add_label">Add an item</string>

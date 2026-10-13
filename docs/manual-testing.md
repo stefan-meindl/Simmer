@@ -246,6 +246,20 @@ Add recipe calls `generate()` through the Pipeline since #17; to exercise the en
 - Not covered on device: Gemini Nano selection (no GeminiNanoReader yet, so Gemma is always used).
 - Automated (JVM, fakes for engine, thermal, time): `GemmaReaderTest` (temperature, GPU to CPU fallback, single instance, off-thread init, idle unload, trim, thermal wait, download progress) and `ReaderSelectorTest`.
 
+### Your kitchen (#12)
+
+Reach it: Settings tab > "Edit your kitchen" (also Add recipe > Change > Settings > Edit your kitchen). Fresh state: `adb shell pm clear com.simmer.app`.
+- First run: title "Your kitchen.", intro, search field, "3 selected" with Hob, Oven, Microwave ticked and 25 others unticked (28 rows in the spec order, Hob first, Dehydrator last), Kitchen mode on Medium (Settings).
+- Toggle: tick Wok, count reads "4 selected" at once; untick it, "3 selected". Tick one, `adb shell am kill com.simmer.app`, reopen: still ticked (saved on each tap, no Save button). Settings pills and Add recipe's kitchen line show the same appliances.
+- Untick everything: "0 selected"; reopen: stays empty (the defaults do not come back); Settings says "No appliances selected yet."
+- Search (English UI): "blend" lists Blender and Hand blender; clearing the text lists all 28. German UI: "Herd" finds Hob's row, and "hob" also finds it (English names match too); "Backofen" and "oven" both find Oven.
+- Add your own: type "Thermomix" (no match): first row "Add 'Thermomix'" with "Not in the list? Add it as your own."; type "H": no add row; type "Hob" or "herd": no add row (exact match). Tap the add row: the search clears, the list ends with "Thermomix" labelled "Added by you", ticked, count +1. Untick it: the row stays. Kill and reopen: it is still listed. Add recipe's kitchen line names it while ticked.
+- Done and Back (arrow, "Settings") both return to Settings; the tab bar is hidden on this screen. From Add recipe > Change > Edit your kitchen > Done, Back returns to Settings and then Add recipe with its text.
+- Rotate and process death with text in the search field: the text survives.
+- German (Settings language Deutsch): "Deine Küche.", "n ausgewählt", "„Thermomix“ hinzufügen", "Von dir hinzugefügt", "Fertig"; long German intro wraps. Light and dark theme, large font, TalkBack (rows read as checkboxes with state, the count is announced when it changes, back button labelled). Rows >= 56dp, buttons >= 44dp.
+- Kitchen mode never filters cooking an existing recipe: with only Hob ticked, open Chilli con carne > Preparation: all its Methods are still offered.
+- Automated: `YourKitchenSearchTest`, `YourKitchenChoiceTest` (JVM), `YourKitchenPrefsTest` (DataStore defaults and persistence, `connectedDebugAndroidTest`).
+
 ### AI pipeline, 4-pass conversion (#17)
 
 Needs the Reader model Ready (Settings, see #15) for real text; the built-in example still converts at once without a model. Without a model on the device use the `throwaway/issue-17-manual-test` branch (a scripted fake reader with delays, see the PR) to see every screen below; the model-quality items (marked **model**) need the real model on a phone.

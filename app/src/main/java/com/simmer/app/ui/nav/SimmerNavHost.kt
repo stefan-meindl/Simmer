@@ -18,7 +18,7 @@ import com.simmer.app.ui.recipes.RecipesScreen
 import com.simmer.app.ui.settings.SettingsScreen
 import com.simmer.app.ui.add.AddRecipeScreen
 import com.simmer.app.ui.shopping.ShoppingListScreen
-import com.simmer.app.ui.screens.YourKitchenPlaceholder
+import com.simmer.app.ui.kitchen.YourKitchenScreen
 
 /**
  * Navigation host for the Simmer app.
@@ -160,15 +160,8 @@ fun SimmerNavHost(
         // ----------------------------------------------------------------
 
         composable<YourKitchen> {
-            YourKitchenPlaceholder(
-                onBack = {
-                    // Back from YourKitchen returns to Settings tab.
-                    navController.navigate(SettingsTab) {
-                        popUpTo(navController.graph.startDestinationId)
-                        launchSingleTop = true
-                    }
-                },
-            )
+            // Settings is always underneath (also when it was opened on top of Add recipe), so Back and Done pop to it.
+            YourKitchenScreen(onDone = { navController.popBackStack() })
         }
     }
 }

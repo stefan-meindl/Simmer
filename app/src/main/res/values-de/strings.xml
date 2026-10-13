@@ -212,6 +212,22 @@
     <string name="appliance_icecream">Eismaschine</string>
     <string name="appliance_dehydrator">Dörrgerät</string>
 
+    <!-- Your kitchen -->
+    <string name="kitchen_title">Deine Küche.</string>
+    <string name="kitchen_intro">Wähle die Geräte, die du besitzt. Neue Rezepte nutzen nur diese. Beim Kochen eines Rezepts, das du schon hast, wird nie etwas eingeschränkt.</string>
+    <string name="kitchen_back_to_settings">Einstellungen</string>
+    <string name="kitchen_search_label">Geräte suchen</string>
+    <string name="kitchen_search_placeholder">Geräte suchen</string>
+    <plurals name="kitchen_selected_count">
+        <item quantity="one">%1$d ausgewählt</item>
+        <item quantity="other">%1$d ausgewählt</item>
+    </plurals>
+    <string name="kitchen_add">„%1$s“ hinzufügen</string>
+    <string name="kitchen_add_helper">Nicht in der Liste? Füge es als dein eigenes Gerät hinzu.</string>
+    <string name="kitchen_added_by_you">Von dir hinzugefügt</string>
+    <string name="kitchen_no_match">Kein Gerät passt.</string>
+    <string name="kitchen_done">Fertig</string>
+
     <!-- Shopping list -->
     <string name="shopping_title">Einkaufsliste.</string>
     <string name="shopping_add_label">Artikel hinzufügen</string>

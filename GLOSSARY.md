@@ -140,6 +140,10 @@ _Avoid_: Rule, filter, visibility flag
 A piece of kitchen equipment the user owns, picked from a catalogue or added by the user.
 _Avoid_: Tool, gadget, equipment
 
+**Your kitchen**:
+The Settings sub-screen where the user ticks their Appliances: a searchable checklist of the 28 catalogue Appliances, with "n selected", where a name that matches nothing can be added as the user's own ("Added by you", kept in the list even when unticked). Every tap is saved at once; first-run defaults are Hob, Oven and Microwave.
+_Avoid_: Kitchen screen, equipment list
+
 **Kitchen mode**:
 Strict, Medium or Free for all: a setting that instructs recipe creation (the Pipeline) how tightly to limit the Methods it generates to the user's Appliances. Has no effect on cooking an existing Recipe.
 _Avoid_: Appliance mode, filter mode
