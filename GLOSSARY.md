@@ -39,7 +39,7 @@ The unsaved Recipe the Add recipe review shows (`RecipeDraftStore`). Edit recipe
 _Avoid_: Pending recipe, import result
 
 **Add recipe**:
-The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe and lands on the Recipes overview, scrolled to the top where the new card is listed first). The review's top row stays pinned with the "Edit details" action. Change on the paste stage opens Settings on top; a bottom tab tap there abandons Add recipe and its draft. Convert is offered only for the built-in example (`stubConvert`) until the RecipeReader is wired into Add recipe (#17); other text shows an inactive Download recipe reader button.
+The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), a Working stage while the Pipeline runs (or the error stage if it fails), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe and lands on the Recipes overview, scrolled to the top where the new card is listed first). The review's top row stays pinned with the "Edit details" action. Change on the paste stage opens Settings on top; a bottom tab tap there abandons Add recipe and its draft. Convert runs the Pipeline once the Reader model is ready; the built-in example still converts at once to its fixed result (`stubConvert`), and other text shows an inactive Download recipe reader button until the model is downloaded.
 _Avoid_: Import screen, new recipe screen
 
 **Kitchen line**:
@@ -155,12 +155,36 @@ _Avoid_: Spice mode, spice units
 ### AI Import
 
 **Pipeline**:
-The four-pass on-device AI process that converts pasted recipe text into a structured Recipe: (1) reading ingredients, (2) splitting phases, (3) linking ingredients to steps, (4) setting timers.
+The four-pass on-device AI process that converts pasted recipe text into a structured Recipe (`RecipePipeline`): (1) reading ingredients and metadata, (2) splitting preparation from cooking, with Methods (filtered by the kitchen rule, both in the prompt and in code: options for a catalogue appliance the cook lacks are dropped with their steps), (3) linking ingredients to steps (`link()` over each step body, no model, then a tiny model pass for `needs`), (4) setting timers (optional: steps with no meaningful wait get none) and notes. The text is trimmed first (blog preamble and comments dropped, capped at about 6,000 characters; a cut adds "This recipe is long. Only the first part was read." to the notes) and each pass asks for 1,200 to 2,000 tokens. The merged result goes through Normalize.
 _Avoid_: Conversion, AI flow, import process
 
 **Normalize**:
 The validation and sanitisation step applied to AI pipeline output before it becomes a user recipe. Strips invalid conditions and variation references, validates step durations, and auto-generates missing IDs.
 _Avoid_: Validate, clean, sanitise
+
+**Pipeline stage**:
+One of the four passes as the Working stage and the notification name it (`PipelineStage`): Reading ingredients, Splitting preparation from cooking, Linking ingredients to steps, Setting timers. Shown with an orange check (done), orange ring (current) or grey ring (pending) (`stageMarks`).
+_Avoid_: Step, phase (reserved for prep and cook)
+
+**Repair retry**:
+The one extra attempt a Pipeline pass gets when its reply is not valid JSON: the model is asked to "Return only valid JSON matching this shape" with the broken output attached. A second invalid reply ends the run in the error stage. `PipelineResult.Done.repairs` counts them; the fixture target is none for 90% of recipes.
+_Avoid_: Retry, fallback
+
+**Error stage**:
+What Add recipe shows when the Pipeline fails: "We couldn't read that recipe on this phone. Try a shorter or cleaner version.", with a button back to the paste stage and the text kept. Also shown when a run was interrupted by process death twice.
+_Avoid_: Failure screen
+
+**Import request**:
+What one conversion works from (`ImportRequest`): the pasted text, the app language, the cook's Appliances and the Kitchen mode. It is saved with the Import job so a resumed run reads the same kitchen.
+_Avoid_: Conversion input
+
+**Import job**:
+The one running Pipeline conversion (`ImportJob`), owned by the app and not by the Add recipe screen, so it keeps going when the screen is left. Its state is Idle, Working (a Pipeline stage), Ready (the recipe is in the Add recipe draft) or Failed. It runs in a foreground service (`ImportService`) that shows the current stage, then "Recipe ready to review", and it is saved so that a process death resumes it once from pass 1 (a second death shows the Error stage). Cancel stops it and returns to the paste stage. Leaving Add recipe drops a finished recipe only if the review was shown; one that was never shown stays for the "Recipe ready to review" notification.
+_Avoid_: Import task, conversion service
+
+**Fixture set**:
+The 22 recipe texts (English and German: blog-style, terse, imperial, optional ingredients, appliances the cook may not own) in `app/src/androidTest/assets/fixtures`. A JVM test checks the set and its trimming; `PipelineFixtureDeviceTest` runs it through the real model on a phone and measures repairs and time.
+_Avoid_: Test data, samples
 
 **RecipeReader**:
 The interface abstracts over the two on-device AI engines (GemmaReader and GeminiNanoReader): `status()`, `download()` (a flow of `DownloadProgress`) and `generate()` (a flow of tokens). `ReaderSelector` picks one at runtime: Gemini Nano when ML Kit reports it Available or Downloadable, else Gemma. GeminiNanoReader does not exist yet, so every phone gets Gemma.

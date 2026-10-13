@@ -52,3 +52,9 @@ fun NavHostController.finishAddRecipe() {
     getBackStackEntry<RecipesTab>().savedStateHandle[RECIPE_SAVED_KEY] = true
     popBackStack<RecipesTab>(inclusive = false)
 }
+
+/** A Pipeline notification was tapped: show Add recipe (its Working, Review or error stage), unless it is already shown. */
+fun NavHostController.openAddRecipe() {
+    if (currentDestination?.hasRoute<AddRecipe>() == true) return
+    if (hasAddRecipeOnStack()) popBackStack<AddRecipe>(inclusive = false) else navigate(AddRecipe) { launchSingleTop = true }
+}
