@@ -23,7 +23,16 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.LiveRegionMode
+import androidx.compose.ui.semantics.liveRegion
+import com.simmer.app.domain.PipelineStage
+import com.simmer.app.domain.StageMark
+import com.simmer.app.domain.stageMarks
+import com.simmer.app.pipeline.ImportNotifications
+import com.simmer.app.ui.flow.rememberNotificationPermissionRequest
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
@@ -89,9 +98,9 @@ import com.simmer.app.ui.theme.SimmerTextStyle_ScreenTitle
 import kotlinx.coroutines.launch
 
 /**
- * Add recipe: paste a recipe's text, convert it, review the result and save it.
- * Without the on-device recipe reader only the built-in example converts; other text shows the
- * "Download recipe reader" placeholder.
+ * Add recipe: paste a recipe's text, convert it (Working stage, or the error stage), review the
+ * result and save it. The built-in example converts at once; other text runs the Pipeline once the
+ * Reader model is downloaded, and shows the "Download recipe reader" placeholder before.
  */
 @Composable
 fun AddRecipeScreen(
@@ -114,6 +123,8 @@ fun AddRecipeScreen(
         when (val u = ui) {
             AddRecipeUi.Loading -> Unit
             is AddRecipeUi.Paste -> PasteStage(u, viewModel, onBack, onChangeKitchen)
+            is AddRecipeUi.Working -> WorkingStage(u, viewModel, onBack)
+            AddRecipeUi.Error -> ErrorStage(viewModel, onBack)
             is AddRecipeUi.Review -> ReviewStage(u, viewModel, onBack, onEditDetails, onSaved)
         }
     }
@@ -198,6 +209,7 @@ private fun ColumnScope.PasteStage(
     val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
     val textLabel = stringResource(R.string.add_recipe_text)
+    val askNotificationPermission = rememberNotificationPermissionRequest()
 
     TopRow(stringResource(R.string.add_caption_paste), onBack)
     Column(
@@ -304,7 +316,10 @@ private fun ColumnScope.PasteStage(
         when (ui.action) {
             ReaderAction.Convert -> PrimaryButton(
                 text = stringResource(R.string.add_convert),
-                onClick = viewModel::convert,
+                onClick = {
+                    askNotificationPermission()
+                    viewModel.convert()
+                },
                 enabled = ui.canConvert,
                 icon = { icon(R.drawable.ic_sparkles) },
                 modifier = Modifier.fillMaxWidth(),
@@ -352,6 +367,120 @@ private fun kitchenText(line: KitchenLine): String = when (line) {
         if (line.appliances.isEmpty()) stringResource(R.string.add_next_kitchen_none)
         else line.appliances.map { applianceLabel(it) }.joinToString(", "),
     )
+}
+
+// ---------------------------------------------------------------------------
+// Working and error stages
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun ColumnScope.WorkingStage(ui: AddRecipeUi.Working, viewModel: AddRecipeViewModel, onBack: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier
+            .weight(1f)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                text = stringResource(R.string.import_working_title),
+                style = SimmerTextStyle_ScreenTitle,
+                color = colors.textPrimary,
+                modifier = Modifier.semantics { heading() },
+            )
+            Text(text = stringResource(R.string.import_working_hint), style = SimmerTextStyle_BodyMd, color = colors.textSecondary)
+        }
+        Column(modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite }) {
+            stageMarks(ui.stage).forEach { (stage, mark) -> StageRow(stage, mark) }
+        }
+    }
+    BottomBar {
+        SecondaryButton(
+            text = stringResource(R.string.import_cancel),
+            onClick = viewModel::cancel,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** One line of the Working checklist: orange check (done), orange ring (current), grey ring (pending). */
+@Composable
+private fun StageRow(stage: PipelineStage, mark: StageMark) {
+    val colors = LocalSimmerColors.current
+    val label = stringResource(ImportNotifications.stageLabel(stage))
+    val description = stringResource(
+        when (mark) {
+            StageMark.Done -> R.string.import_stage_done
+            StageMark.Current -> R.string.import_stage_current
+            StageMark.Pending -> R.string.import_stage_pending
+        },
+        label,
+    )
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .defaultMinSize(minHeight = 56.dp)
+            .semantics(mergeDescendants = true) { contentDescription = description },
+    ) {
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .size(28.dp)
+                .clip(CircleShape)
+                .background(if (mark == StageMark.Done) colors.accent else Color.Transparent)
+                .border(
+                    BorderStroke(if (mark == StageMark.Current) 3.dp else 2.dp, if (mark == StageMark.Pending) colors.borderStrong else colors.accent),
+                    CircleShape,
+                ),
+        ) {
+            if (mark == StageMark.Done) {
+                Icon(painterResource(R.drawable.ic_check_bold), contentDescription = null, tint = colors.accentFg, modifier = Modifier.size(16.dp))
+            }
+        }
+        Text(
+            text = label,
+            style = SimmerTextStyle_BodyMd,
+            color = if (mark == StageMark.Pending) colors.textTertiary else colors.textPrimary,
+        )
+    }
+}
+
+@Composable
+private fun ColumnScope.ErrorStage(viewModel: AddRecipeViewModel, onBack: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .weight(1f)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.import_error_title),
+            style = SimmerTextStyle_ScreenTitle,
+            color = colors.textPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
+        Text(
+            text = stringResource(R.string.import_error_body),
+            style = SimmerTextStyle_BodyMd,
+            color = colors.textSecondary,
+            modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
+        )
+    }
+    BottomBar {
+        PrimaryButton(
+            text = stringResource(R.string.import_error_back),
+            onClick = viewModel::dismissError,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 }
 
 // ---------------------------------------------------------------------------

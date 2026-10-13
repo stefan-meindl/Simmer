@@ -45,9 +45,16 @@ class AddRecipeStubTest {
         assertNull(stubConvert("Pancakes: flour, milk, egg. Whisk and fry in butter.", id = "u1"))
     }
 
-    @Test fun `the example text offers Convert and other text offers Download`() {
-        assertEquals(ReaderAction.Convert, readerAction(EXAMPLE_TEXT))
-        assertEquals(ReaderAction.Download, readerAction("Pancakes: flour, milk, egg. Whisk and fry."))
+    @Test fun `the example text always offers Convert`() {
+        assertEquals(ReaderAction.Convert, readerAction(EXAMPLE_TEXT, readerReady = false))
+        assertEquals(ReaderAction.Convert, readerAction(EXAMPLE_TEXT, readerReady = true))
+    }
+
+    @Test fun `other text offers Convert once the reader model is ready and Download before`() {
+        val text = "Pancakes: flour, milk, egg. Whisk and fry."
+
+        assertEquals(ReaderAction.Download, readerAction(text, readerReady = false))
+        assertEquals(ReaderAction.Convert, readerAction(text, readerReady = true))
     }
 
     @Test fun `the example result keeps its notes methods and add-in`() {

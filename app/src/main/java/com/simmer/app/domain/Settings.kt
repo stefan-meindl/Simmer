@@ -29,6 +29,25 @@ val APPLIANCE_CATALOGUE = listOf(
 fun orderAppliances(keys: Set<String>): List<String> =
     APPLIANCE_CATALOGUE.filter { it in keys } + (keys - APPLIANCE_CATALOGUE.toSet()).sorted()
 
+private val APPLIANCE_ENGLISH = mapOf(
+    "hob" to "Hob", "oven" to "Oven", "microwave" to "Microwave", "airfryer" to "Air fryer",
+    "slowcooker" to "Slow cooker", "pressure" to "Pressure cooker", "multicooker" to "Multi-cooker",
+    "ricecooker" to "Rice cooker", "steamoven" to "Steam oven", "grill" to "Gas grill",
+    "charcoal" to "Charcoal grill", "smoker" to "Smoker", "pizzaoven" to "Pizza oven",
+    "grillpan" to "Grill pan", "wok" to "Wok", "dutchoven" to "Cast-iron casserole",
+    "sousvide" to "Sous vide", "toaster" to "Toaster", "kettle" to "Kettle",
+    "processor" to "Food processor", "mixer" to "Stand mixer", "handmixer" to "Hand mixer",
+    "blender" to "Blender", "stickblender" to "Hand blender", "breadmaker" to "Bread maker",
+    "waffle" to "Waffle iron", "icecream" to "Ice cream maker", "dehydrator" to "Dehydrator",
+)
+
+/** The prompt clause for the cook's [appliances] and [mode] ([kitchenRule] with English appliance names). */
+fun kitchenRuleFor(appliances: Set<String>, mode: KitchenMode): String =
+    kitchenRule(
+        orderAppliances(appliances).map { if (it.startsWith("c:")) it.removePrefix("c:") else APPLIANCE_ENGLISH[it] ?: it },
+        mode.key,
+    )
+
 /** One line of the Settings preview: an ingredient name and its amount in the user's units. */
 data class PreviewRow(val name: String, val amount: String)
 

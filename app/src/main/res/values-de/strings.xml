@@ -347,4 +347,22 @@
     <string name="add_and">%1$s und %2$s</string>
     <string name="add_edit_text">Text bearbeiten</string>
     <string name="add_save">Rezept speichern</string>
+    <!-- Pipeline: Working and error stages, notifications -->
+    <string name="import_working_title">Dein Rezept wird gelesen.</string>
+    <string name="import_working_hint">Das dauert auf diesem Handy 1 bis 3 Minuten. Du kannst diesen Bildschirm verlassen.</string>
+    <string name="import_stage_ingredients">Zutaten lesen</string>
+    <string name="import_stage_splitting">Vorbereiten und Kochen trennen</string>
+    <string name="import_stage_linking">Zutaten mit Schritten verknüpfen</string>
+    <string name="import_stage_timers">Timer setzen</string>
+    <string name="import_stage_done">%1$s, erledigt</string>
+    <string name="import_stage_current">%1$s, läuft</string>
+    <string name="import_stage_pending">%1$s, wartet</string>
+    <string name="import_cancel">Abbrechen</string>
+    <string name="import_error_title">Wir konnten dieses Rezept nicht lesen.</string>
+    <string name="import_error_body">Wir konnten dieses Rezept auf diesem Handy nicht lesen. Versuch es mit einer kürzeren oder saubereren Version.</string>
+    <string name="import_error_back">Zurück zum Text</string>
+    <string name="import_ready_title">Rezept bereit zur Prüfung</string>
+    <string name="import_channel_progress">Rezept lesen</string>
+    <string name="import_channel_done">Rezept fertig</string>
+    <string name="import_truncated_note">Dieses Rezept ist lang. Nur der erste Teil wurde gelesen.</string>
 </resources>

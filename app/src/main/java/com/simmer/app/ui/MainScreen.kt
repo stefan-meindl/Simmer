@@ -21,6 +21,7 @@ import com.simmer.app.ui.nav.RecipeFlowPhase3
 import com.simmer.app.ui.nav.SettingsTab
 import com.simmer.app.ui.nav.SimmerNavHost
 import com.simmer.app.ui.nav.navigateToTab
+import com.simmer.app.ui.nav.openAddRecipe
 import com.simmer.app.ui.nav.YourKitchen
 import com.simmer.app.ui.theme.SimmerTheme
 
@@ -38,6 +39,8 @@ import com.simmer.app.ui.theme.SimmerTheme
 fun MainScreen(
     openSettings: Boolean = false,
     onSettingsOpened: () -> Unit = {},
+    openAddRecipe: Boolean = false,
+    onAddRecipeOpened: () -> Unit = {},
     viewModel: MainViewModel = hiltViewModel(),
 ) {
     val themePreference by viewModel.themePreference.collectAsStateWithLifecycle()
@@ -58,6 +61,13 @@ fun MainScreen(
             if (openSettings) {
                 navController.navigateToTab(SettingsTab)
                 onSettingsOpened()
+            }
+        }
+        // A Pipeline notification asked for Add recipe.
+        LaunchedEffect(openAddRecipe) {
+            if (openAddRecipe) {
+                navController.openAddRecipe()
+                onAddRecipeOpened()
             }
         }
         val navBackStackEntry by navController.currentBackStackEntryAsState()
