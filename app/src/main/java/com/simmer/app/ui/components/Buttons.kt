@@ -1,7 +1,10 @@
 package com.simmer.app.ui.components
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.semantics.Role
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -238,6 +241,29 @@ fun EditAction(
             )
         },
     )
+}
+
+/** Icon-only [EditAction] (pencil), a 44 dp touch target; [contentDescription] says what it edits. */
+@Composable
+fun EditIconAction(
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = LocalSimmerColors.current
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .size(44.dp)
+            .clickable(role = Role.Button, onClick = onClick),
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_pencil),
+            contentDescription = contentDescription,
+            tint = colors.textLink,
+            modifier = Modifier.size(18.dp),
+        )
+    }
 }
 
 // ---------------------------------------------------------------------------

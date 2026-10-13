@@ -12,21 +12,24 @@ private fun NavHostController.isTab(route: Any): Boolean = when (route) {
     else -> false
 }
 
-/** Add recipe is the one pushed screen that can sit under a tab (Settings opened by its Change link). */
 private fun NavHostController.hasAddRecipeOnStack(): Boolean =
     runCatching { getBackStackEntry<AddRecipe>() }.isSuccess
+
+/** A tab is shown over an origin (Add recipe or the recipe flow), so a Back banner is showing. */
+private fun NavHostController.hasBannerOrigin(): Boolean =
+    backOriginFor(currentDestination?.route, previousBackStackEntry?.destination?.route) != null
 
 /**
  * Switches to a bottom tab, as the tab bar does.
  *
- * A screen that is not a tab (Add recipe, with Settings opened on top of it) is abandoned, not saved:
+ * A screen that is not a tab (Add recipe or the recipe flow, with a tab opened on top of it) is abandoned, not saved:
  * `popUpTo { saveState }` would store it with the tab's state, and `restoreState` would bring it back
  * the next time that tab is tapped (the Recipes tab then showed Settings on top of Add recipe again).
  * Tapping the tab that is already shown does nothing, so Add recipe keeps its draft.
  */
 fun NavHostController.navigateToTab(route: Any) {
     if (isTab(route)) return
-    if (hasAddRecipeOnStack()) popBackStack(graph.startDestinationId, inclusive = false)
+    if (hasBannerOrigin()) popBackStack(graph.startDestinationId, inclusive = false)
     navigate(route) {
         // Pop up to the start destination of the graph to
         // avoid building up a large back stack.
@@ -38,9 +41,16 @@ fun NavHostController.navigateToTab(route: Any) {
     }
 }
 
-/** Add recipe's "Change" link: Settings opens on top, so Back returns to Add recipe with its text. */
+/** Key on the Settings entry's saved state: set when Settings should scroll to "Recipe creator", cleared once done. */
+const val SCROLL_TO_CREATOR_KEY = "scrollToCreator"
+
+/**
+ * Add recipe's pencil: Settings opens on top and scrolls to its "Recipe creator" section, so Back or the
+ * banner returns to Add recipe with its text.
+ */
 fun NavHostController.openSettingsOnTop() {
     navigate(SettingsTab) { launchSingleTop = true }
+    getBackStackEntry<SettingsTab>().savedStateHandle[SCROLL_TO_CREATOR_KEY] = true
 }
 
 /** Key on the Recipes entry's saved state: set when a new recipe was saved, cleared once shown. */
@@ -70,4 +80,9 @@ fun NavHostController.continueCooking(recipe: Recipe) {
     navigate(RecipeFlow(recipe.id))
     if (hasSelectableMethod(recipe)) navigate(RecipeFlowPhase2(recipe.id))
     navigate(RecipeFlowPhase3(recipe.id))
+}
+
+/** Recipe flow's "View list": Shopping list opens on top of the flow, which stays underneath. */
+fun NavHostController.openShoppingFromFlow() {
+    navigate(ShoppingListTab) { launchSingleTop = true }
 }

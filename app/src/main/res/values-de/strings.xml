@@ -379,7 +379,11 @@
     <string name="add_next_kitchen_only">Zubereitungen nutzen nur deine Geräte: %1$s.</string>
     <string name="add_next_kitchen_none">keine Geräte ausgewählt</string>
     <string name="add_next_kitchen_any">Zubereitungen dürfen jedes Gerät nutzen.</string>
-    <string name="add_change">Ändern</string>
+    <string name="add_change_kitchen">Küchen-Einstellungen ändern</string>
+    <string name="back_to_recipe_creator">Zurück zum Rezept-Assistenten</string>
+    <string name="back_to_recipe">Zurück zum Rezept</string>
+    <string name="settings_creator">Rezept-Assistent</string>
+    <string name="settings_creator_hint">Was der Rezept-Assistent beim Hinzufügen eines Rezepts nutzt: deine Küche und der Rezept-Leser.</string>
     <string name="add_convert">Rezept umwandeln</string>
     <string name="add_download">Rezept-Leser laden (%1$s)</string>
     <string name="add_reader_note">Läuft auf deinem Handy. Wird einmal über WLAN geladen.</string>

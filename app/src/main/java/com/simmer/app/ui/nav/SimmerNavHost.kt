@@ -49,7 +49,7 @@ fun SimmerNavHost(
         composable<RecipesTab> { backStackEntry ->
             val saved by backStackEntry.savedStateHandle
                 .getStateFlow(RECIPE_SAVED_KEY, false).collectAsStateWithLifecycle()
-            RecipesScreen(
+            BackBannerHost(navController) { RecipesScreen(
                 recipeSaved = saved,
                 onRecipeSavedShown = { backStackEntry.savedStateHandle[RECIPE_SAVED_KEY] = false },
                 isDarkTheme = isDarkTheme,
@@ -57,15 +57,23 @@ fun SimmerNavHost(
                 onAddRecipe = { navController.navigate(AddRecipe) },
                 onOpenRecipe = { navController.navigate(RecipeFlow(it)) },
                 onContinueCooking = { navController.continueCooking(it) },
-            )
+            ) }
         }
 
         composable<ShoppingListTab> {
-            ShoppingListScreen()
+            BackBannerHost(navController) { ShoppingListScreen() }
         }
 
-        composable<SettingsTab> {
-            SettingsScreen(onEditKitchen = { navController.navigate(YourKitchen) })
+        composable<SettingsTab> { backStackEntry ->
+            val scrollToCreator by backStackEntry.savedStateHandle
+                .getStateFlow(SCROLL_TO_CREATOR_KEY, false).collectAsStateWithLifecycle()
+            BackBannerHost(navController) {
+                SettingsScreen(
+                    onEditKitchen = { navController.navigate(YourKitchen) },
+                    scrollToCreator = scrollToCreator,
+                    onScrolledToCreator = { backStackEntry.savedStateHandle[SCROLL_TO_CREATOR_KEY] = false },
+                )
+            }
         }
 
         // ----------------------------------------------------------------
@@ -77,12 +85,8 @@ fun SimmerNavHost(
             RecipeFlowPhase1Screen(
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
-                onViewList = {
-                    navController.navigate(ShoppingListTab) {
-                        popUpTo(navController.graph.startDestinationId)
-                        launchSingleTop = true
-                    }
-                },
+                // The flow stays underneath, so Shopping list shows "Back to recipe".
+                onViewList = { navController.openShoppingFromFlow() },
                 onPreparation = { navController.navigate(RecipeFlowPhase2(route.recipeId)) },
                 // No Method to pick: Phase 3 sits directly on Phase 1, so Back returns here.
                 onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
@@ -133,7 +137,7 @@ fun SimmerNavHost(
         composable<AddRecipe> {
             AddRecipeScreen(
                 onBack = { navController.popBackStack() },
-                // Settings opens on top, so back returns here with the pasted text.
+                // Settings opens on top (with a Back banner), so back returns here with the pasted text.
                 onChangeKitchen = { navController.openSettingsOnTop() },
                 onEditDetails = { navController.navigate(EditRecipe()) },
                 // The new recipe is listed first on the Recipes tab, which scrolls there.
