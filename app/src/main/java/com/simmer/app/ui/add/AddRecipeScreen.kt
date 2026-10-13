@@ -130,7 +130,7 @@ fun AddRecipeScreen(
         when (val u = ui) {
             AddRecipeUi.Loading -> Unit
             is AddRecipeUi.Start -> StartStage(u, viewModel, onBack)
-            AddRecipeUi.Chatbot -> ChatbotStage(onStepBack)
+            is AddRecipeUi.Chatbot -> ChatbotStage(u, viewModel, onStepBack)
             is AddRecipeUi.Paste -> PasteStage(u, viewModel, onStepBack, onChangeKitchen)
             is AddRecipeUi.Working -> WorkingStage(u, viewModel, onBack)
             AddRecipeUi.Error -> ErrorStage(viewModel, onBack)
@@ -258,18 +258,83 @@ private fun StartCard(iconRes: Int, title: String, body: String, detail: String?
     }
 }
 
-/** The chatbot path: empty for now, with a back button. */
+/** The chatbot path: paste the chatbot's reply, then "Add recipe" turns it into the draft for review. */
 @Composable
-private fun ColumnScope.ChatbotStage(onBack: () -> Unit) {
+private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddRecipeViewModel, onBack: () -> Unit) {
     val colors = LocalSimmerColors.current
+    val focus = remember { FocusRequester() }
+    val replyLabel = stringResource(R.string.add_reply)
+    val pasteReply = rememberPasteAction(onPasted = viewModel::setReply, onEmpty = { focus.requestFocus() })
+
     TopRow(stringResource(R.string.add_choose_chatbot), onBack)
-    Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 16.dp)) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(24.dp),
+        modifier = Modifier
+            .weight(1f)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
         Text(
             text = stringResource(R.string.add_chatbot_title),
             style = SimmerTextStyle_ScreenTitle,
             color = colors.textPrimary,
             modifier = Modifier.semantics { heading() },
         )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .defaultMinSize(minHeight = 44.dp),
+            ) {
+                Text(text = replyLabel, style = SimmerTextStyle_BodySmMedium, color = colors.textPrimary)
+                if (ui.reply.isNotEmpty()) {
+                    LinkButton(text = stringResource(R.string.add_clear), onClick = viewModel::clearReply)
+                } else {
+                    SecondaryButton(
+                        text = stringResource(R.string.add_paste),
+                        onClick = pasteReply,
+                        icon = { icon(R.drawable.ic_copy, 16) },
+                    )
+                }
+            }
+            SimmerTextArea(
+                value = ui.reply,
+                onValueChange = viewModel::setReply,
+                placeholder = stringResource(R.string.add_reply_placeholder),
+                minLines = 13,
+                fieldModifier = Modifier
+                    .fillMaxWidth()
+                    .focusRequester(focus)
+                    .semantics { contentDescription = replyLabel },
+            )
+        }
+    }
+
+    BottomBar {
+        PrimaryButton(
+            text = stringResource(R.string.add_reply_add),
+            onClick = viewModel::addFromReply,
+            enabled = ui.canAdd,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** A click handler that pastes the clipboard's text into [onPasted], or calls [onEmpty] when it holds none. */
+@Composable
+private fun rememberPasteAction(onPasted: (String) -> Unit, onEmpty: () -> Unit): () -> Unit {
+    val clipboard = LocalClipboard.current
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    return {
+        scope.launch {
+            val pasted = clipboard.getClipEntry()?.clipData
+                ?.takeIf { it.itemCount > 0 }
+                ?.getItemAt(0)?.coerceToText(context)?.toString()
+            if (pasted.isNullOrEmpty()) onEmpty() else onPasted(pasted)
+        }
     }
 }
 
@@ -286,10 +351,8 @@ private fun ColumnScope.PasteStage(
     onChangeKitchen: () -> Unit,
 ) {
     val colors = LocalSimmerColors.current
-    val clipboard = LocalClipboard.current
-    val context = LocalContext.current
-    val scope = rememberCoroutineScope()
     val focus = remember { FocusRequester() }
+    val pasteText = rememberPasteAction(onPasted = viewModel::setText, onEmpty = { focus.requestFocus() })
     val textLabel = stringResource(R.string.add_recipe_text)
     val askNotificationPermission = rememberNotificationPermissionRequest()
 
@@ -325,14 +388,7 @@ private fun ColumnScope.PasteStage(
                 } else {
                     SecondaryButton(
                         text = stringResource(R.string.add_paste),
-                        onClick = {
-                            scope.launch {
-                                val pasted = clipboard.getClipEntry()?.clipData
-                                    ?.takeIf { it.itemCount > 0 }
-                                    ?.getItemAt(0)?.coerceToText(context)?.toString()
-                                if (pasted.isNullOrEmpty()) focus.requestFocus() else viewModel.setText(pasted)
-                            }
-                        },
+                        onClick = pasteText,
                         icon = { icon(R.drawable.ic_copy, 16) },
                     )
                 }

@@ -312,6 +312,9 @@
     <string name="add_choose_chatbot">With a chatbot</string>
     <string name="add_choose_chatbot_body">Use any capable chatbot you like, then paste its reply back here.</string>
     <string name="add_chatbot_title">Add with a chatbot.</string>
+    <string name="add_reply">Chatbot reply</string>
+    <string name="add_reply_placeholder">Paste the chatbot\'s reply here</string>
+    <string name="add_reply_add">Add recipe</string>
     <string name="add_caption_new">New recipe</string>
     <string name="add_caption_review">New recipe · not saved yet</string>
     <string name="add_title">Add a recipe.</string>

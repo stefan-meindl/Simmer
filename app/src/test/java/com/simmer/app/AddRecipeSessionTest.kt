@@ -4,6 +4,7 @@ import com.simmer.app.data.AddRecipeSession
 import com.simmer.app.data.RecipeDraftStore
 import com.simmer.app.data.RecipeWriter
 import com.simmer.app.domain.EXAMPLE_TEXT
+import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.model.Recipe
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -35,6 +36,24 @@ class AddRecipeSessionTest {
 
     @Test fun `converting other text leaves no draft`() {
         assertFalse(session.convert("Pancakes: flour, milk, egg. Whisk and fry.", "u-new"))
+
+        assertNull(drafts.current.value)
+    }
+
+    @Test fun `a valid chatbot reply puts a new recipe in the draft store`() {
+        val reply = """```json
+            {"title": "Toast", "ingredients": [{"name": "Bread", "q": 2}], "steps": [{"b": "Toast it.", "ph": "cook"}]}
+            ```"""
+
+        assertTrue(session.addFromReply(reply, "u-new", emptySet(), KitchenMode.Free))
+
+        assertEquals("Toast", drafts.current.value!!.title)
+        assertEquals("u-new", drafts.current.value!!.id)
+        assertTrue(recipes.saved.isEmpty())
+    }
+
+    @Test fun `an unusable chatbot reply leaves no draft`() {
+        assertFalse(session.addFromReply("""{"title": "Toast"}""", "u-new", emptySet(), KitchenMode.Free))
 
         assertNull(drafts.current.value)
     }
