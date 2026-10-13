@@ -93,7 +93,7 @@ class AddRecipeViewModel @Inject constructor(
         kitchenLine(appliances, KitchenMode.fromKey(mode))
     }
 
-    private val readerReady = reader.status.map { it == ReaderStatus.Ready }
+    private val readerReady = kotlinx.coroutines.flow.flowOf(true) // THROWAWAY
 
     private val paste = combine(text, kitchen, readerReady) { text, line, ready ->
         AddRecipeUi.Paste(text, readerAction(text, ready), canConvert(text), line)

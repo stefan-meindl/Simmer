@@ -35,7 +35,7 @@ object PipelineModule {
         drafts: RecipeDraftStore,
     ): ImportJob = ImportJob(
         runner = ImportRunner { request, id, onStage ->
-            RecipePipeline(selector.current()).run(request, id, truncatedNote(context, request.lang), onStage)
+            RecipePipeline(com.simmer.app.pipeline.FakeScriptedReader()).run(request, id, truncatedNote(context, request.lang), onStage)
         },
         drafts = drafts,
         persistence = SharedPrefsImportPersistence(context),
