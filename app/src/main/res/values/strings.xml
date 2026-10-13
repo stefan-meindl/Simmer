@@ -66,7 +66,10 @@
 
     <!-- Flow phase 3 -->
     <string name="flow_cook_progress">%1$d of %2$d steps done</string>
-    <string name="flow_tap_hint">Tap an underlined ingredient for its amount and tips.</string>
+    <string name="flow_tap_hint">Tap an ingredient marked with a lightbulb for its tips.</string>
+    <string name="flow_tips_title">Tips</string>
+    <string name="flow_tips_close">Close tips</string>
+    <string name="flow_link_tips_description">%1$s, tips for %2$s</string>
     <string name="flow_prep_caption">Get everything ready before you turn on the heat.</string>
     <string name="flow_cook_caption">Steps marked with a warning need a preparation step first.</string>
     <string name="flow_needs_first">Needs %1$s first</string>

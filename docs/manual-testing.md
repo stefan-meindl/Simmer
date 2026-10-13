@@ -95,11 +95,11 @@ Open `chilli`, tap Preparation:
 
 Open `chilli`, Preparation, Start cooking (Phase 3 has no entry button yet; use the throwaway branch, section 3):
 - Progress line "0 of n steps done" (de: "0 von n Schritten erledigt"), selection summary on the right ("4 servings", plus any non-default swap or add-in), 4dp bar fills as steps finish.
-- Hint "Tap an underlined ingredient for its amount and tips." with lightbulb.
+- Hint "Tap an ingredient marked with a lightbulb for its tips." (de: "Tippe auf eine Zutat mit Glühbirne für ihre Tipps.") with lightbulb.
 - Sections: Preparation ("Get everything ready before you turn on the heat.") then Cooking ("Steps marked with a warning need a preparation step first."). Labels "Prep 1..n" / "Step 1..n" (de: "Vorb." / "Schritt").
 - First unfinished step has a thick orange outline, orange eyebrow and a dark Mark as done button; others have the outlined secondary button.
 - "Soften the onions" shows a cream note with orange outline, alert icon, "Needs Prep 1 first", "Chop the vegetables" and "Go to step", which smooth-scrolls to Prep 1. After marking Prep 1 done the note becomes the quiet "Prep 1 done · Chop the vegetables" line.
-- Underlined ingredient words (2dp, offset; each is a 44dp button for TalkBack and touch, even short words like "rice"): tap shows a popover with name, scaled amount in current units (check imperial in Settings), note and tips; tap outside closes it. Change servings in Phase 1 and the amounts follow.
+- Ingredient words show their scaled amount inline, e.g. "garlic (3 cloves)", with an orange underline (2dp, offset, light and dark) under the word and its "(amount)". Check imperial in Settings and change servings in Phase 1: the inline amounts follow. Built-in recipes have no tips, so nothing is tappable there and tapping an underlined word does nothing. Tips tooltip: see "Tips tooltip (#33)" below.
 - Mark as done collapses to a row with orange check, struck-through title and Undo; Undo restores the card.
 - Timer button: orange, timer icon, duration ("10 min", "1 h"). Behaviour is under StepTimer (#8) below.
 - Finish all steps (TalkBack announces "Enjoy your meal."): gradient panel with circle-check, "Enjoy your meal." (de: "Guten Appetit."), "title · selection summary", Back to recipes (dark) goes to the Recipes tab.
@@ -125,8 +125,8 @@ Settings tab. "Your kitchen" has no editor yet (#12), so pills need the throwawa
 - Title "Settings." (de: "Einstellungen."). Sections in order: Language, Units, Spices and dried herbs, Your kitchen (+ "How closely to follow it"), Recipe reader, Preview.
 - Option cards are radios (TalkBack: radio, selected); selected has a 3dp orange outline and a check dot, no layout shift.
 - Language: tap Deutsch: whole UI switches at once (tabs, Recipes title, flow strings) with no manual restart; tap English to go back. Kill the process and reopen: language kept. Caption mentions that built-in recipes stay in English.
-- Units: Imperial (US): Preview reads 1 lb, 1¼ cups, oven 300°F. Open `chilli` Phase 1 and 3: amounts in oz/lb/cups; Phase 2 oven card "Covered at 300°F."; ingredient popovers and step text temperatures in °F. Back to Metric restores.
-- Spices: Grams: Preview cumin 5 g, oregano 1 g; the same in the flow ingredient list and popovers. In German, fractional gram amounts use a comma: `chilli`, add the Cinnamon add-in at 4 servings, add-in row reads "+ 1,5 g" (en: "+ 1.5 g").
+- Units: Imperial (US): Preview reads 1 lb, 1¼ cups, oven 300°F. Open `chilli` Phase 1 and 3: amounts in oz/lb/cups; Phase 2 oven card "Covered at 300°F."; inline step amounts and step text temperatures in °F. Back to Metric restores.
+- Spices: Grams: Preview cumin 5 g, oregano 1 g; the same in the flow ingredient list and the inline step amounts. In German, fractional gram amounts use a comma: `chilli`, add the Cinnamon add-in at 4 servings, add-in row reads "+ 1,5 g" (en: "+ 1.5 g").
 - Your kitchen: "No appliances selected yet." when empty; Edit your kitchen opens the Your kitchen screen (placeholder until #12), back returns to Settings.
 - Kitchen follow-it mode: Strict / Medium (default) / Free for all, radio list; choice survives process death. It only stores a preference; cooking an existing recipe is unaffected.
 - Recipe reader: static row "On this phone · Gemma 4 E2B", "Not downloaded · 2.6 GB", lock caption; no buttons.
@@ -173,7 +173,7 @@ Open `chilli`, tap Edit (top right of any flow phase). Editing the Add recipe dr
 - Details: title, 3-line summary, Servings and Total time side by side (digits only), Easy/Medium/Hard option group, wrapping Category options. Selected option has the orange outline; TalkBack reads radio + selected.
 - Ingredients: one accordion row open at a time (opening another closes the first). Collapsed: name, "note · aisle", amount + unit. Expanded: Name, Amount, Unit, Note, Shop section, Remove ingredient. Amount accepts `1.5`, `1,5`, `1/2`, `1 1/2`, `½`, `¼`, `¾` (after Save and reopen it shows the decimal, e.g. 0.5). "Beef mince" shows the info line "Only when: Beef", "Plant-based mince" shows "Only when: Plant-based" (de: "Nur wenn: ..."). Add ingredient appends a blank row and opens it.
 - Steps: Preparation and Cooking groups; collapsed shows "Prep 1" / "Step 1", title, timer ("2 min"; no timer icon or text when the step has none). Expanded: title, instructions (plain text, no braces), live "Linked: Onions, Garlic" line while you type (or "No ingredients found in this text yet."), Timer in decimal minutes (`1.5` = 1 min 30 s, `0.1` saves as 6 s) with the hint "Optional" (de: "Optional"), then the Phase toggle on its own full-width row (Preparation / Cooking, each half width, labels do not wrap in en or de; the step moves to the other group and renumbers), then Move up / Move down side by side with arrow icons (disabled on the first / last step of the group), Remove step. "Add preparation step" / "Add cooking step" under each group append and open a blank step. Conditional steps show "Only when: ...".
-- Relinking: edit "Chop the vegetables" to "Slice the onions and the garlic." and Save; in Phase 3 those words are underlined and tapping shows amount and tips. Edit only its title: the old underlined words stay underlined.
+- Relinking: edit "Chop the vegetables" to "Slice the onions and the garlic." and Save; in Phase 3 those words are underlined with their amount inline (they have no tips, so tapping does nothing). Edit only its title: the old underlined words stay underlined.
 - Remove the "Dark beer" ingredient and Save: the Dark beer add-in row is gone from Phase 1.
 - Built-in recipe: after Save the Recipes card shows the "Edited" badge; reopen Edit: "Restore original" shows. Restore original: title, ingredients and steps are back, badge gone, link gone.
 - After Save or Restore you land on the flow phase you came from (try Phase 1, 2 and 3), showing the new content; servings and picks are kept.
@@ -183,7 +183,7 @@ Open `chilli`, tap Edit (top right of any flow phase). Editing the Add recipe dr
 - Optional timer: clear the Timer field (or type `0`) on a step and Save: the step has no timer chip in the editor, and in Phase 3 it shows no timer button. Add preparation step: the new step's Timer field is empty with the hint "Optional". Typing `0.1` is accepted (6 s, no 30 s minimum). Reopen Edit on a step without a timer: the field is empty.
 - Amount or Timer typed as text such as "lots": the field shows the error outline and Save changes is disabled; a number, "1,5" or "1 1/2" enables it again. A nameless ingredient or textless step with a bad value does not block Save (it is dropped).
 - Step phase: open a Preparation step, tap Cooking: it appears as the last Cooking step.
-- Delete the Garlic ingredient and Save without touching "Chop the vegetables": in Phase 3 "garlic" in that step is no longer underlined; the other links are.
+- Delete the Garlic ingredient and Save without touching "Chop the vegetables": in Phase 3 "garlic" in that step is no longer underlined and shows no amount; the other links are.
 - Rotate and `adb shell am kill com.simmer.app` with edits and an open row: edits and open rows are restored.
 - German: all labels translate; categories Suppen, Salate, Backen etc. Light and dark theme. Large font: nothing clipped, accordion rows grow. Touch targets >= 44dp, rows >= 56dp. The keyboard does not cover the focused field or the bottom bar.
 - Compare against Design/ (Edit recipe screen in `Recipe App.dc.html`).
@@ -212,6 +212,17 @@ Recipes tab, + , "With a chatbot". Step 1 is on top of the chatbot screen, step 
 - Rotate with text in the recipe field: it stays. Process death (`adb shell am kill com.simmer.app`, reopen from Recents): still on the chatbot screen with the recipe text. Back to the start stage and "With a chatbot" again: the text is still there.
 - Large font: nothing clipped, the keyboard does not cover the focused field or the bottom bar.
 - Automated (JVM): `ReaderPromptTest` (builder: Kitchen line and rule per mode, recipe text, empty field, schema and example), `ReaderPromptLanguageTest` (the shipped English and German strings, and that the prompt's example parses with the #48 parser and follows the Kitchen rule). Not covered by tests: the clipboard write, the Toast and the saved-state wiring (this checklist).
+
+### Tips tooltip (#33)
+
+Built-in recipes have no tips, so make a recipe with them: Recipes tab, +, "With a chatbot", paste this reply, Add recipe, Save recipe, open it, Start cooking to Phase 3:
+`{"title":"Pancakes","summary":"Thin and easy.","category":"Breakfast","time":20,"base":4,"ingredients":[{"id":"i1","name":"Flour","q":200,"u":"g","tips":["Sift it for lighter pancakes.","Plain flour works too."]},{"id":"i2","name":"Milk","q":300,"u":"ml"}],"steps":[{"id":"p1","ph":"prep","t":"Whisk","b":"Whisk the {i1:flour} with the {i2:milk}."},{"id":"c1","ph":"cook","t":"Fry","b":"Fry until golden.","d":300,"needs":["p1"]}]}`
+- Inline amounts: "Whisk the flour (200 g) with the milk (300 ml)." both words and their "(amount)" underlined in orange, in light and dark. Settings Units Imperial: "flour (7 oz)"; servings in Phase 1 scale them; German shows the comma where an amount has a decimal.
+- Only "flour" has a lightbulb after "(200 g)" (the bulb is not underlined). Tapping "milk (300 ml)" does nothing.
+- Tap "flour": the tooltip opens centred under the word with a 14dp arrow pointing at it, white card with rounded corners and a soft shadow (light) or just the outline (dark). The word gets a warm background while it is open. Title "Tips" (de: "Tipps"), X button at the top right, then the two tips. No ingredient name, amount, note or tabs.
+- Close with the X, and again by tapping outside: both dismiss and the word loses its background. Back also dismisses.
+- Scroll so the word is near the bottom of the screen and tap it: the tooltip opens above the word with the arrow at its bottom edge. Near the screen edge the tooltip keeps a 12dp margin and the arrow still points at the word. A long tip wraps; the tooltip is at most 300dp wide.
+- TalkBack: the link reads "flour (200 g), tips for Flour, button"; opening announces "Tips"; the close button reads "Close tips" and is at least 40dp. With a large font nothing is clipped.
 
 ### Add recipe: paste a chatbot reply (#48)
 
@@ -252,7 +263,7 @@ Recipes tab, tap + (no throwaway branch needed), then "On this phone" (#47). The
 - Convert recipe goes straight to Review (no Working screen). Caption "New recipe · not saved yet". Hero: MAINS, "Sheet-pan lemon chicken", summary, "1 h", "Easy", "4 servings".
 - "Check before saving" cream note with orange outline lists the three notes. "Choices found": "The chicken" (Oven · Air fryer) and "Chilli flakes" (Optional add-in · ...).
 - Underline tabs Ingredients / Steps and caption "9 ingredients · 3 preparation and 3 cooking steps". Ingredients: 9 rows with note · aisle and amount; Chilli flakes has the orange "Optional" tag. Settings units imperial: potatoes read "1¾ lb".
-- Steps: "Shown for Oven. Other choices change these steps." Groups Preparation (3) and Cooking (3: roast potatoes, roast chicken, finish). Cards show Prep 1.. / Step 1.. labels, timer icon and duration, title, "Needs Prep 2 and Prep 3 first" on "Roast the chicken", and body text with underlined ingredients; tap one for the popover (amount, note, tips).
+- Steps: "Shown for Oven. Other choices change these steps." Groups Preparation (3) and Cooking (3: roast potatoes, roast chicken, finish). Cards show Prep 1.. / Step 1.. labels, timer icon and duration, title, "Needs Prep 2 and Prep 3 first" on "Roast the chicken", and body text with underlined ingredients, each followed by its amount in parentheses; one with tips shows a lightbulb and opens the Tips tooltip.
 - Edit details opens Edit recipe on the draft: change the title, Save: back on Review with the new title, nothing on Recipes yet. Cancel returns unchanged.
 - Edit text returns to the paste stage with the text kept; Convert again works.
 - Save recipe: Add recipe closes and you land on the Recipes tab (not Phase 1): the new card is first in the list with "Added by you", the list is scrolled to the top (scroll the list down and filter by "feta" before saving: after saving the search is cleared and the top is shown). Back from Recipes leaves the app, not Add recipe. Open the card: Phase 1 shows the Chilli flakes add-in, 4 servings. Save a second recipe: it is above the first. Open it, edit and save it (it keeps its place in the list), and Delete recipe (Edit recipe) works. Editing a built-in does not move it either.

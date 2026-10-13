@@ -7,6 +7,23 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.text.InlineTextContent
+import androidx.compose.foundation.text.appendInlineContent
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.paneTitle
+import androidx.compose.ui.text.Placeholder
+import androidx.compose.ui.text.PlaceholderVerticalAlign
+import androidx.compose.ui.unit.sp
+import com.simmer.app.domain.BODY_TIP_MARK
+import com.simmer.app.domain.BodyLink
+import com.simmer.app.domain.TooltipPlacement
+import com.simmer.app.domain.layoutBody
+import com.simmer.app.domain.placeTooltip
+import com.simmer.app.ui.theme.DarkSimmerColors
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -488,52 +505,65 @@ private fun NeedsWarning(label: String, title: String, onJump: () -> Unit) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Step body with tappable ingredient references
-// ---------------------------------------------------------------------------
 
-private data class LinkRange(val id: String, val start: Int, val end: Int, val shown: String)
+// ---------------------------------------------------------------------------
+// Step body: Links with their amount inline; Links with tips open the Tips tooltip
+// ---------------------------------------------------------------------------
 
 private val UnderlineThickness = 2.dp
 private val UnderlineOffset = 3.dp
 private val MinTouchTarget = 44.dp
 private val LinkTargetPadding = 12.dp
+private val TooltipMaxWidth = 300.dp
+private val TooltipMargin = 12.dp
+private val TooltipGap = 10.dp
+private val TooltipArrow = 14.dp
+private val TooltipArrowInset = 20.dp
+private val TooltipShadowPad = 24.dp
+private val TooltipCorner = 12.dp
+private val CloseButtonSize = 40.dp
+private const val TIP_ICON = "tip"
 
 /** The part of a Link on one text line, in text coordinates. */
 private data class LinkLine(val index: Int, val left: Float, val right: Float)
 
-private fun linkLines(layout: TextLayoutResult, range: LinkRange): List<LinkLine> {
-    val first = layout.getLineForOffset(range.start)
-    val last = layout.getLineForOffset(range.end - 1)
+private fun linkLines(layout: TextLayoutResult, start: Int, end: Int): List<LinkLine> {
+    val first = layout.getLineForOffset(start)
+    val last = layout.getLineForOffset(end - 1)
     return (first..last).map { line ->
         LinkLine(
             index = line,
-            left = if (line == first) layout.getHorizontalPosition(range.start, true) else layout.getLineLeft(line),
-            right = if (line == last) layout.getHorizontalPosition(range.end, true) else layout.getLineRight(line),
+            left = if (line == first) layout.getHorizontalPosition(start, true) else layout.getLineLeft(line),
+            right = if (line == last) layout.getHorizontalPosition(end, true) else layout.getLineRight(line),
         )
     }
 }
 
 /**
- * Step text where each ingredient Link is underlined (2dp, offset below the baseline).
- * Tapping one opens a popover with the ingredient's amount, note and tips; tapping outside closes it.
+ * Step text where each ingredient Link shows its amount "(3 cloves)" and is underlined in orange
+ * (2dp, offset below the baseline). A Link whose ingredient has tips also shows a lightbulb and is
+ * a button that opens the Tips tooltip; tapping outside or the close button dismisses it.
  */
 @Composable
 internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, ResolvedIngredient>) {
     val colors = LocalSimmerColors.current
     val density = LocalDensity.current
-    val (text, ranges) = remember(segs) { bodyText(segs) }
-    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
-    var openIngredient by remember { mutableStateOf<ResolvedIngredient?>(null) }
-    var anchor by remember { mutableStateOf(Offset.Zero) }
-    val underlineColor = colors.textSecondary
-
-    fun openRange(r: LinkRange, at: Offset) {
-        ingredients[r.id]?.let {
-            anchor = at
-            openIngredient = it
+    val body = remember(segs, ingredients) { layoutBody(segs, ingredients) }
+    val annotated = remember(body) {
+        buildAnnotatedString {
+            body.text.forEach { c -> if (c == BODY_TIP_MARK) appendInlineContent(TIP_ICON) else append(c) }
         }
     }
+    val inline = remember(colors) {
+        mapOf(
+            TIP_ICON to InlineTextContent(Placeholder(14.sp, 14.sp, PlaceholderVerticalAlign.Center)) {
+                Icon(painterResource(R.drawable.ic_lightbulb), null, Modifier.fillMaxSize(), tint = colors.textAccent)
+            },
+        )
+    }
+    var layout by remember { mutableStateOf<TextLayoutResult?>(null) }
+    var open by remember { mutableStateOf<BodyLink?>(null) }
+    var anchor by remember { mutableStateOf(IntRect.Zero) }
 
     // The vertical padding gives short links room to reach a 44dp touch target.
     val padPx = with(density) { LinkTargetPadding.roundToPx() }
@@ -541,27 +571,43 @@ internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, Resolved
     Box {
         Box(Modifier.padding(vertical = LinkTargetPadding)) {
             Text(
-                text = text,
+                text = annotated,
+                inlineContent = inline,
                 style = SimmerTextStyle_BodyMd,
                 color = colors.textSecondary,
                 onTextLayout = { layout = it },
                 modifier = Modifier.drawBehind {
                     val l = layout ?: return@drawBehind
-                    val thickness = with(density) { UnderlineThickness.toPx() }
-                    val gap = with(density) { UnderlineOffset.toPx() }
-                    ranges.forEach { r ->
-                        linkLines(l, r).forEach { line ->
+                    val thickness = UnderlineThickness.toPx()
+                    val gap = UnderlineOffset.toPx()
+                    open?.let { link ->
+                        linkLines(l, link.start, link.end).forEach { line ->
+                            drawRoundRect(
+                                colors.surfaceWarmStrong,
+                                Offset(line.left, l.getLineTop(line.index)),
+                                Size(line.right - line.left, l.getLineBottom(line.index) - l.getLineTop(line.index)),
+                                CornerRadius(4.dp.toPx()),
+                            )
+                        }
+                    }
+                    body.links.forEach { link ->
+                        linkLines(l, link.start, link.underlineEnd).forEach { line ->
                             val y = l.getLineBaseline(line.index) + gap
-                            drawRect(underlineColor, Offset(line.left, y), Size(line.right - line.left, thickness))
+                            drawRect(colors.accent, Offset(line.left, y), Size(line.right - line.left, thickness))
                         }
                     }
                 },
             )
         }
-        // One button per link (per line it wraps over), sized to at least 44dp.
+        // One button per tip-bearing link (per line it wraps over), sized to at least 44dp.
         layout?.let { l ->
-            ranges.filter { it.id in ingredients }.forEach { r ->
-                linkLines(l, r).forEachIndexed { n, line ->
+            body.links.filter { it.tappable }.forEach { link ->
+                val description = stringResource(
+                    R.string.flow_link_tips_description,
+                    body.text.substring(link.start, link.underlineEnd),
+                    ingredients.getValue(link.id).name,
+                )
+                linkLines(l, link.start, link.end).forEachIndexed { n, line ->
                     val width = (line.right - line.left).toInt()
                     val height = (l.getLineBottom(line.index) - l.getLineTop(line.index)).toInt()
                     val w = maxOf(width, minTargetPx)
@@ -574,7 +620,7 @@ internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, Resolved
                             .size(with(density) { w.toDp() }, with(density) { h.toDp() })
                             .then(
                                 if (n == 0) {
-                                    Modifier.semantics { contentDescription = r.shown }
+                                    Modifier.semantics { contentDescription = description }
                                 } else {
                                     Modifier.clearAndSetSemantics {}
                                 },
@@ -583,81 +629,164 @@ internal fun StepBody(segs: List<BodySegment>, ingredients: Map<String, Resolved
                                 interactionSource = remember { MutableInteractionSource() },
                                 indication = null,
                                 role = Role.Button,
-                            ) { openRange(r, Offset(line.left, padPx + l.getLineBottom(line.index))) },
+                            ) {
+                                anchor = IntRect(
+                                    line.left.toInt(),
+                                    padPx + l.getLineTop(line.index).toInt(),
+                                    line.right.toInt(),
+                                    padPx + l.getLineBottom(line.index).toInt(),
+                                )
+                                open = link
+                            },
                     )
                 }
             }
         }
-        openIngredient?.let { ingredient ->
-            val gap = with(density) { 12.dp.roundToPx() }
-            val margin = with(density) { 16.dp.roundToPx() }
-            Popup(
-                popupPositionProvider = remember(anchor) {
-                    object : PopupPositionProvider {
-                        override fun calculatePosition(
-                            anchorBounds: IntRect,
-                            windowSize: IntSize,
-                            layoutDirection: LayoutDirection,
-                            popupContentSize: IntSize,
-                        ): IntOffset {
-                            val x = (anchorBounds.left + anchor.x.toInt())
-                                .coerceIn(margin, (windowSize.width - popupContentSize.width - margin).coerceAtLeast(margin))
-                            val below = anchorBounds.top + anchor.y.toInt() + gap
-                            val y = if (below + popupContentSize.height > windowSize.height) {
-                                (anchorBounds.top + anchor.y.toInt() - gap - popupContentSize.height).coerceAtLeast(0)
-                            } else below
-                            return IntOffset(x, y)
-                        }
-                    }
-                },
-                onDismissRequest = { openIngredient = null },
-                properties = PopupProperties(focusable = true),
-            ) {
-                IngredientPopover(ingredient)
-            }
+        open?.let { link ->
+            TipsTooltip(
+                tips = ingredients.getValue(link.id).tips,
+                anchor = anchor,
+                onDismiss = { open = null },
+            )
         }
     }
 }
 
-private fun bodyText(segs: List<BodySegment>): Pair<AnnotatedString, List<LinkRange>> {
-    val ranges = mutableListOf<LinkRange>()
-    val text = buildAnnotatedString {
-        segs.forEach { seg ->
-            when (seg) {
-                is BodySegment.TextSegment -> append(seg.text)
-                is BodySegment.IngredientLinkSegment -> {
-                    val start = length
-                    append(seg.text)
-                    ranges += LinkRange(seg.id, start, length, seg.text)
+/** The Tips tooltip: arrow at the tapped word, "Tips" title with a close button, then the tips. */
+@Composable
+private fun TipsTooltip(tips: List<String>, anchor: IntRect, onDismiss: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    val density = LocalDensity.current
+    val shape = RoundedCornerShape(TooltipCorner)
+    val shadowPad = with(density) { TooltipShadowPad.roundToPx() }
+    val margin = with(density) { TooltipMargin.roundToPx() }
+    val gap = with(density) { TooltipGap.roundToPx() }
+    val arrowInset = with(density) { TooltipArrowInset.roundToPx() }
+    var placement by remember { mutableStateOf(TooltipPlacement(0, 0, true, arrowInset)) }
+    val title = stringResource(R.string.flow_tips_title)
+    Popup(
+        popupPositionProvider = remember(anchor) {
+            object : PopupPositionProvider {
+                override fun calculatePosition(
+                    anchorBounds: IntRect,
+                    windowSize: IntSize,
+                    layoutDirection: LayoutDirection,
+                    popupContentSize: IntSize,
+                ): IntOffset {
+                    val p = placeTooltip(
+                        anchorBounds.left + anchor.left,
+                        anchorBounds.top + anchor.top,
+                        anchorBounds.left + anchor.right,
+                        anchorBounds.top + anchor.bottom,
+                        popupContentSize.width - 2 * shadowPad,
+                        popupContentSize.height - 2 * shadowPad,
+                        windowSize.width,
+                        windowSize.height,
+                        margin,
+                        gap,
+                        arrowInset,
+                    )
+                    placement = p
+                    return IntOffset(p.x - shadowPad, p.y - shadowPad)
+                }
+            }
+        },
+        onDismissRequest = onDismiss,
+        properties = PopupProperties(focusable = true),
+    ) {
+        // The outer padding leaves room for the shadow, which the popup window would otherwise clip.
+        Box(Modifier.padding(TooltipShadowPad)) {
+            Box(Modifier.widthIn(max = TooltipMaxWidth).semantics { paneTitle = title }) {
+                val isDark = colors === DarkSimmerColors
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        // shadow-4 is light theme only; dark relies on the outline.
+                        .then(
+                            if (isDark) {
+                                Modifier
+                            } else {
+                                Modifier.shadow(
+                                    16.dp, shape, clip = false,
+                                    ambientColor = Color.Black.copy(alpha = 0.12f),
+                                    spotColor = Color.Black.copy(alpha = 0.12f),
+                                )
+                            },
+                        )
+                        .background(colors.surfaceCard, shape)
+                        .border(BorderStroke(2.dp, colors.borderStrong), shape),
+                )
+                TooltipArrowMark(placement)
+                Column {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(start = 16.dp, top = 6.dp, end = 6.dp),
+                    ) {
+                        Text(
+                            title,
+                            style = SimmerTextStyle_Heading5,
+                            color = colors.textPrimary,
+                            modifier = Modifier.weight(1f),
+                        )
+                        Box(
+                            contentAlignment = Alignment.Center,
+                            modifier = Modifier
+                                .size(CloseButtonSize)
+                                .clickable(role = Role.Button, onClick = onDismiss),
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.ic_x),
+                                stringResource(R.string.flow_tips_close),
+                                Modifier.size(18.dp),
+                                tint = colors.textTertiary,
+                            )
+                        }
+                    }
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 2.dp, bottom = 16.dp),
+                    ) {
+                        tips.forEach { tip ->
+                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Icon(
+                                    painterResource(R.drawable.ic_lightbulb), null,
+                                    Modifier.padding(top = 2.dp).size(14.dp), tint = colors.textTertiary,
+                                )
+                                Text(tip, style = SimmerTextStyle_Caption, color = colors.textSecondary)
+                            }
+                        }
+                    }
                 }
             }
         }
     }
-    return text to ranges
 }
 
+/** The 14dp rotated square on the tooltip edge nearest the word: top when below it, bottom when above. */
 @Composable
-private fun IngredientPopover(ingredient: ResolvedIngredient) {
+private fun BoxScope.TooltipArrowMark(placement: TooltipPlacement) {
     val colors = LocalSimmerColors.current
-    val shape = RoundedCornerShape(12.dp)
-    Column(
-        verticalArrangement = Arrangement.spacedBy(6.dp),
-        modifier = Modifier
-            .widthIn(min = 180.dp, max = 280.dp)
-            .background(colors.surfaceCard, shape)
-            .border(BorderStroke(2.dp, colors.borderStrong), shape)
-            .padding(14.dp),
-    ) {
-        Text(ingredient.name, style = SimmerTextStyle_BodyMdMedium, color = colors.textPrimary)
-        Text(ingredient.amount, style = SimmerTextStyle_BodySmMedium, color = colors.textAccent)
-        if (ingredient.note.isNotBlank()) {
-            Text(ingredient.note, style = SimmerTextStyle_Caption, color = colors.textTertiary)
-        }
-        ingredient.tips.forEach { tip ->
-            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(painterResource(R.drawable.ic_lightbulb), null, Modifier.size(14.dp), tint = colors.textTertiary)
-                Text(tip, style = SimmerTextStyle_Caption, color = colors.textSecondary)
-            }
-        }
-    }
+    val density = LocalDensity.current
+    val half = with(density) { (TooltipArrow / 2).roundToPx() }
+    val below = placement.below
+    Box(
+        Modifier
+            .align(if (below) Alignment.TopStart else Alignment.BottomStart)
+            .offset { IntOffset(placement.arrowX - half, if (below) -half else half) }
+            .size(TooltipArrow)
+            .rotate(45f)
+            .background(colors.surfaceCard, RoundedCornerShape(topStart = 3.dp, bottomEnd = 3.dp))
+            .drawBehind {
+                val w = 2.dp.toPx()
+                val inset = w / 2
+                val s = size.width
+                if (below) {
+                    drawLine(colors.borderStrong, Offset(0f, inset), Offset(s, inset), w)
+                    drawLine(colors.borderStrong, Offset(inset, 0f), Offset(inset, s), w)
+                } else {
+                    drawLine(colors.borderStrong, Offset(0f, s - inset), Offset(s, s - inset), w)
+                    drawLine(colors.borderStrong, Offset(s - inset, 0f), Offset(s - inset, s), w)
+                }
+            },
+    )
 }
