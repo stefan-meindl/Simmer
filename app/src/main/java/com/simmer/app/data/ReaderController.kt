@@ -18,6 +18,7 @@ import com.simmer.app.domain.ReaderModel
 import com.simmer.app.domain.READER_REQUIRED_FREE_BYTES
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.readerStatus
+import com.simmer.app.reader.ReaderModelSource
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -47,7 +48,7 @@ interface ReaderEntryPoint {
 class ReaderController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val prefs: PrefsRepository,
-) {
+) : ReaderModelSource {
     private val modelDir = File(context.filesDir, "models")
 
     val downloader = ModelDownloader(
@@ -64,7 +65,7 @@ class ReaderController @Inject constructor(
     /** Bumped when the files change outside WorkManager's knowledge (remove, worker finished). */
     private val filesVersion = MutableStateFlow(0)
 
-    val status: Flow<ReaderStatus> = combine(
+    override val status: Flow<ReaderStatus> = combine(
         work.getWorkInfosForUniqueWorkFlow(WORK_NAME).map { it.firstOrNull().toDownloadWork() },
         filesVersion,
     ) { downloadWork, _ ->
@@ -77,7 +78,7 @@ class ReaderController @Inject constructor(
     }
 
     /** Starts (or restarts) the download; resumes a partial file. Honours "Download on Wi-Fi only". */
-    suspend fun download() {
+    override suspend fun download() {
         val wifiOnly = prefs.readerWifiOnly.first()
         val request = OneTimeWorkRequestBuilder<ModelDownloadWorker>()
             .setConstraints(
@@ -95,6 +96,8 @@ class ReaderController @Inject constructor(
         val info = work.getWorkInfosForUniqueWork(WORK_NAME).get().firstOrNull()
         if (info != null && !info.state.isFinished) download()
     }
+
+    override fun modelPath(): String = File(modelDir, ReaderModel.FILE_NAME).path
 
     /** Stops the task. The partial file stays, so a later Download resumes where it stopped. */
     fun cancel() {

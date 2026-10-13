@@ -39,7 +39,7 @@ The unsaved Recipe the Add recipe review shows (`RecipeDraftStore`). Edit recipe
 _Avoid_: Pending recipe, import result
 
 **Add recipe**:
-The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe and lands on the Recipes overview, scrolled to the top where the new card is listed first). The review's top row stays pinned with the "Edit details" action. Change on the paste stage opens Settings on top; a bottom tab tap there abandons Add recipe and its draft. Convert is offered only for the built-in example (`stubConvert`) until the RecipeReader exists; other text shows an inactive Download recipe reader button.
+The screen that turns pasted text into a User Recipe: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe and lands on the Recipes overview, scrolled to the top where the new card is listed first). The review's top row stays pinned with the "Edit details" action. Change on the paste stage opens Settings on top; a bottom tab tap there abandons Add recipe and its draft. Convert is offered only for the built-in example (`stubConvert`) until the RecipeReader is wired into Add recipe (#17); other text shows an inactive Download recipe reader button.
 _Avoid_: Import screen, new recipe screen
 
 **Kitchen line**:
@@ -163,8 +163,16 @@ The validation and sanitisation step applied to AI pipeline output before it bec
 _Avoid_: Validate, clean, sanitise
 
 **RecipeReader**:
-The interface abstracts over the two on-device AI engines (GemmaReader and GeminiNanoReader). The app picks one at runtime based on device capability.
+The interface abstracts over the two on-device AI engines (GemmaReader and GeminiNanoReader): `status()`, `download()` (a flow of `DownloadProgress`) and `generate()` (a flow of tokens). `ReaderSelector` picks one at runtime: Gemini Nano when ML Kit reports it Available or Downloadable, else Gemma. GeminiNanoReader does not exist yet, so every phone gets Gemma.
 _Avoid_: AI engine, model, backend
+
+**GemmaReader**:
+The RecipeReader that runs the Reader model through LiteRT-LM. Holds one engine per app lifetime: loaded on first use (GPU first, CPU as fallback, off the main thread), closed after 60 s idle or under real memory pressure (not when the app merely goes to the background), and waits (up to 5 minutes, then fails) before a pass while the phone's thermal status is severe. One generation runs at a time. Generates at temperature 0.2.
+_Avoid_: Gemma engine, LLM
+
+**DownloadProgress**:
+What `RecipeReader.download()` reports: Running (percent, possibly waiting for a connection), then Complete or Failed (carrying a `DownloadFailure`). It is `ReaderStatus` reduced to the download's own steps.
+_Avoid_: Download state
 
 **Reader model**:
 The Gemma 4 E2B file (`gemma-4-E2B-it-web.litertlm`, `ReaderModel`) that GemmaReader runs on. It is downloaded once by a unique WorkManager task (Wi-Fi only by default, resumable, SHA-256 checked, needs 3.5 GB free) into `filesDir/models/`. The file only exists under its final name once verified; until then the bytes sit in a `.part` file.
