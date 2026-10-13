@@ -41,6 +41,8 @@ import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.formatGigabytes
 import androidx.compose.ui.platform.LocalConfiguration
 import com.simmer.app.ui.components.PrimaryButton
+import com.simmer.app.ui.components.readerModelSize
+import com.simmer.app.ui.components.readerStateText
 import com.simmer.app.ui.flow.rememberNotificationPermissionRequest
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -406,33 +408,6 @@ internal val APPLIANCE_LABELS: Map<String, Int> = mapOf(
     "icecream" to R.string.appliance_icecream,
     "dehydrator" to R.string.appliance_dehydrator,
 )
-
-@Composable
-private fun readerModelSize(): String =
-    formatGigabytes(ReaderModel.SIZE_BYTES, LocalConfiguration.current.locales[0])
-
-@Composable
-private fun readerFreeSpaceNeeded(): String =
-    formatGigabytes(READER_REQUIRED_FREE_BYTES, LocalConfiguration.current.locales[0])
-
-/** The state line under "On this phone": one string per [ReaderStatus]. */
-@Composable
-private fun readerStateText(status: ReaderStatus): String = when (status) {
-    ReaderStatus.NotDownloaded -> stringResource(R.string.settings_reader_state, readerModelSize())
-    is ReaderStatus.Downloading -> stringResource(
-        if (status.waiting) R.string.settings_reader_state_waiting else R.string.settings_reader_state_downloading,
-        status.percent,
-    )
-    ReaderStatus.Ready -> stringResource(R.string.settings_reader_state_ready)
-    ReaderStatus.NotEnoughStorage -> stringResource(R.string.settings_reader_state_no_space, readerFreeSpaceNeeded())
-    ReaderStatus.NotSupported -> stringResource(R.string.settings_reader_state_unsupported)
-    is ReaderStatus.Failed -> when (status.reason) {
-        DownloadFailure.ChecksumMismatch -> stringResource(R.string.settings_reader_state_corrupt)
-        DownloadFailure.NotEnoughStorage -> stringResource(R.string.settings_reader_state_no_space, readerFreeSpaceNeeded())
-        DownloadFailure.ServerError -> stringResource(R.string.settings_reader_state_server)
-        DownloadFailure.Unknown -> stringResource(R.string.settings_reader_state_failed)
-    }
-}
 
 /** Status of the on-device model, its actions (Download, Cancel, Remove) and the Wi-Fi-only switch. */
 @Composable

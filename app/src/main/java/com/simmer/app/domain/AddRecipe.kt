@@ -15,6 +15,19 @@ const val MIN_RECIPE_TEXT = 30
 /** A new User Recipe's id: "u" and the time in base 36. The one place ids are made. */
 fun newRecipeId(now: Long = System.currentTimeMillis()): String = "u" + now.toString(36)
 
+/** Where Add recipe is before a conversion starts: the start stage, or one of the two ways to add. */
+enum class AddStep(val key: String) {
+    Start("start"),
+    Phone("phone"),
+    Chatbot("chatbot"),
+}
+
+/** The step saved under [key] (rotation, process death); the start stage when there is none. */
+fun addStepFromKey(key: String?): AddStep = AddStep.entries.firstOrNull { it.key == key } ?: AddStep.Start
+
+/** Where Back goes from this step: the start stage, or null from the start stage itself (leave Add recipe). */
+fun AddStep.back(): AddStep? = if (this == AddStep.Start) null else AddStep.Start
+
 /** What "Try an example" puts in the text area. */
 val EXAMPLE_TEXT = """Sheet-pan lemon chicken with potatoes
 Serves 4 · about 1 hour

@@ -1,5 +1,8 @@
 package com.simmer.app.ui.add
 
+import androidx.activity.compose.BackHandler
+import com.simmer.app.domain.AddStep
+import com.simmer.app.ui.components.readerStateText
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -114,6 +117,10 @@ fun AddRecipeScreen(
     val colors = LocalSimmerColors.current
     val ui by viewModel.ui.collectAsStateWithLifecycle()
 
+    // Back from the start stage, the chatbot path or the paste stage: step back, then leave from the start stage.
+    val onStepBack = { viewModel.back(onLeave = onBack) }
+    BackHandler(enabled = ui is AddRecipeUi.Chatbot || ui is AddRecipeUi.Paste, onBack = onStepBack)
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -122,7 +129,9 @@ fun AddRecipeScreen(
     ) {
         when (val u = ui) {
             AddRecipeUi.Loading -> Unit
-            is AddRecipeUi.Paste -> PasteStage(u, viewModel, onBack, onChangeKitchen)
+            is AddRecipeUi.Start -> StartStage(u, viewModel, onBack)
+            AddRecipeUi.Chatbot -> ChatbotStage(onStepBack)
+            is AddRecipeUi.Paste -> PasteStage(u, viewModel, onStepBack, onChangeKitchen)
             is AddRecipeUi.Working -> WorkingStage(u, viewModel, onBack)
             AddRecipeUi.Error -> ErrorStage(viewModel, onBack)
             is AddRecipeUi.Review -> ReviewStage(u, viewModel, onBack, onEditDetails, onSaved)
@@ -192,6 +201,79 @@ private fun icon(res: Int, size: Int = 20, tint: androidx.compose.ui.graphics.Co
 }
 
 // ---------------------------------------------------------------------------
+// Start stage and chatbot path
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun ColumnScope.StartStage(ui: AddRecipeUi.Start, viewModel: AddRecipeViewModel, onBack: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    TopRow(stringResource(R.string.add_caption_new), onBack)
+    Column(
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        modifier = Modifier
+            .weight(1f)
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 16.dp),
+    ) {
+        Text(
+            text = stringResource(R.string.add_choose_title),
+            style = SimmerTextStyle_ScreenTitle,
+            color = colors.textPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
+        StartCard(
+            iconRes = R.drawable.ic_cpu,
+            title = stringResource(R.string.add_choose_phone),
+            body = stringResource(R.string.add_choose_phone_body),
+            detail = readerStateText(ui.reader),
+            onClick = { viewModel.choose(AddStep.Phone) },
+        )
+        StartCard(
+            iconRes = R.drawable.ic_sparkles,
+            title = stringResource(R.string.add_choose_chatbot),
+            body = stringResource(R.string.add_choose_chatbot_body),
+            detail = null,
+            onClick = { viewModel.choose(AddStep.Chatbot) },
+        )
+    }
+}
+
+@Composable
+private fun StartCard(iconRes: Int, title: String, body: String, detail: String?, onClick: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    RowCard(modifier = Modifier.clickable(role = Role.Button, onClick = onClick)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.Top,
+            modifier = Modifier.padding(16.dp),
+        ) {
+            icon(iconRes, 24, colors.textPrimary)
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.weight(1f)) {
+                Text(text = title, style = SimmerTextStyle_Heading5, color = colors.textPrimary)
+                Text(text = body, style = SimmerTextStyle_BodySm, color = colors.textSecondary)
+                if (detail != null) Text(text = detail, style = SimmerTextStyle_Caption, color = colors.textTertiary)
+            }
+            icon(R.drawable.ic_chevron_right, 20, colors.textTertiary)
+        }
+    }
+}
+
+/** The chatbot path: empty for now, with a back button. */
+@Composable
+private fun ColumnScope.ChatbotStage(onBack: () -> Unit) {
+    val colors = LocalSimmerColors.current
+    TopRow(stringResource(R.string.add_choose_chatbot), onBack)
+    Column(modifier = Modifier.weight(1f).padding(horizontal = 16.dp, vertical = 16.dp)) {
+        Text(
+            text = stringResource(R.string.add_chatbot_title),
+            style = SimmerTextStyle_ScreenTitle,
+            color = colors.textPrimary,
+            modifier = Modifier.semantics { heading() },
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Paste stage
 // ---------------------------------------------------------------------------
 
@@ -211,7 +293,7 @@ private fun ColumnScope.PasteStage(
     val textLabel = stringResource(R.string.add_recipe_text)
     val askNotificationPermission = rememberNotificationPermissionRequest()
 
-    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier
@@ -376,7 +458,7 @@ private fun kitchenText(line: KitchenLine): String = when (line) {
 @Composable
 private fun ColumnScope.WorkingStage(ui: AddRecipeUi.Working, viewModel: AddRecipeViewModel, onBack: () -> Unit) {
     val colors = LocalSimmerColors.current
-    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier
@@ -453,7 +535,7 @@ private fun StageRow(stage: PipelineStage, mark: StageMark) {
 @Composable
 private fun ColumnScope.ErrorStage(viewModel: AddRecipeViewModel, onBack: () -> Unit) {
     val colors = LocalSimmerColors.current
-    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier

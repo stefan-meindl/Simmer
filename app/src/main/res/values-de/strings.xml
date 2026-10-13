@@ -304,7 +304,13 @@
     <string name="edit_collapse">Details ausblenden</string>
 
     <!-- Add recipe -->
-    <string name="add_caption_paste">Neues Rezept</string>
+    <string name="add_choose_title">Wie möchtest du dieses Rezept hinzufügen?</string>
+    <string name="add_choose_phone">Auf diesem Handy</string>
+    <string name="add_choose_phone_body">Füge das Rezept ein, dein Handy liest es. Nichts verlässt dein Handy.</string>
+    <string name="add_choose_chatbot">Mit einem Chatbot</string>
+    <string name="add_choose_chatbot_body">Nimm einen beliebigen leistungsfähigen Chatbot und füge seine Antwort hier wieder ein.</string>
+    <string name="add_chatbot_title">Mit einem Chatbot hinzufügen.</string>
+    <string name="add_caption_new">Neues Rezept</string>
     <string name="add_caption_review">Neues Rezept · noch nicht gespeichert</string>
     <string name="add_title">Rezept hinzufügen.</string>
     <string name="add_intro">Füge es aus einer Website, einer Nachricht oder deinen Notizen ein. Wir machen daraus Schritte, Timer und eine Einkaufsliste.</string>

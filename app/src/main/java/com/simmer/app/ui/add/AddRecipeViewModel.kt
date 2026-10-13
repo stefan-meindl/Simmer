@@ -11,6 +11,9 @@ import com.simmer.app.data.RecipeDraftStore
 import com.simmer.app.data.draftFromJson
 import com.simmer.app.data.toDraftJson
 import com.simmer.app.domain.AddRecipeReview
+import com.simmer.app.domain.AddStep
+import com.simmer.app.domain.addStepFromKey
+import com.simmer.app.domain.back
 import com.simmer.app.domain.EXAMPLE_TEXT
 import com.simmer.app.domain.KitchenLine
 import com.simmer.app.domain.ImportRequest
@@ -37,6 +40,7 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val KEY_TEXT = "text"
+private const val KEY_STEP = "step"
 private const val KEY_TAB = "tab"
 private const val KEY_DRAFT = "draft"
 
@@ -48,6 +52,12 @@ enum class ReviewTab { Ingredients, Steps }
 
 sealed interface AddRecipeUi {
     data object Loading : AddRecipeUi
+
+    /** The start stage: how to add the recipe. [reader] is the Reader model's state, shown on "On this phone". */
+    data class Start(val reader: ReaderStatus) : AddRecipeUi
+
+    /** The chatbot path (empty for now). */
+    data object Chatbot : AddRecipeUi
 
     /** The paste stage. */
     data class Paste(
@@ -93,13 +103,24 @@ class AddRecipeViewModel @Inject constructor(
         kitchenLine(appliances, KitchenMode.fromKey(mode))
     }
 
-    private val readerReady = reader.status.map { it == ReaderStatus.Ready }
+    private val readerStatus = reader.status
+    private val readerReady = readerStatus.map { it == ReaderStatus.Ready }
+
+    private val step = savedState.getStateFlow(KEY_STEP, AddStep.Start.key)
 
     private val paste = combine(text, kitchen, readerReady) { text, line, ready ->
         AddRecipeUi.Paste(text, readerAction(text, ready), canConvert(text), line)
     }
 
-    val ui: StateFlow<AddRecipeUi> = combine(paste, drafts.current, tab, display, job.state) { paste, draft, tab, display, state ->
+    private val start = combine(step, paste, readerStatus) { step, paste, status ->
+        when (addStepFromKey(step)) {
+            AddStep.Start -> AddRecipeUi.Start(status)
+            AddStep.Chatbot -> AddRecipeUi.Chatbot
+            AddStep.Phone -> paste
+        }
+    }
+
+    val ui: StateFlow<AddRecipeUi> = combine(start, drafts.current, tab, display, job.state) { paste, draft, tab, display, state ->
         when {
             draft != null ->
                 AddRecipeUi.Review(addRecipeReview(draft, display.units, display.spices, display.lang), ReviewTab.valueOf(tab))
@@ -123,6 +144,16 @@ class AddRecipeViewModel @Inject constructor(
         viewModelScope.launch {
             drafts.current.collect { savedState[KEY_DRAFT] = it?.toDraftJson() }
         }
+    }
+
+    fun choose(step: AddStep) {
+        savedState[KEY_STEP] = step.key
+    }
+
+    /** Back on the start, chatbot and paste stages: returns to the start stage, or [onLeave] from the start stage. */
+    fun back(onLeave: () -> Unit) {
+        val previous = addStepFromKey(savedState.get<String>(KEY_STEP)).back()
+        if (previous == null) onLeave() else choose(previous)
     }
 
     fun setText(text: String) {
