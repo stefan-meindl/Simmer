@@ -15,6 +15,9 @@ object ShoppingListTab
 @Serializable
 object SettingsTab
 
+/** The bottom tabs, in tab-bar order: the one source for tab checks. */
+val TABS: List<Any> = listOf(RecipesTab, ShoppingListTab, SettingsTab)
+
 // ---------------------------------------------------------------------------
 // Destinations that hide the bottom tab bar
 // ---------------------------------------------------------------------------

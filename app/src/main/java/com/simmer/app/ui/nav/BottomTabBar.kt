@@ -10,7 +10,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
@@ -22,7 +21,6 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.stringResource
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.currentBackStackEntryAsState
 import com.simmer.app.R
 import com.simmer.app.ui.theme.LocalSimmerColors
 import com.simmer.app.ui.theme.SimmerTextStyle_Micro
@@ -49,16 +47,16 @@ private val TAB_ITEMS = listOf(
  *
  * - Active tab: [SimmerColors.accent] (orange) icon + label color
  * - Inactive tabs: [SimmerColors.textTertiary] icon + label color
+ * - [currentRoute] is the route of the screen the bar belongs to, so a fading-out screen keeps its own selection
  * - Shopping list tab shows a [BadgedBox]; badge shows [badgeCount] and is hidden when it is 0
  */
 @Composable
 fun BottomTabBar(
     navController: NavHostController,
     badgeCount: Int,
+    currentRoute: String?,
 ) {
     val colors = LocalSimmerColors.current
-    val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route
 
     NavigationBar(
         containerColor = colors.surfacePage,

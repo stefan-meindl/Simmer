@@ -90,6 +90,7 @@ import com.simmer.app.domain.model.Recipe
 import com.simmer.app.domain.model.ResolvedIngredient
 import com.simmer.app.domain.model.ResolvedStep
 import com.simmer.app.ui.components.EditAction
+import com.simmer.app.ui.components.EditIconAction
 import com.simmer.app.ui.components.GradientHeroCard
 import com.simmer.app.ui.components.LinkButton
 import com.simmer.app.ui.components.PrimaryButton
@@ -509,7 +510,6 @@ private fun rememberPasteAction(onPasted: (String) -> Unit, onEmpty: () -> Unit)
 // Paste stage
 // ---------------------------------------------------------------------------
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ColumnScope.PasteStage(
     ui: AddRecipeUi.Paste,
@@ -586,12 +586,24 @@ private fun ColumnScope.PasteStage(
         }
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                text = stringResource(R.string.add_next_title).uppercase(),
-                style = SimmerTextStyle_MicroUppercase,
-                color = colors.textTertiary,
-                modifier = Modifier.semantics { heading() },
-            )
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = stringResource(R.string.add_next_title).uppercase(),
+                    style = SimmerTextStyle_MicroUppercase,
+                    color = colors.textTertiary,
+                    modifier = Modifier
+                        .weight(1f)
+                        .semantics { heading() },
+                )
+                EditIconAction(
+                    contentDescription = stringResource(R.string.add_change_kitchen),
+                    onClick = onChangeKitchen,
+                )
+            }
             listOf(
                 R.drawable.ic_list_checks to R.string.add_next_1,
                 R.drawable.ic_utensils to R.string.add_next_2,
@@ -600,19 +612,12 @@ private fun ColumnScope.PasteStage(
                 NextRow(iconRes) { Text(stringResource(text), style = SimmerTextStyle_BodySm, color = colors.textSecondary) }
             }
             NextRow(R.drawable.ic_chef_hat) {
-                FlowRow(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalArrangement = Arrangement.Center,
+                Text(
+                    text = kitchenText(ui.kitchen),
+                    style = SimmerTextStyle_BodySm,
+                    color = colors.textSecondary,
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        text = kitchenText(ui.kitchen),
-                        style = SimmerTextStyle_BodySm,
-                        color = colors.textSecondary,
-                        modifier = Modifier.align(Alignment.CenterVertically),
-                    )
-                    LinkButton(text = stringResource(R.string.add_change), onClick = onChangeKitchen)
-                }
+                )
             }
         }
     }
