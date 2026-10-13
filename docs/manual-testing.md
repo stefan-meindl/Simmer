@@ -184,6 +184,17 @@ Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to li
 - TalkBack: rows read as checkboxes with state, basket row says "Show items in your basket", badge reads "n items to buy".
 - `connectedDebugAndroidTest` includes `ShoppingPersistenceTest` (Room reopen, re-add replaces).
 
+### Open in Gemini (#62)
+
+Add recipe, With a chatbot (step 1 has Copy prompt and, when Gemini is installed, Open in Gemini). Needs a phone with the Gemini app (`com.google.android.apps.bard`) for the main flow; an emulator without it covers the hidden case.
+- Gemini not installed (`adb shell pm list packages | grep bard` prints nothing): no Open in Gemini button, Copy prompt unchanged.
+- Gemini installed: button "Open in Gemini" (de: "In Gemini öffnen") under Copy prompt. Tap: Gemini opens with the whole Reader prompt prefilled (with the optional recipe text typed in step 1) and waits for you to tap send. Back in Simmer, Paste in step 2 does not offer the prompt; the clipboard holds the prompt.
+- Reply on the clipboard: in Gemini send the prompt with a recipe photo, tap Copy on the code block, switch back to Simmer: the "Chatbot reply" field is filled and a toast "Reply pasted from the clipboard" (de: "Antwort aus der Zwischenablage eingefügt") shows. "Add recipe" is not tapped for you. Also try a full reply copied with chatter and code fences.
+- Invalid clipboard: copy any ordinary text (or half a reply), return to Simmer: field and toast unchanged. Returning right after Open in Gemini or Copy prompt (prompt on the clipboard) fills nothing.
+- Fill, edit the reply, leave and return (Home, app switcher): your edit is not overwritten by the same clipboard text. Copy a different valid reply: it fills.
+- Existing flows: Copy prompt, Paste, Clear, Add recipe with a bad reply, Copy fix prompt behave as before.
+- Rotate and `adb shell am kill com.simmer.app`: reply field kept; German strings for button and toast.
+
 ### StepTimer (#8)
 
 Open `chilli`, Preparation, Start cooking (no throwaway branch needed). Prep 2 "Mix the spices" is 2 min, Prep 3 "Drain the beans" is 1 min. On Android 13+ the first tap asks for notification permission: allow it (and test deny once after `pm clear`: timers still run, finishing only vibrates).

@@ -43,7 +43,7 @@ The screen that turns pasted text into a User Recipe. It opens on the start stag
 _Avoid_: Import screen, new recipe screen
 
 **Chatbot path**:
-The way of adding a recipe where an outside chatbot does the reading instead of the Reader model: the user copies the Reader prompt (optionally with the recipe text), runs it in a chatbot of their choice with a photo, link or text, and pastes the reply back. The Reply parser turns it into the Add recipe draft; there is no Pipeline, Working stage or Import job, and no Reader model download. Chosen with the "With a chatbot" card; the other way is "On this phone".
+The way of adding a recipe where an outside chatbot does the reading instead of the Reader model: the user copies the Reader prompt (optionally with the recipe text), runs it in a chatbot of their choice with a photo, link or text, and pastes the reply back. Where the Gemini app is installed, "Open in Gemini" hands the same Reader prompt to it (shared text, and also put on the clipboard); Gemini has no way to return a result, so the user still copies its reply and comes back. On return to Simmer, a clipboard text that the Reply parser reads as a recipe prefills the "Chatbot reply" field with a toast (`autofillReply`); it never taps "Add recipe", and anything else on the clipboard is ignored. The Reply parser turns the reply into the Add recipe draft; there is no Pipeline, Working stage or Import job, and no Reader model download. Chosen with the "With a chatbot" card; the other way is "On this phone".
 _Avoid_: Chatbot import, cloud path, manual import
 
 **Pasted reply**:

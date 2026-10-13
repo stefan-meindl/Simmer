@@ -342,6 +342,8 @@
     <string name="add_prompt_text_note">You can also attach a photo or a link in the chatbot instead.</string>
     <string name="add_copy_prompt">Copy prompt</string>
     <string name="add_prompt_copied">Prompt copied</string>
+    <string name="add_open_gemini">Open in Gemini</string>
+    <string name="add_reply_autofilled">Reply pasted from the clipboard</string>
     <string name="add_reply_error">That doesn\'t look like a recipe from the prompt.</string>
     <string name="add_copy_fix_prompt">Copy fix prompt</string>
     <string name="add_fix_prompt_copied">Fix prompt copied</string>
