@@ -408,16 +408,16 @@ internal val APPLIANCE_LABELS: Map<String, Int> = mapOf(
 )
 
 @Composable
-private fun readerModelSize(): String =
+fun readerModelSize(): String =
     formatGigabytes(ReaderModel.SIZE_BYTES, LocalConfiguration.current.locales[0])
 
 @Composable
-private fun readerFreeSpaceNeeded(): String =
+fun readerFreeSpaceNeeded(): String =
     formatGigabytes(READER_REQUIRED_FREE_BYTES, LocalConfiguration.current.locales[0])
 
 /** The state line under "On this phone": one string per [ReaderStatus]. */
 @Composable
-private fun readerStateText(status: ReaderStatus): String = when (status) {
+fun readerStateText(status: ReaderStatus): String = when (status) {
     ReaderStatus.NotDownloaded -> stringResource(R.string.settings_reader_state, readerModelSize())
     is ReaderStatus.Downloading -> stringResource(
         if (status.waiting) R.string.settings_reader_state_waiting else R.string.settings_reader_state_downloading,
