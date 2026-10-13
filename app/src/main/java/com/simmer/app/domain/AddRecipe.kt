@@ -48,10 +48,14 @@ fun canConvert(text: String): Boolean = text.trim().length >= MIN_RECIPE_TEXT
 private fun isExampleText(text: String): Boolean = text.trim() == EXAMPLE_TEXT.trim()
 
 /**
- * Until the on-device recipe reader exists, only the built-in example can be converted.
- * Every other text asks for the reader download.
+ * The built-in example always converts (it needs no model). Other text converts through the
+ * Pipeline once the Reader model is [readerReady]; before that it asks for the reader download.
  */
-fun readerAction(text: String): ReaderAction = if (isExampleText(text)) ReaderAction.Convert else ReaderAction.Download
+fun readerAction(text: String, readerReady: Boolean): ReaderAction =
+    if (isExampleText(text) || readerReady) ReaderAction.Convert else ReaderAction.Download
+
+/** True for the built-in example text, which converts to its fixed result instead of running the Pipeline. */
+fun usesExampleShortcut(text: String): Boolean = isExampleText(text)
 
 /**
  * The stand-in for the recipe reader: the example's fixed result as a new User Recipe with [id],

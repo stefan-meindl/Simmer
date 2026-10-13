@@ -48,6 +48,12 @@
                 android:value="Countdown timers for recipe steps that must keep running while the app is in the background" />
         </service>
 
+        <!-- Keeps the recipe Pipeline running while the user leaves Add recipe, and shows its stage. -->
+        <service
+            android:name=".pipeline.ImportService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
         <!-- WorkManager runs the Recipe reader model download as a data-sync foreground service. -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"

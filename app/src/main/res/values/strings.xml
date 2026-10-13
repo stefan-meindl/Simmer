@@ -333,4 +333,21 @@
     <string name="add_and">%1$s and %2$s</string>
     <string name="add_edit_text">Edit text</string>
     <string name="add_save">Save recipe</string>
+    <!-- Pipeline: Working and error stages, notifications -->
+    <string name="import_working_title">Reading your recipe.</string>
+    <string name="import_working_hint">This takes 1 to 3 minutes on this phone. You can leave this screen.</string>
+    <string name="import_stage_ingredients">Reading ingredients</string>
+    <string name="import_stage_phases">Splitting preparation from cooking</string>
+    <string name="import_stage_linking">Linking ingredients to steps</string>
+    <string name="import_stage_timers">Setting timers</string>
+    <string name="import_stage_done">%1$s, done</string>
+    <string name="import_stage_current">%1$s, in progress</string>
+    <string name="import_stage_pending">%1$s, waiting</string>
+    <string name="import_cancel">Cancel</string>
+    <string name="import_error_title">We couldn\'t read that recipe.</string>
+    <string name="import_error_body">We couldn\'t read that recipe on this phone. Try a shorter or cleaner version.</string>
+    <string name="import_error_back">Back to the text</string>
+    <string name="import_ready_title">Recipe ready to review</string>
+    <string name="import_channel_progress">Recipe reading</string>
+    <string name="import_channel_done">Recipe ready</string>
 </resources>
