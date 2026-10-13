@@ -36,6 +36,18 @@ abstract class ShoppingDao {
     }
 
     @Query("SELECT * FROM shopping_items ORDER BY rowid")
+    abstract suspend fun getAllItems(): List<ShoppingItemEntity>
+
+    @Query("SELECT * FROM planned_recipes")
+    abstract suspend fun getAllPlanned(): List<PlannedRecipeEntity>
+
+    @Query("DELETE FROM shopping_items WHERE id IN (:ids)")
+    abstract suspend fun deleteItems(ids: List<String>)
+
+    @Query("DELETE FROM planned_recipes WHERE recipeId IN (:recipeIds)")
+    abstract suspend fun deletePlannedFor(recipeIds: List<String>)
+
+    @Query("SELECT * FROM shopping_items ORDER BY rowid")
     abstract fun observeItems(): Flow<List<ShoppingItemEntity>>
 
     @Query("UPDATE shopping_items SET checked = :checked WHERE id = :id")
@@ -58,5 +70,19 @@ abstract class ShoppingDao {
         deleteForRecipe(recipeId)
         insertItems(items.map { it.copy(checked = it.id in checked) })
         upsertPlanned(planned)
+    }
+
+    /** Deletes [items] and [planned], atomically; the caller picked what goes. */
+    @Transaction
+    open suspend fun remove(items: List<ShoppingItemEntity>, planned: List<PlannedRecipeEntity>) {
+        deleteItems(items.map { it.id })
+        deletePlannedFor(planned.map { it.recipeId })
+    }
+
+    /** Puts [items] and [planned] back exactly as given (including `checked`), atomically. */
+    @Transaction
+    open suspend fun putBack(items: List<ShoppingItemEntity>, planned: List<PlannedRecipeEntity>) {
+        insertItems(items)
+        planned.forEach { upsertPlanned(it) }
     }
 }

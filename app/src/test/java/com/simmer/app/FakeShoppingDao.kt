@@ -35,6 +35,18 @@ class FakeShoppingDao : ShoppingDao() {
         planned.remove(recipeId)
     }
 
+    override suspend fun getAllItems(): List<ShoppingItemEntity> = items.toList()
+
+    override suspend fun getAllPlanned(): List<PlannedRecipeEntity> = planned.values.toList()
+
+    override suspend fun deleteItems(ids: List<String>) {
+        items.removeAll { it.id in ids }
+    }
+
+    override suspend fun deletePlannedFor(recipeIds: List<String>) {
+        recipeIds.forEach { planned.remove(it) }
+    }
+
     override fun observeItems(): Flow<List<ShoppingItemEntity>> = flow { emit(items.toList()) }
 
     override suspend fun setChecked(id: String, checked: Boolean) {
