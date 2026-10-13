@@ -58,6 +58,9 @@ class GemmaReader(
     private var idleTimer: Job? = null
     private var epoch = 0L
 
+    /** THROWAWAY: which backend the last load used. */
+    @Volatile var lastBackend: String = "not loaded yet"
+
     override suspend fun status(): ReaderStatus = source.status.first()
 
     override fun download(): Flow<DownloadProgress> = flow {
@@ -144,8 +147,8 @@ class GemmaReader(
         check(source.status.first() == ReaderStatus.Ready) { "The Reader model is not downloaded" }
         val path = source.modelPath()
         return withContext(engineDispatcher) {
-            attempt { factory.create(path, InferenceBackend.Gpu) }
-                .getOrElse { factory.create(path, InferenceBackend.Cpu) }
+            attempt { factory.create(path, InferenceBackend.Gpu).also { lastBackend = "GPU" } }
+                .getOrElse { err -> factory.create(path, InferenceBackend.Cpu).also { lastBackend = "CPU (GPU failed: ${err.message})" } }
         }
     }
 

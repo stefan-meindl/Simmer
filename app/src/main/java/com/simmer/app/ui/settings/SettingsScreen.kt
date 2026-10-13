@@ -144,6 +144,7 @@ fun SettingsScreen(
                 onRemove = viewModel::removeReader,
             )
             state.preview?.let { PreviewPanel(it) }
+            DebugReaderSection()
         }
     }
 }
