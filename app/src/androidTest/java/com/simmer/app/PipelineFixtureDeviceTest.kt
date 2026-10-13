@@ -7,6 +7,8 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import com.simmer.app.data.PrefsRepository
 import com.simmer.app.data.ReaderController
+import com.simmer.app.domain.ImportRequest
+import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.PipelineResult
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.RecipePipeline
@@ -36,6 +38,10 @@ class PipelineFixtureDeviceTest {
 
     private val context = ApplicationProvider.getApplicationContext<Context>()
 
+    private companion object {
+        val APPLIANCE_THEMES = listOf("appliance", "air-fryer", "sous-vide", "slow-cooker", "heissluft", "mixer")
+    }
+
     private class Row(val name: String, val outcome: String, val repairs: Int, val seconds: Long)
 
     @Test
@@ -57,7 +63,15 @@ class PipelineFixtureDeviceTest {
             val text = assets.open("fixtures/$name").bufferedReader().use { it.readText() }
             val lang = if (name.startsWith("de-")) "de" else "en"
             val start = System.nanoTime()
-            val result = RecipePipeline(reader).run(text, kitchenRule = "", lang = lang, id = "fx") {}
+            // Appliance-themed fixtures run with a small kitchen so the kitchen rule is exercised too.
+            val limited = APPLIANCE_THEMES.any { it in name }
+            val request = ImportRequest(
+                text = text,
+                lang = lang,
+                appliances = if (limited) setOf("hob", "oven") else emptySet(),
+                kitchenMode = if (limited) KitchenMode.Medium else KitchenMode.Free,
+            )
+            val result = RecipePipeline(reader).run(request, id = "fx", truncatedNote = "truncated") {}
             val seconds = (System.nanoTime() - start) / 1_000_000_000
             when (result) {
                 is PipelineResult.Done -> Row(name, "ok", result.repairs, seconds)

@@ -1,10 +1,13 @@
 package com.simmer.app.di
 
 import android.content.Context
+import android.content.res.Configuration
+import com.simmer.app.R
 import com.simmer.app.data.ImportJob
 import com.simmer.app.data.ImportRunner
 import com.simmer.app.data.RecipeDraftStore
 import com.simmer.app.domain.RecipePipeline
+import com.simmer.app.domain.newRecipeId
 import com.simmer.app.pipeline.AndroidImportHost
 import com.simmer.app.pipeline.SharedPrefsImportPersistence
 import com.simmer.app.reader.ReaderSelector
@@ -16,6 +19,7 @@ import dagger.hilt.components.SingletonComponent
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import java.util.Locale
 import javax.inject.Singleton
 
 @Module
@@ -30,13 +34,19 @@ object PipelineModule {
         selector: ReaderSelector,
         drafts: RecipeDraftStore,
     ): ImportJob = ImportJob(
-        runner = ImportRunner { text, rule, lang, id, onStage ->
-            RecipePipeline(selector.current()).run(text, rule, lang, id, onStage)
+        runner = ImportRunner { request, id, onStage ->
+            RecipePipeline(selector.current()).run(request, id, truncatedNote(context, request.lang), onStage)
         },
         drafts = drafts,
         persistence = SharedPrefsImportPersistence(context),
         host = AndroidImportHost(context),
         scope = CoroutineScope(SupervisorJob() + Dispatchers.Default),
-        newId = { "u" + System.currentTimeMillis().toString(36) },
+        newId = { newRecipeId() },
     )
+
+    /** The "This recipe is long" note in the app language, which may differ from the device's. */
+    private fun truncatedNote(context: Context, lang: String): String {
+        val config = Configuration(context.resources.configuration).apply { setLocale(Locale(lang)) }
+        return context.createConfigurationContext(config).getString(R.string.import_truncated_note)
+    }
 }

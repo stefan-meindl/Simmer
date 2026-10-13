@@ -55,7 +55,11 @@ private class LiteRtEngine(private val engine: Engine) : LlmEngine {
         emitAll(
             conversation.sendMessageAsync(user)
                 .map { it.toString() }
-                .onCompletion { conversation.close() },
+                .onCompletion { cause ->
+                    // Cancelled while the model is still generating: stop the native inference before freeing it.
+                    if (cause != null && conversation.isAlive) conversation.cancelProcess()
+                    conversation.close()
+                },
         )
     }.flowOn(Dispatchers.Default)
 

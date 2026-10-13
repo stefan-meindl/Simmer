@@ -1,9 +1,19 @@
 package com.simmer.app.domain
 
 import com.simmer.app.domain.model.Recipe
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlin.math.roundToInt
 
 /** The Pipeline's four passes, in order. They are the stages the Working screen lists. */
-enum class PipelineStage { Ingredients, Phases, Linking, Timers }
+enum class PipelineStage { Ingredients, Splitting, Linking, Timers }
+
+/** What one conversion works from: the pasted [text], the app [lang] and the cook's kitchen. */
+data class ImportRequest(
+    val text: String,
+    val lang: String,
+    val appliances: Set<String>,
+    val kitchenMode: KitchenMode,
+)
 
 sealed interface PipelineResult {
     /** [repairs] counts the repair retries used; the fixture target is 0 for 90% of recipes. */
@@ -13,113 +23,130 @@ sealed interface PipelineResult {
     data class Failed(val stage: PipelineStage) : PipelineResult
 }
 
-/** Added to the review notes when the pasted text was cut. */
-const val TRUNCATED_NOTE = "This recipe is long. Only the first part was read."
+/** One pass produced nothing within its time limit (the model stalled). */
+class PassTimeoutException(val stage: PipelineStage) : Exception("Pass $stage timed out")
 
 /** Each pass asks for this many tokens at most (between 1,200 and 2,000). */
 private const val TOKENS_LARGE = 2_000
 private const val TOKENS_SMALL = 1_200
 
-private typealias Json = Map<String, Any?>
+/** A repair prompt carries at most this much of the broken reply and of the recipe text, so it fits the model's context. */
+const val REPAIR_BROKEN_CHARS = 2_000
+const val REPAIR_TEXT_CHARS = 3_000
+
+/** A pass may take this long, thermal wait included. */
+const val PASS_TIMEOUT_MS = 10 * 60_000L
+
+private typealias JsonMap = Map<String, Any?>
 
 /**
  * The four-pass on-device conversion of pasted text into a Recipe. Each pass is one short
  * [RecipeReader.generate] call; an invalid reply gets one repair retry, a second one fails the run.
  * Cancel by cancelling the calling coroutine.
  */
-class RecipePipeline(private val reader: RecipeReader) {
+class RecipePipeline(
+    private val reader: RecipeReader,
+    private val passTimeoutMs: Long = PASS_TIMEOUT_MS,
+) {
 
     /**
-     * Converts [text] into a User Recipe with id [id]. [kitchenRule] is the `kitchenRule(...)` clause,
-     * [lang] the app language. [onStage] is called as each pass starts.
+     * Converts [request] into a User Recipe with id [id]. [truncatedNote] is the localised "This recipe
+     * is long" note, added when the text had to be cut. [onStage] is called as each pass starts.
+     * Throws [PassTimeoutException] when the model stalls.
      */
     suspend fun run(
-        text: String,
-        kitchenRule: String,
-        lang: String,
+        request: ImportRequest,
         id: String,
+        truncatedNote: String,
         onStage: (PipelineStage) -> Unit,
     ): PipelineResult {
-        val trimmed = trimRecipeText(text)
-        val german = if (lang == "de") GERMAN_RULE else ""
+        val trimmed = trimRecipeText(request.text)
+        val kitchenRule = kitchenRuleFor(request.appliances, request.kitchenMode)
+        val owned = if (request.kitchenMode == KitchenMode.Free) null else request.appliances
+        val german = if (request.lang == "de") GERMAN_RULE else ""
         var repairs = 0
-        suspend fun pass(stage: PipelineStage, system: String, user: String, shape: String, tokens: Int, valid: (Json) -> Boolean): Json? {
+
+        suspend fun pass(stage: PipelineStage, system: String, user: String, shape: String, tokens: Int, valid: (JsonMap) -> Boolean): JsonMap? {
             onStage(stage)
-            val first = ask(system + german, user, tokens)
+            val first = ask(stage, system + german, user, tokens)
             parseModelJson(first)?.takeIf(valid)?.let { return it }
             repairs++
-            val second = ask(REPAIR_SYSTEM.format(shape) + german, "Broken output:\n$first\n\nRecipe text:\n${trimmed.text}", tokens)
+            val repairUser = "Broken output:\n${first.take(REPAIR_BROKEN_CHARS)}\n\nRecipe text:\n${trimmed.text.take(REPAIR_TEXT_CHARS)}"
+            val second = ask(stage, REPAIR_SYSTEM.format(shape) + german, repairUser, tokens)
             return parseModelJson(second)?.takeIf(valid)
         }
 
         // Pass 1: ingredients and metadata.
-        val p1 = pass(PipelineStage.Ingredients, PASS1_SYSTEM, "Recipe text:\n${trimmed.text}", PASS1_SHAPE, TOKENS_LARGE) {
-            it["ok"] == false || firstMaps(it["ingredients"]).isNotEmpty()
+        val ingredientsReply = pass(PipelineStage.Ingredients, PASS1_SYSTEM, "Recipe text:\n${trimmed.text}", PASS1_SHAPE, TOKENS_LARGE) {
+            it["ok"] == false || objectsIn(it["ingredients"]).isNotEmpty()
         } ?: return PipelineResult.Failed(PipelineStage.Ingredients)
-        if (p1["ok"] == false) return PipelineResult.Failed(PipelineStage.Ingredients)
-        val ingredients = firstMaps(p1["ingredients"]).mapIndexed { k, i -> i + ("id" to "i${k + 1}") }
+        if (ingredientsReply["ok"] == false) return PipelineResult.Failed(PipelineStage.Ingredients)
+        val ingredients = objectsIn(ingredientsReply["ingredients"]).mapIndexed { k, ingredient -> ingredient + ("id" to "i${k + 1}") }
         val ingredientObjects = normalize(mapOf("ingredients" to ingredients)).ingredients
         val ingredientsJson = ingredients.joinToString(",", "[", "]") { toJson(it) }
 
         // Pass 2: methods and steps.
-        val p2 = pass(
-            PipelineStage.Phases,
+        val splitReply = pass(
+            PipelineStage.Splitting,
             PASS2_SYSTEM + kitchenRule,
             "Recipe text:\n${trimmed.text}\n\nIngredients already read:\n$ingredientsJson",
             PASS2_SHAPE,
             TOKENS_LARGE,
-        ) { stepMaps(it).isNotEmpty() } ?: return PipelineResult.Failed(PipelineStage.Phases)
+        ) { reply ->
+            val steps = stepsIn(reply)
+            steps.isNotEmpty() && steps.all { it["ph"] == "prep" || it["ph"] == "cook" }
+        } ?: return PipelineResult.Failed(PipelineStage.Splitting)
         var prepCount = 0
         var cookCount = 0
-        val steps = stepMaps(p2).map { s ->
-            val prep = s["ph"] == "prep"
-            val stepId = if (prep) "p${++prepCount}" else "c${++cookCount}"
-            s + mapOf("id" to stepId, "ph" to if (prep) "prep" else "cook")
+        val numbered = stepsIn(splitReply).map { step ->
+            val stepId = if (step["ph"] == "prep") "p${++prepCount}" else "c${++cookCount}"
+            step + ("id" to stepId)
         }
+        val (methods, steps) = filterMethodsByKitchen(objectsIn(splitReply["methods"]), numbered, owned)
 
         // Pass 3: links are deterministic; the model only fills `needs` for cook steps.
-        val linked = steps.map { s ->
-            s + ("b" to link(s["b"].toString().replace(LINK_MARKUP, "$2"), ingredientObjects))
+        val linked = steps.map { step ->
+            step + ("b" to link(step["b"].toString().replace(LINK_MARKUP, "$2"), ingredientObjects))
         }
+        val prepIds = linked.filter { it["ph"] == "prep" }.map { it["id"] }.toSet()
         var needs: Map<String, List<String>> = emptyMap()
-        if (prepCount > 0 && cookCount > 0) {
-            val p3 = pass(
+        if (prepIds.isNotEmpty() && linked.any { it["ph"] == "cook" }) {
+            val needsReply = pass(
                 PipelineStage.Linking,
                 PASS3_SYSTEM,
                 "Steps:\n${stepsForPrompt(linked)}",
                 PASS3_SHAPE,
                 TOKENS_SMALL,
             ) { it["needs"] is Map<*, *> } ?: return PipelineResult.Failed(PipelineStage.Linking)
-            val prepIds = linked.filter { it["ph"] == "prep" }.map { it["id"] }.toSet()
-            needs = (p3["needs"] as Map<*, *>).entries.associate { (k, v) ->
-                k.toString() to (v as? List<*>).orEmpty().map { it.toString() }.filter { it in prepIds }
+            needs = (needsReply["needs"] as Map<*, *>).entries.associate { (stepId, ids) ->
+                stepId.toString() to (ids as? List<*>).orEmpty().map { it.toString() }.filter { it in prepIds }
             }
         } else {
             onStage(PipelineStage.Linking)
         }
-        val withNeeds = linked.map { s ->
-            if (s["ph"] == "cook") s + ("needs" to (needs[s["id"]] ?: emptyList())) else s
+        val withNeeds = linked.map { step ->
+            if (step["ph"] == "cook") step + ("needs" to (needs[step["id"]] ?: emptyList())) else step
         }
 
         // Pass 4: timers and notes.
-        val p4 = pass(
+        val timersReply = pass(
             PipelineStage.Timers,
             PASS4_SYSTEM,
             "Recipe text:\n${trimmed.text}\n\nSteps:\n${stepsForPrompt(withNeeds)}",
             PASS4_SHAPE,
             TOKENS_SMALL,
         ) { it["timers"] is Map<*, *> } ?: return PipelineResult.Failed(PipelineStage.Timers)
-        val timers = (p4["timers"] as Map<*, *>).entries.mapNotNull { (k, v) ->
-            (v as? Number)?.toInt()?.takeIf { it > 0 }?.let { k.toString() to it }
+        val timers = (timersReply["timers"] as Map<*, *>).entries.mapNotNull { (stepId, seconds) ->
+            (seconds as? Number)?.toDouble()?.roundToInt()?.takeIf { it > 0 }?.let { stepId.toString() to it }
         }.toMap()
-        val withTimers = withNeeds.map { s -> s + ("d" to (timers[s["id"]] ?: 0)) }
+        val withTimers = withNeeds.map { step -> step + ("d" to (timers[step["id"]] ?: 0)) }
 
-        val notes = listOfNotNull(TRUNCATED_NOTE.takeIf { trimmed.truncated }) +
-            strings(p2["notes"]) + strings(p4["notes"])
+        val notes = listOfNotNull(truncatedNote.takeIf { trimmed.truncated }) +
+            strings(splitReply["notes"]) + strings(timersReply["notes"])
         val recipe = normalize(
-            p1 + mapOf(
+            ingredientsReply + mapOf(
                 "ingredients" to ingredients,
-                "methods" to firstMaps(p2["methods"]),
+                "methods" to methods,
                 "steps" to withTimers,
                 "notes" to notes,
             ),
@@ -127,30 +154,34 @@ class RecipePipeline(private val reader: RecipeReader) {
         return PipelineResult.Done(recipe.copy(id = id, mine = true), repairs)
     }
 
-    private suspend fun ask(system: String, user: String, maxTokens: Int): String {
+    private suspend fun ask(stage: PipelineStage, system: String, user: String, maxTokens: Int): String {
         val out = StringBuilder()
-        reader.generate(system, user, maxTokens).collect { out.append(it) }
+        withTimeoutOrNull(passTimeoutMs) {
+            reader.generate(system, user, maxTokens).collect { out.append(it) }
+        } ?: throw PassTimeoutException(stage)
         return out.toString()
     }
 
-    private fun firstMaps(v: Any?): List<Map<String, Any?>> =
-        (v as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().filter { it["name"] != null || it["b"] != null || it["id"] != null }
+    /** The objects of a JSON array that look like ingredients, methods or steps. */
+    private fun objectsIn(value: Any?): List<JsonMap> =
+        (value as? List<*>).orEmpty().filterIsInstance<Map<*, *>>().filter { it["name"] != null || it["b"] != null || it["id"] != null }
             .map { m -> m.entries.associate { it.key.toString() to it.value } }
 
-    private fun stepMaps(j: Json): List<Map<String, Any?>> =
-        firstMaps(j["steps"]).filter { (it["b"] as? String)?.isNotBlank() == true }
+    /** Steps of a pass 2 reply that have a body. */
+    private fun stepsIn(reply: JsonMap): List<JsonMap> =
+        objectsIn(reply["steps"]).filter { (it["b"] as? String)?.isNotBlank() == true }
 
-    private fun strings(v: Any?): List<String> = (v as? List<*>).orEmpty().filterIsInstance<String>()
+    private fun strings(value: Any?): List<String> = (value as? List<*>).orEmpty().filterIsInstance<String>()
 
-    private fun stepsForPrompt(steps: List<Map<String, Any?>>): String =
+    private fun stepsForPrompt(steps: List<JsonMap>): String =
         steps.joinToString("\n") { "${it["id"]} (${it["ph"]}) ${it["t"]}: ${it["b"]}" }
 
-    private fun toJson(v: Any?): String = when (v) {
+    private fun toJson(value: Any?): String = when (value) {
         null -> "null"
-        is String -> "\"" + v.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""
-        is Map<*, *> -> v.entries.joinToString(",", "{", "}") { "${toJson(it.key.toString())}:${toJson(it.value)}" }
-        is List<*> -> v.joinToString(",", "[", "]") { toJson(it) }
-        else -> v.toString()
+        is String -> "\"" + value.replace("\\", "\\\\").replace("\"", "\\\"").replace("\n", "\\n") + "\""
+        is Map<*, *> -> value.entries.joinToString(",", "{", "}") { "${toJson(it.key.toString())}:${toJson(it.value)}" }
+        is List<*> -> value.joinToString(",", "[", "]") { toJson(it) }
+        else -> value.toString()
     }
 
     private companion object {

@@ -1,5 +1,6 @@
 package com.simmer.app.data
 
+import com.simmer.app.domain.ImportRequest
 import com.simmer.app.domain.ImportState
 import com.simmer.app.domain.PipelineResult
 import com.simmer.app.domain.PipelineStage
@@ -10,15 +11,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/** Runs the Pipeline once; [ImportJob] gives it the text and listens to its stages. */
+/** Runs the Pipeline once; [ImportJob] gives it the request and listens to its stages. */
 fun interface ImportRunner {
-    suspend fun run(text: String, kitchenRule: String, lang: String, id: String, onStage: (PipelineStage) -> Unit): PipelineResult
+    suspend fun run(request: ImportRequest, id: String, onStage: (PipelineStage) -> Unit): PipelineResult
 }
 
 /** What survives process death of a conversion. */
 sealed interface PersistedImport {
     /** Unfinished. [attempts] counts how often it was restarted after the process died. */
-    data class Running(val text: String, val kitchenRule: String, val lang: String, val attempts: Int) : PersistedImport
+    data class Running(val request: ImportRequest, val attempts: Int) : PersistedImport
 
     /** Finished, not yet reviewed: the recipe as draft JSON. */
     data class Ready(val recipeJson: String) : PersistedImport
@@ -38,6 +39,10 @@ fun interface ImportHost {
  * The one Pipeline run, owned by the app and not the screen: it keeps going when the Add recipe
  * screen is left, and is remembered so a process death resumes it once ([restore]) before showing
  * the error stage. A finished recipe goes into the [RecipeDraftStore].
+ *
+ * Threading: the public functions are called from the main thread and the run reports from [scope]'s
+ * dispatcher (several threads), so every change of state happens under [lock]. A run that was
+ * cancelled or replaced (its [generation] is no longer current) cannot change the state any more.
  */
 class ImportJob(
     private val runner: ImportRunner,
@@ -50,17 +55,20 @@ class ImportJob(
     private val mutableState = MutableStateFlow<ImportState>(ImportState.Idle)
     val state: StateFlow<ImportState> = mutableState
 
+    private val lock = Any()
     private var running: Job? = null
+    private var generation = 0
     private var restored = false
 
-    /** Starts converting [text]; ignored while a run is working. */
-    fun start(text: String, kitchenRule: String, lang: String) {
-        if (mutableState.value is ImportState.Working) return
-        launch(PersistedImport.Running(text, kitchenRule, lang, attempts = 0))
+    /** Starts converting [request]; ignored while a run is working. */
+    fun start(request: ImportRequest) = synchronized(lock) {
+        if (mutableState.value is ImportState.Working) return@synchronized
+        launch(PersistedImport.Running(request, attempts = 0))
     }
 
     /** Stops generation and goes back to the paste stage. */
-    fun cancel() {
+    fun cancel() = synchronized(lock) {
+        generation++
         running?.cancel()
         running = null
         persistence.save(null)
@@ -69,19 +77,30 @@ class ImportJob(
 
     /** The error stage was dismissed. */
     fun dismissError() {
-        if (mutableState.value == ImportState.Failed) mutableState.value = ImportState.Idle
+        mutableState.compareAndSet(ImportState.Failed, ImportState.Idle)
     }
 
     /** The finished recipe was taken over by the review (saved, edited away or left). */
-    fun acknowledge() {
-        if (mutableState.value != ImportState.Ready) return
+    fun acknowledge() = synchronized(lock) {
+        if (mutableState.value != ImportState.Ready) return@synchronized
         persistence.save(null)
         mutableState.value = ImportState.Idle
     }
 
+    /**
+     * Add recipe was left. The draft is dropped, unless a finished recipe was never shown on that screen
+     * ([reviewShown] false): it stays for the "Recipe ready to review" notification to open. A running
+     * job goes on.
+     */
+    fun leaveScreen(reviewShown: Boolean) {
+        if (mutableState.value == ImportState.Ready && !reviewShown) return
+        drafts.set(null)
+        acknowledge()
+    }
+
     /** After the process was recreated: resume an unfinished run once, or hand over a finished recipe. Once per process. */
-    fun restore() {
-        if (restored) return
+    fun restore() = synchronized(lock) {
+        if (restored) return@synchronized
         restored = true
         when (val saved = persistence.load()) {
             null -> Unit
@@ -98,29 +117,37 @@ class ImportJob(
         }
     }
 
-    private fun launch(job: PersistedImport.Running) {
-        persistence.save(job)
+    /** Callers hold [lock]. */
+    private fun launch(record: PersistedImport.Running) {
+        val mine = ++generation
+        persistence.save(record)
         mutableState.value = ImportState.Working(PipelineStage.Ingredients)
         host.startService()
         running = scope.launch {
             try {
-                val result = runner.run(job.text, job.kitchenRule, job.lang, newId()) { stage ->
-                    mutableState.value = ImportState.Working(stage)
+                val result = runner.run(record.request, newId()) { stage ->
+                    ifCurrent(mine) { mutableState.value = ImportState.Working(stage) }
                 }
-                when (result) {
-                    is PipelineResult.Done -> {
-                        drafts.set(result.recipe)
-                        persistence.save(PersistedImport.Ready(result.recipe.toDraftJson()))
-                        mutableState.value = ImportState.Ready
+                ifCurrent(mine) {
+                    when (result) {
+                        is PipelineResult.Done -> {
+                            drafts.set(result.recipe)
+                            persistence.save(PersistedImport.Ready(result.recipe.toDraftJson()))
+                            mutableState.value = ImportState.Ready
+                        }
+                        is PipelineResult.Failed -> fail()
                     }
-                    is PipelineResult.Failed -> fail()
                 }
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                fail()
+                ifCurrent(mine) { fail() }
             }
         }
+    }
+
+    private fun ifCurrent(run: Int, block: () -> Unit) = synchronized(lock) {
+        if (run == generation) block()
     }
 
     private fun fail() {

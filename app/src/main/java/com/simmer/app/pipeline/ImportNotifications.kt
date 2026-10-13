@@ -32,7 +32,7 @@ object ImportNotifications {
 
     fun stageLabel(stage: PipelineStage): Int = when (stage) {
         PipelineStage.Ingredients -> R.string.import_stage_ingredients
-        PipelineStage.Phases -> R.string.import_stage_phases
+        PipelineStage.Splitting -> R.string.import_stage_splitting
         PipelineStage.Linking -> R.string.import_stage_linking
         PipelineStage.Timers -> R.string.import_stage_timers
     }

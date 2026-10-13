@@ -13,6 +13,7 @@ import com.simmer.app.data.toDraftJson
 import com.simmer.app.domain.AddRecipeReview
 import com.simmer.app.domain.EXAMPLE_TEXT
 import com.simmer.app.domain.KitchenLine
+import com.simmer.app.domain.ImportRequest
 import com.simmer.app.domain.ImportState
 import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.PipelineStage
@@ -21,7 +22,7 @@ import com.simmer.app.domain.ReaderAction
 import com.simmer.app.domain.addRecipeReview
 import com.simmer.app.domain.canConvert
 import com.simmer.app.domain.kitchenLine
-import com.simmer.app.domain.kitchenRuleFor
+import com.simmer.app.domain.newRecipeId
 import com.simmer.app.domain.readerAction
 import com.simmer.app.domain.usesExampleShortcut
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -30,6 +31,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -105,9 +107,13 @@ class AddRecipeViewModel @Inject constructor(
             state == ImportState.Failed -> AddRecipeUi.Error
             else -> paste
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddRecipeUi.Loading)
+    }.onEach { if (it is AddRecipeUi.Review) reviewShown = true }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddRecipeUi.Loading)
 
     private var saving = false
+
+    /** True once this screen has shown the review: only then is leaving it a decision to drop the recipe. */
+    private var reviewShown = false
 
     init {
         // A conversion that was running when the process died resumes (or shows the error stage).
@@ -132,12 +138,18 @@ class AddRecipeViewModel @Inject constructor(
         val text = text.value
         if (!canConvert(text)) return
         if (usesExampleShortcut(text)) {
-            session.convert(text, id = "u" + System.currentTimeMillis().toString(36))
+            session.convert(text, id = newRecipeId())
             return
         }
         viewModelScope.launch {
-            val rule = kitchenRuleFor(prefs.appliances.first(), KitchenMode.fromKey(prefs.kitchenMode.first()))
-            job.start(text, rule, prefs.lang.first())
+            job.start(
+                ImportRequest(
+                    text = text,
+                    lang = prefs.lang.first(),
+                    appliances = prefs.appliances.first(),
+                    kitchenMode = KitchenMode.fromKey(prefs.kitchenMode.first()),
+                ),
+            )
         }
     }
 
@@ -175,7 +187,6 @@ class AddRecipeViewModel @Inject constructor(
 
     /** Leaving the screen without saving drops the draft. */
     override fun onCleared() {
-        session.discard()
-        job.acknowledge()
+        job.leaveScreen(reviewShown)
     }
 }

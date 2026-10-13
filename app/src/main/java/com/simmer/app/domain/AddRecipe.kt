@@ -12,6 +12,9 @@ import com.simmer.app.domain.model.Variation
 /** Fewest characters (ignoring surrounding spaces) the Add recipe text needs before Convert or Download is offered. */
 const val MIN_RECIPE_TEXT = 30
 
+/** A new User Recipe's id: "u" and the time in base 36. The one place ids are made. */
+fun newRecipeId(now: Long = System.currentTimeMillis()): String = "u" + now.toString(36)
+
 /** What "Try an example" puts in the text area. */
 val EXAMPLE_TEXT = """Sheet-pan lemon chicken with potatoes
 Serves 4 · about 1 hour

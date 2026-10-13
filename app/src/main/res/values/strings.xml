@@ -337,7 +337,7 @@
     <string name="import_working_title">Reading your recipe.</string>
     <string name="import_working_hint">This takes 1 to 3 minutes on this phone. You can leave this screen.</string>
     <string name="import_stage_ingredients">Reading ingredients</string>
-    <string name="import_stage_phases">Splitting preparation from cooking</string>
+    <string name="import_stage_splitting">Splitting preparation from cooking</string>
     <string name="import_stage_linking">Linking ingredients to steps</string>
     <string name="import_stage_timers">Setting timers</string>
     <string name="import_stage_done">%1$s, done</string>
@@ -350,4 +350,5 @@
     <string name="import_ready_title">Recipe ready to review</string>
     <string name="import_channel_progress">Recipe reading</string>
     <string name="import_channel_done">Recipe ready</string>
+    <string name="import_truncated_note">This recipe is long. Only the first part was read.</string>
 </resources>

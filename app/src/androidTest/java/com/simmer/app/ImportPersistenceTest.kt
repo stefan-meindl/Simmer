@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.simmer.app.data.PersistedImport
+import com.simmer.app.domain.ImportRequest
+import com.simmer.app.domain.KitchenMode
 import com.simmer.app.pipeline.SharedPrefsImportPersistence
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -20,7 +22,7 @@ class ImportPersistenceTest {
     @After fun clean() = SharedPrefsImportPersistence(context).save(null)
 
     @Test fun aRunningJobComesBackWithItsAttempts() {
-        val running = PersistedImport.Running("Soup\nIngredients\n- 1 onion", "\n- rule", "de", attempts = 1)
+        val running = PersistedImport.Running(ImportRequest("Soup\nIngredients\n- 1 onion", "de", setOf("oven", "c:Tandoor"), KitchenMode.Strict), attempts = 1)
         SharedPrefsImportPersistence(context).save(running)
 
         assertEquals(running, SharedPrefsImportPersistence(context).load())
@@ -34,7 +36,7 @@ class ImportPersistenceTest {
 
     @Test fun clearingForgetsTheJob() {
         val store = SharedPrefsImportPersistence(context)
-        store.save(PersistedImport.Running("x", "", "en", 0))
+        store.save(PersistedImport.Running(ImportRequest("x", "en", emptySet(), KitchenMode.Free), 0))
         store.save(null)
 
         assertNull(SharedPrefsImportPersistence(context).load())

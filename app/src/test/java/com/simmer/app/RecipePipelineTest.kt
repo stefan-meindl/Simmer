@@ -6,7 +6,11 @@ import com.simmer.app.domain.PipelineStage
 import com.simmer.app.domain.RecipePipeline
 import com.simmer.app.domain.RecipeReader
 import com.simmer.app.domain.ReaderStatus
-import com.simmer.app.domain.TRUNCATED_NOTE
+import com.simmer.app.domain.ImportRequest
+import com.simmer.app.domain.KitchenMode
+import com.simmer.app.domain.PassTimeoutException
+import com.simmer.app.domain.REPAIR_BROKEN_CHARS
+import com.simmer.app.domain.REPAIR_TEXT_CHARS
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -53,8 +57,16 @@ private val PASS2 = """
 private val PASS3 = """{"needs":{"c1":["p1","p9"]}}"""
 private val PASS4 = """{"timers":{"c1":2280},"notes":["Roast time was 35-40 min; used 38."]}"""
 
-private fun run(reader: RecipeReader, text: String = "Lemon chicken. 8 chicken thighs. Roast it.", rule: String = "", lang: String = "en", stages: MutableList<PipelineStage> = mutableListOf()) =
-    runBlocking { RecipePipeline(reader).run(text, rule, lang, "u1") { stages += it } }
+private const val NOTE = "This recipe is long. Only the first part was read."
+
+private fun run(
+    reader: RecipeReader,
+    text: String = "Lemon chicken. 8 chicken thighs. Roast it.",
+    appliances: Set<String> = emptySet(),
+    mode: KitchenMode = KitchenMode.Free,
+    lang: String = "en",
+    stages: MutableList<PipelineStage> = mutableListOf(),
+) = runBlocking { RecipePipeline(reader).run(ImportRequest(text, lang, appliances, mode), "u1", NOTE) { stages += it } }
 
 /** Seam: [RecipePipeline.run] against a scripted [RecipeReader]. */
 class RecipePipelineTest {
@@ -66,7 +78,7 @@ class RecipePipelineTest {
         val done = run(reader, stages = stages) as PipelineResult.Done
         val recipe = done.recipe
 
-        assertEquals(listOf(PipelineStage.Ingredients, PipelineStage.Phases, PipelineStage.Linking, PipelineStage.Timers), stages)
+        assertEquals(listOf(PipelineStage.Ingredients, PipelineStage.Splitting, PipelineStage.Linking, PipelineStage.Timers), stages)
         assertEquals(4, reader.calls.size)
         assertEquals(0, done.repairs)
         assertEquals("u1", recipe.id)
@@ -107,7 +119,7 @@ class RecipePipelineTest {
     @Test fun `the kitchen rule goes to the methods pass and German to every pass`() {
         val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4))
 
-        run(reader, rule = "\n- The cook owns these appliances: Oven.", lang = "de")
+        run(reader, appliances = setOf("oven"), mode = KitchenMode.Medium, lang = "de")
 
         assertTrue(reader.calls[1].system.contains("The cook owns these appliances: Oven."))
         assertTrue(reader.calls.all { it.system.contains("German") })
@@ -130,14 +142,14 @@ class RecipePipelineTest {
 
         val result = run(reader)
 
-        assertEquals(PipelineResult.Failed(PipelineStage.Phases), result)
+        assertEquals(PipelineResult.Failed(PipelineStage.Splitting), result)
         assertEquals(3, reader.calls.size)
     }
 
     @Test fun `a reply that is JSON but has no steps counts as invalid`() {
         val reader = ScriptedReader(listOf(PASS1, """{"methods":[],"steps":[]}""", """{"steps":[]}"""))
 
-        assertEquals(PipelineResult.Failed(PipelineStage.Phases), run(reader))
+        assertEquals(PipelineResult.Failed(PipelineStage.Splitting), run(reader))
     }
 
     @Test fun `a text that is not a recipe fails at once without a repair`() {
@@ -163,8 +175,7 @@ class RecipePipelineTest {
 
         val done = run(reader, text = long) as PipelineResult.Done
 
-        assertEquals(TRUNCATED_NOTE, done.recipe.notes.first())
-        assertEquals("This recipe is long. Only the first part was read.", TRUNCATED_NOTE)
+        assertEquals(NOTE, done.recipe.notes.first())
         assertTrue(reader.calls[0].user.length < 7_000)
     }
 
@@ -180,7 +191,7 @@ class RecipePipelineTest {
                 CompletableDeferred<Unit>().await()
             }
         }
-        val job = async(start = CoroutineStart.UNDISPATCHED) { RecipePipeline(hanging).run("text", "", "en", "u1") {} }
+        val job = async(start = CoroutineStart.UNDISPATCHED) { RecipePipeline(hanging).run(ImportRequest("text", "en", emptySet(), KitchenMode.Free), "u1", NOTE) {} }
         started.await()
         yield()
 
@@ -189,5 +200,77 @@ class RecipePipelineTest {
         val outcome = runCatching { job.await() }.exceptionOrNull()
         assertTrue(outcome is CancellationException)
         assertEquals(listOf(1), calls)
+    }
+
+    @Test fun `a repair prompt carries a bounded slice of the broken reply and the text`() {
+        val hugeBroken = """{"methods":[],"steps":[""" + "x".repeat(20_000)
+        val reader = ScriptedReader(listOf(PASS1, hugeBroken, PASS2, PASS3, PASS4))
+
+        run(reader, text = "Lemon chicken\nIngredients\n- 8 chicken thighs\nMethod\n" + "Roast it for a good while.\n".repeat(200))
+
+        val repair = reader.calls[2].user
+        assertTrue(repair.length < REPAIR_BROKEN_CHARS + REPAIR_TEXT_CHARS + 100)
+        assertTrue(repair.contains(hugeBroken.take(REPAIR_BROKEN_CHARS)))
+    }
+
+    @Test fun `a step with an unknown phase makes the reply invalid and triggers the repair`() {
+        val badPhase = """{"methods":[],"steps":[{"ph":"serve","t":"Plate","b":"Plate the chicken thighs."}]}"""
+        val reader = ScriptedReader(listOf(PASS1, badPhase, PASS2, PASS3, PASS4))
+
+        val done = run(reader) as PipelineResult.Done
+
+        assertEquals(1, done.repairs)
+        assertEquals(listOf("p1", "c1"), done.recipe.steps.map { it.id })
+    }
+
+    @Test fun `timer seconds are rounded not truncated`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, """{"timers":{"c1":899.6},"notes":[]}"""))
+
+        val done = run(reader) as PipelineResult.Done
+
+        assertEquals(900, done.recipe.steps[1].durationSecs)
+    }
+
+    @Test fun `methods for appliances the cook lacks are filtered in code, not only asked for in the prompt`() {
+        val withMethods = """{"methods":[{"id":"m1","label":"The chicken","q":"How?","options":[
+            {"v":"oven","l":"Oven"},{"v":"air","l":"Air fryer"},{"v":"hob","l":"Hob"}]}],
+            "steps":[{"ph":"prep","t":"Halve","b":"Halve the baby potatoes."},
+            {"ph":"cook","t":"Roast","b":"Roast the chicken thighs.","if":"m1=oven"},
+            {"ph":"cook","t":"Air-fry","b":"Air-fry the chicken thighs.","if":"m1=air"},
+            {"ph":"cook","t":"Pan-fry","b":"Pan-fry the chicken thighs.","if":"m1=hob"}]}"""
+        val reader = ScriptedReader(listOf(PASS1, withMethods, PASS3, PASS4))
+
+        val done = run(reader, appliances = setOf("oven", "hob"), mode = KitchenMode.Strict) as PipelineResult.Done
+
+        assertEquals(listOf("oven", "hob"), done.recipe.methods.single().options.map { it.value })
+        assertEquals(listOf("Roast", "Pan-fry"), done.recipe.steps.filter { it.phase == "cook" }.map { it.title })
+    }
+
+    @Test fun `Free for all keeps every method option`() {
+        val withMethods = """{"methods":[{"id":"m1","label":"The chicken","q":"How?","options":[
+            {"v":"oven","l":"Oven"},{"v":"air","l":"Air fryer"}]}],
+            "steps":[{"ph":"cook","t":"Roast","b":"Roast it.","if":"m1=oven"},{"ph":"cook","t":"Air-fry","b":"Air-fry it.","if":"m1=air"}]}"""
+        val reader = ScriptedReader(listOf(PASS1, withMethods, PASS4))
+
+        val done = run(reader, appliances = setOf("hob"), mode = KitchenMode.Free) as PipelineResult.Done
+
+        assertEquals(2, done.recipe.methods.single().options.size)
+    }
+
+    @Test fun `a model that stalls fails the pass instead of waiting for ever`() {
+        val stalling = object : RecipeReader {
+            override suspend fun status() = ReaderStatus.Ready
+            override fun download(): Flow<DownloadProgress> = flowOf(DownloadProgress.Complete)
+            override suspend fun generate(system: String, user: String, maxTokens: Int): Flow<String> = flow {
+                CompletableDeferred<Unit>().await()
+            }
+        }
+
+        val outcome = runCatching {
+            runBlocking { RecipePipeline(stalling, passTimeoutMs = 50).run(ImportRequest("text", "en", emptySet(), KitchenMode.Free), "u1", NOTE) {} }
+        }.exceptionOrNull()
+
+        assertTrue(outcome is PassTimeoutException)
+        assertEquals(PipelineStage.Ingredients, (outcome as PassTimeoutException).stage)
     }
 }
