@@ -34,7 +34,7 @@
     </plurals>
     <string name="flow_ingredients_caption">%1$s · %2$s</string>
     <string name="flow_add_to_list">Add to list · %1$s</string>
-    <string name="flow_remove_from_list">Remove from list · %1$s</string>
+    <string name="flow_remove_from_list">Unplan · %1$s</string>
     <string name="flow_preparation_next">Preparation</string>
     <string name="flow_toast_added">Added %1$s for %2$s.</string>
     <string name="flow_toast_find">Find it under Planned on Recipes.</string>
@@ -110,7 +110,7 @@
     <string name="recipes_all">All</string>
     <string name="recipes_planned">Planned</string>
     <string name="recipes_planned_menu">More options for %1$s</string>
-    <string name="recipes_remove_from_list">Remove from list</string>
+    <string name="recipes_remove_from_list">Unplan</string>
     <string name="recipes_cooking_now">Cooking now</string>
     <string name="recipes_continue">Continue</string>
     <string name="recipes_continue_description">Continue %1$s</string>

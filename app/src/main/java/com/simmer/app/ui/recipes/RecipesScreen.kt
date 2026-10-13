@@ -231,7 +231,7 @@ private fun SectionTitle(text: String) {
     )
 }
 
-/** [onRemove] adds a three-dot menu with "Remove from list"; null for Cooking-now cards. */
+/** [onRemove] adds a three-dot menu with "Unplan"; null for Cooking-now cards. */
 @Composable
 private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit, onRemove: (() -> Unit)?) {
     val colors = LocalSimmerColors.current

@@ -20,7 +20,7 @@ data class ShoppingEntry(
  * Immutable state of recipe flow phase 1.
  *
  * [added] is the choice last saved with "Add to list"; the screen shows
- * "Remove from list" only while the current choice equals it.
+ * "Unplan" only while the current choice equals it.
  */
 data class Phase1State(
     val recipe: Recipe,
