@@ -53,8 +53,8 @@ enum class ReviewTab { Ingredients, Steps }
 sealed interface AddRecipeUi {
     data object Loading : AddRecipeUi
 
-    /** The first step: how to add the recipe. [reader] is the Reader model's state, shown on "On this phone". */
-    data class Choice(val reader: ReaderStatus) : AddRecipeUi
+    /** The start stage: how to add the recipe. [reader] is the Reader model's state, shown on "On this phone". */
+    data class Start(val reader: ReaderStatus) : AddRecipeUi
 
     /** The chatbot path (empty for now). */
     data object Chatbot : AddRecipeUi
@@ -106,7 +106,7 @@ class AddRecipeViewModel @Inject constructor(
     private val readerStatus = reader.status
     private val readerReady = readerStatus.map { it == ReaderStatus.Ready }
 
-    private val step = savedState.getStateFlow(KEY_STEP, AddStep.Choice.key)
+    private val step = savedState.getStateFlow(KEY_STEP, AddStep.Start.key)
 
     private val paste = combine(text, kitchen, readerReady) { text, line, ready ->
         AddRecipeUi.Paste(text, readerAction(text, ready), canConvert(text), line)
@@ -114,7 +114,7 @@ class AddRecipeViewModel @Inject constructor(
 
     private val start = combine(step, paste, readerStatus) { step, paste, status ->
         when (addStepFromKey(step)) {
-            AddStep.Choice -> AddRecipeUi.Choice(status)
+            AddStep.Start -> AddRecipeUi.Start(status)
             AddStep.Chatbot -> AddRecipeUi.Chatbot
             AddStep.Phone -> paste
         }
@@ -150,7 +150,7 @@ class AddRecipeViewModel @Inject constructor(
         savedState[KEY_STEP] = step.key
     }
 
-    /** Back on the choice, chatbot and paste stages: returns to the choice step, or [onLeave] from the choice step. */
+    /** Back on the start, chatbot and paste stages: returns to the start stage, or [onLeave] from the start stage. */
     fun back(onLeave: () -> Unit) {
         val previous = addStepFromKey(savedState.get<String>(KEY_STEP)).back()
         if (previous == null) onLeave() else choose(previous)

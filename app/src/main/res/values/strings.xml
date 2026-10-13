@@ -312,7 +312,7 @@
     <string name="add_choose_chatbot">With a chatbot</string>
     <string name="add_choose_chatbot_body">Use any capable chatbot you like, then paste its reply back here.</string>
     <string name="add_chatbot_title">Add with a chatbot.</string>
-    <string name="add_caption_paste">New recipe</string>
+    <string name="add_caption_new">New recipe</string>
     <string name="add_caption_review">New recipe · not saved yet</string>
     <string name="add_title">Add a recipe.</string>
     <string name="add_intro">Paste it from a website, a message or your notes. We turn it into steps, timers and a shopping list.</string>

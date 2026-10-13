@@ -191,13 +191,13 @@ Open `chilli`, tap Edit (top right of any flow phase). Editing the Add recipe dr
 ### Add recipe: choose how to add (#47)
 
 Recipes tab, tap +. Every Add recipe item below that mentions the paste stage starts with "On this phone".
-- Choice step, every time: title "How do you want to add this recipe?" (de: "Wie möchtest du dieses Rezept hinzufügen?"), two cards. Open Add recipe, leave (Back), open it again: the choice step shows each time, never the paste stage.
+- Start stage on every visit: title "How do you want to add this recipe?" (de: "Wie möchtest du dieses Rezept hinzufügen?"), two cards. Open Add recipe, leave (Back), open it again: the start stage shows, never the paste stage (the ViewModel is new for each visit). Exception, as before this change: a conversion still running or a finished recipe never reviewed (the "Recipe ready to review" notification) is picked up, so the screen opens on Working or Review instead.
 - "On this phone" card: line "Paste the recipe and your phone reads it..." and the Reader model's state under it, the same text as Settings > Recipe reader (e.g. "Not downloaded · 2.6 GB", "Ready"). Download the reader in Settings, come back: it reads "Ready".
 - Tap "On this phone": the paste stage, unchanged: "Download recipe reader (2.6 GB)" for other text, Try an example then Convert recipe, the Working stage, review and Save recipe as under Add recipe (#14) below.
 - Tap "With a chatbot": an empty screen with a back button and the title "Add with a chatbot." (de: "Mit einem Chatbot hinzufügen."). Card text names no specific chatbot.
-- Back: from the paste stage (arrow and system back) and from the chatbot screen (arrow and system back) returns to the choice step; the paste text is kept when you pick "On this phone" again. Back from the choice step closes Add recipe. Working, error and review stages keep their own Back.
-- Rotate on the choice step, the chatbot screen and the paste stage: you stay on the same step.
-- Process death: on the chatbot screen run `adb shell am kill com.simmer.app` and reopen from Recents: still on the chatbot screen. Same on the choice step and the paste stage.
+- Back: from the paste stage (arrow and system back) and from the chatbot screen (arrow and system back) returns to the start stage; the paste text is kept when you pick "On this phone" again. Back from the start stage closes Add recipe. Working, error and review stages keep their own Back.
+- Rotate on the start stage, the chatbot screen and the paste stage: you stay on the same step.
+- Process death: on the chatbot screen run `adb shell am kill com.simmer.app` and reopen from Recents: still on the chatbot screen. Same on the start stage and the paste stage.
 - English and German: strings above in both.
 
 ### Add recipe (#14)

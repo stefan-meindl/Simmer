@@ -2,7 +2,7 @@ package com.simmer.app.ui.add
 
 import androidx.activity.compose.BackHandler
 import com.simmer.app.domain.AddStep
-import com.simmer.app.ui.settings.readerStateText
+import com.simmer.app.ui.components.readerStateText
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -117,7 +117,7 @@ fun AddRecipeScreen(
     val colors = LocalSimmerColors.current
     val ui by viewModel.ui.collectAsStateWithLifecycle()
 
-    // Back from the choice step, the chatbot path or the paste stage: step back, then leave from the choice step.
+    // Back from the start stage, the chatbot path or the paste stage: step back, then leave from the start stage.
     val onStepBack = { viewModel.back(onLeave = onBack) }
     BackHandler(enabled = ui is AddRecipeUi.Chatbot || ui is AddRecipeUi.Paste, onBack = onStepBack)
 
@@ -129,7 +129,7 @@ fun AddRecipeScreen(
     ) {
         when (val u = ui) {
             AddRecipeUi.Loading -> Unit
-            is AddRecipeUi.Choice -> ChoiceStage(u, viewModel, onBack)
+            is AddRecipeUi.Start -> StartStage(u, viewModel, onBack)
             AddRecipeUi.Chatbot -> ChatbotStage(onStepBack)
             is AddRecipeUi.Paste -> PasteStage(u, viewModel, onStepBack, onChangeKitchen)
             is AddRecipeUi.Working -> WorkingStage(u, viewModel, onBack)
@@ -201,13 +201,13 @@ private fun icon(res: Int, size: Int = 20, tint: androidx.compose.ui.graphics.Co
 }
 
 // ---------------------------------------------------------------------------
-// Choice step and chatbot path
+// Start stage and chatbot path
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun ColumnScope.ChoiceStage(ui: AddRecipeUi.Choice, viewModel: AddRecipeViewModel, onBack: () -> Unit) {
+private fun ColumnScope.StartStage(ui: AddRecipeUi.Start, viewModel: AddRecipeViewModel, onBack: () -> Unit) {
     val colors = LocalSimmerColors.current
-    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         modifier = Modifier
@@ -221,14 +221,14 @@ private fun ColumnScope.ChoiceStage(ui: AddRecipeUi.Choice, viewModel: AddRecipe
             color = colors.textPrimary,
             modifier = Modifier.semantics { heading() },
         )
-        ChoiceCard(
+        StartCard(
             iconRes = R.drawable.ic_cpu,
             title = stringResource(R.string.add_choose_phone),
             body = stringResource(R.string.add_choose_phone_body),
             detail = readerStateText(ui.reader),
             onClick = { viewModel.choose(AddStep.Phone) },
         )
-        ChoiceCard(
+        StartCard(
             iconRes = R.drawable.ic_sparkles,
             title = stringResource(R.string.add_choose_chatbot),
             body = stringResource(R.string.add_choose_chatbot_body),
@@ -239,7 +239,7 @@ private fun ColumnScope.ChoiceStage(ui: AddRecipeUi.Choice, viewModel: AddRecipe
 }
 
 @Composable
-private fun ChoiceCard(iconRes: Int, title: String, body: String, detail: String?, onClick: () -> Unit) {
+private fun StartCard(iconRes: Int, title: String, body: String, detail: String?, onClick: () -> Unit) {
     val colors = LocalSimmerColors.current
     RowCard(modifier = Modifier.clickable(role = Role.Button, onClick = onClick)) {
         Row(
@@ -293,7 +293,7 @@ private fun ColumnScope.PasteStage(
     val textLabel = stringResource(R.string.add_recipe_text)
     val askNotificationPermission = rememberNotificationPermissionRequest()
 
-    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier
@@ -458,7 +458,7 @@ private fun kitchenText(line: KitchenLine): String = when (line) {
 @Composable
 private fun ColumnScope.WorkingStage(ui: AddRecipeUi.Working, viewModel: AddRecipeViewModel, onBack: () -> Unit) {
     val colors = LocalSimmerColors.current
-    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
         verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier
@@ -535,7 +535,7 @@ private fun StageRow(stage: PipelineStage, mark: StageMark) {
 @Composable
 private fun ColumnScope.ErrorStage(viewModel: AddRecipeViewModel, onBack: () -> Unit) {
     val colors = LocalSimmerColors.current
-    TopRow(stringResource(R.string.add_caption_paste), onBack)
+    TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
