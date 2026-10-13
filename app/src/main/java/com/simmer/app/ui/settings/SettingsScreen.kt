@@ -352,16 +352,20 @@ private fun modeStrings(mode: KitchenMode): Pair<Int, Int> = when (mode) {
 @Composable
 private fun AppliancePill(label: String) {
     val colors = LocalSimmerColors.current
-    Text(
-        text = label,
-        style = SimmerTextStyle_BodySmMedium,
-        color = colors.textPrimary,
+    Box(
         modifier = Modifier
             .defaultMinSize(minHeight = 36.dp)
             .background(colors.surfaceWarm, CircleShape)
             .border(BorderStroke(2.dp, colors.borderWarm), CircleShape)
             .padding(horizontal = 12.dp, vertical = 8.dp),
-    )
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = label,
+            style = SimmerTextStyle_BodySmMedium,
+            color = colors.textPrimary,
+        )
+    }
 }
 
 /** Catalogue appliances have a translation; custom ones ("c:Name") show as the user wrote them. */
