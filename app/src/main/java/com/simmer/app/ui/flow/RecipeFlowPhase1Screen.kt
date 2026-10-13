@@ -182,13 +182,10 @@ private fun Phase1Content(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             val servingsText = pluralStringResource(R.plurals.flow_servings_count, s.servings, s.servings)
+            val onList = s.isOnList
             SecondaryButton(
-                text = if (s.isOnList) {
-                    stringResource(R.string.flow_remove_from_list, servingsText)
-                } else {
-                    stringResource(R.string.flow_add_to_list, servingsText)
-                },
-                onClick = if (s.isOnList) viewModel::removeFromList else viewModel::addToList,
+                text = stringResource(if (onList) R.string.flow_remove_from_list else R.string.flow_add_to_list, servingsText),
+                onClick = if (onList) viewModel::removeFromList else viewModel::addToList,
                 modifier = Modifier.weight(1f),
             )
             // Nothing to pick on Flow Phase 2, so this button goes straight to Flow Phase 3.

@@ -131,7 +131,7 @@ The Recipes tab is the start screen. "Added by you" and "Edited" tags need a Use
 - Count below filters: "5 recipes", "1 recipe" (singular), updates as you filter; TalkBack announces changes. "Clear filters" link appears only while a filter is active and resets search, category and tags.
 - Empty state: dashed box, "No recipes match these filters." and a Clear filters button.
 - Card: gradient icon tile (flame, chef hat, utensils, egg, carrot), title, category badge, "35 min · Easy" (de: "35 Min. · Einfach"), accent "3 variations" only when the recipe has variations, tags joined with " · ". Tapping opens Flow Phase 1 for that recipe.
-- Planned section: absent on a fresh install. Open `chilli`, switch Mince to Plant-based, toggle Dark beer, tap Add to list, go back: a cream "Planned" card reads "4 servings · Plant-based · Dark beer". Continue reopens Phase 1 with those servings and picks, button shows "On your list". Planned cards ignore search and filters. Each Planned card has a three-dot menu (TalkBack "More options for Chilli con carne") with one item, "Remove from list" (de: "Von der Liste entfernen"): tap it and the card and the recipe's Shopping items go at once, no confirm, no undo. Cooking now cards have no menu.
+- Planned section: absent on a fresh install. Open `chilli`, switch Mince to Plant-based, toggle Dark beer, tap Add to list, go back: a cream "Planned" card reads "4 servings · Plant-based · Dark beer". Continue reopens Phase 1 with those servings and picks, button shows "Remove from list · 4 servings". Planned cards ignore search and filters. Each Planned card has a three-dot menu (TalkBack "More options for Chilli con carne") with one item, "Remove from list" (de: "Von der Liste entfernen"): tap it and the card and the recipe's Shopping items go at once, no confirm, no undo. Cooking now cards have no menu.
 - Filters survive rotation and `adb shell am kill com.simmer.app`.
 - Bottom tab bar does not cover the last card.
 
@@ -176,6 +176,8 @@ Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to li
   - Undo within 5s: items return still ticked, `curry` is Planned again with its servings and picks (Continue reopens Phase 1 with "Remove from list" on the button). Tapping nothing: the snackbar leaves after ~5s and Undo is gone.
   - Clear all: every item (recipe, manual, basket) and all Planned cards go; Undo restores everything. A Cooking now card is untouched by both actions.
   - Rotate with the snackbar showing: it stays with Undo.
+  - After a clear, switch to another tab and back within 5s: no snackbar re-appears. Undo after a partial clear restores items in their original positions.
+  - Flow button "Remove from list" while the "Added N items · View list" toast is showing: the toast is not dismissed by the tap itself.
 - Re-add: open `chilli`, change servings to 2, Add to list again: aisle amounts change, no duplicate rows; manual items stay; items you had ticked and that remain stay ticked. Add `curry` too: both recipes' items show, notes differ.
 - `adb shell am kill com.simmer.app`, reopen: list, ticks, badge kept. Typed-but-unsent text and the open basket survive rotation.
 - German: switch in Settings, all strings above translate (built-in recipe ingredient names and aisles stay English).

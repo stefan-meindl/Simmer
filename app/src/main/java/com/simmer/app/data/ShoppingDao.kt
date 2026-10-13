@@ -72,17 +72,42 @@ abstract class ShoppingDao {
         upsertPlanned(planned)
     }
 
-    /** Deletes [items] and [planned], atomically; the caller picked what goes. */
+    /** Removes every ticked item. Planned goes only for recipes left with no items. Read and delete are one transaction. */
     @Transaction
-    open suspend fun remove(items: List<ShoppingItemEntity>, planned: List<PlannedRecipeEntity>) {
-        deleteItems(items.map { it.id })
-        deletePlannedFor(planned.map { it.recipeId })
+    open suspend fun clearTicked(): ShoppingSnapshot {
+        val all = getAllItems()
+        val ticked = all.filter { it.checked }
+        val remainingRecipes = all.filterNot { it.checked }.mapNotNull { it.recipeId }.toSet()
+        val tickedRecipes = ticked.mapNotNull { it.recipeId }.toSet()
+        val dropped = getAllPlanned().filter { it.recipeId in tickedRecipes && it.recipeId !in remainingRecipes }
+        deleteItems(ticked.map { it.id })
+        deletePlannedFor(dropped.map { it.recipeId })
+        return ShoppingSnapshot(ticked, dropped, all.map { it.id })
     }
 
-    /** Puts [items] and [planned] back exactly as given (including `checked`), atomically. */
+    /** Removes every item and all Planned state. Read and delete are one transaction. */
     @Transaction
-    open suspend fun putBack(items: List<ShoppingItemEntity>, planned: List<PlannedRecipeEntity>) {
-        insertItems(items)
-        planned.forEach { upsertPlanned(it) }
+    open suspend fun clearAll(): ShoppingSnapshot {
+        val all = getAllItems()
+        val planned = getAllPlanned()
+        deleteItems(all.map { it.id })
+        deletePlannedFor(planned.map { it.recipeId })
+        return ShoppingSnapshot(all, planned, all.map { it.id })
+    }
+
+    /**
+     * Puts a cleared [snapshot] back exactly as it was (including `checked`), atomically. Items keep their
+     * original relative order; items added since the clear go after them. The list is rewritten because
+     * REPLACE hands out new rowids, and the list is ordered by rowid.
+     */
+    @Transaction
+    open suspend fun putBack(snapshot: ShoppingSnapshot) {
+        val current = getAllItems()
+        val position = snapshot.order.withIndex().associate { (i, id) -> id to i }
+        val merged = (current + snapshot.items).distinctBy { it.id }
+            .sortedBy { position[it.id] ?: Int.MAX_VALUE } // stable: newer items stay in their current order
+        deleteItems(current.map { it.id })
+        insertItems(merged)
+        snapshot.planned.forEach { upsertPlanned(it) }
     }
 }

@@ -40,7 +40,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import com.simmer.app.ui.components.MenuAction
 import com.simmer.app.ui.components.OverflowMenu
@@ -92,22 +91,21 @@ fun ShoppingListScreen(
     val cleared by viewModel.cleared.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
 
-    // "Cleared N items · Undo" for about 5 seconds; Undo restores the snapshot.
-    val clearedMessage = cleared?.let { pluralStringResource(R.plurals.shopping_cleared, it.count, it.count) }
+    // "Cleared N items · Undo": the view model owns the 5 s timer and clears the state, so a rotation or
+    // returning to the tab does not show it again.
+    val clearedMessage = cleared?.let { pluralStringResource(R.plurals.shopping_cleared, it.items.size, it.items.size) }
     val undoLabel = stringResource(R.string.shopping_undo)
     LaunchedEffect(cleared) {
-        val c = cleared ?: return@LaunchedEffect
-        val dismisser = launch {
-            delay(CLEARED_SNACKBAR_MS)
+        if (cleared == null) {
             snackbar.currentSnackbarData?.dismiss()
+            return@LaunchedEffect
         }
         val result = snackbar.showSnackbar(
             message = clearedMessage.orEmpty(),
             actionLabel = undoLabel,
             duration = SnackbarDuration.Indefinite,
         )
-        dismisser.cancel()
-        if (result == SnackbarResult.ActionPerformed) viewModel.undoClear() else if (viewModel.cleared.value === c) viewModel.dismissCleared()
+        if (result == SnackbarResult.ActionPerformed) viewModel.undoClear() else viewModel.dismissCleared()
     }
 
     // The system "remove animations" setting (animator duration scale 0): keep the strikethrough, skip fade and collapse.
@@ -207,7 +205,6 @@ fun ShoppingListScreen(
     }
 }
 
-private const val CLEARED_SNACKBAR_MS = 5_000L
 
 private fun Context.findActivity(): Activity {
     var c = this

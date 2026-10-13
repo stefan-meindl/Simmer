@@ -48,8 +48,15 @@ private fun ShoppingItemEntity.toDomain() = ShoppingItem(
     checked = checked,
 )
 
-/** What a clear action removed, kept so Undo can [ShoppingRepository.restore] it. */
-data class ShoppingSnapshot(val items: List<ShoppingItemEntity>, val planned: List<PlannedRecipeEntity>) {
+/**
+ * What a clear action removed, kept so Undo can [ShoppingRepository.restore] it.
+ * [order] is the id order of the whole list before the clear.
+ */
+data class ShoppingSnapshot(
+    val items: List<ShoppingItemEntity>,
+    val planned: List<PlannedRecipeEntity>,
+    val order: List<String> = items.map { it.id },
+) {
     val isEmpty: Boolean get() = items.isEmpty() && planned.isEmpty()
 }
 
@@ -109,21 +116,13 @@ class ShoppingRepository @Inject constructor(
     suspend fun removeRecipe(recipeId: String) = dao.removeRecipe(recipeId)
 
     /** Removes every ticked item, recipe or manual. Planned goes only for recipes left with no items. Returns what went. */
-    suspend fun clearTicked(): ShoppingSnapshot {
-        val all = dao.getAllItems()
-        val ticked = all.filter { it.checked }
-        val remainingRecipes = (all - ticked.toSet()).mapNotNull { it.recipeId }.toSet()
-        val dropped = dao.getAllPlanned().filter { it.recipeId !in remainingRecipes }
-            .filter { p -> ticked.any { it.recipeId == p.recipeId } }
-        return ShoppingSnapshot(ticked, dropped).also { dao.remove(it.items, it.planned) }
-    }
+    suspend fun clearTicked(): ShoppingSnapshot = dao.clearTicked()
 
     /** Removes every item and all Planned state. Returns what went. */
-    suspend fun clearAll(): ShoppingSnapshot =
-        ShoppingSnapshot(dao.getAllItems(), dao.getAllPlanned()).also { dao.remove(it.items, it.planned) }
+    suspend fun clearAll(): ShoppingSnapshot = dao.clearAll()
 
-    /** Puts a cleared [snapshot] back: items with their `checked` state, and the Planned choices. */
-    suspend fun restore(snapshot: ShoppingSnapshot) = dao.putBack(snapshot.items, snapshot.planned)
+    /** Puts a cleared [snapshot] back: items in their original order with their `checked` state, and the Planned choices. */
+    suspend fun restore(snapshot: ShoppingSnapshot) = dao.putBack(snapshot)
 
     suspend fun setChecked(id: String, checked: Boolean) = dao.setChecked(id, checked)
 

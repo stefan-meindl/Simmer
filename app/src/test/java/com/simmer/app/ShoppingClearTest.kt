@@ -82,4 +82,47 @@ class ShoppingClearTest {
         seed()
         assertEquals(true, repo.clearTicked().isEmpty)
     }
+
+    @Test fun `restore after clear ticked puts items back in their original order`() = runBlocking {
+        seed()
+        tick("onions", "ginger")
+        val before = dao.getAllItems().map { it.name }
+
+        repo.restore(repo.clearTicked())
+
+        assertEquals(before, dao.getAllItems().map { it.name })
+    }
+
+    @Test fun `restore after clear all puts items back in their original order`() = runBlocking {
+        seed()
+        val before = dao.getAllItems().map { it.name }
+
+        repo.restore(repo.clearAll())
+
+        assertEquals(before, dao.getAllItems().map { it.name })
+    }
+
+    @Test fun `restore keeps items added after the clear and their ticks`() = runBlocking {
+        seed()
+        tick("onions")
+        val snap = repo.clearTicked()
+        repo.addManualItem("Milk")
+        tick("Milk")
+
+        repo.restore(snap)
+
+        assertEquals(listOf("onions", "garlic", "ginger", "Batteries", "Milk"), dao.getAllItems().map { it.name })
+        assertEquals(true, dao.items.first { it.name == "Milk" }.checked)
+    }
+
+    @Test fun `clear all with only Planned state still clears and restores it`() = runBlocking {
+        dao.planned["chilli"] = PlannedRecipeEntity("chilli", 2, "{}")
+
+        val snap = repo.clearAll()
+
+        assertEquals(false, snap.isEmpty)
+        assertEquals(emptyMap<String, PlannedRecipeEntity>(), dao.planned)
+        repo.restore(snap)
+        assertEquals(setOf("chilli"), dao.planned.keys)
+    }
 }

@@ -80,11 +80,13 @@ class ShoppingPersistenceTest {
             assertEquals(choice, repo.getPlanned("chilli"))
 
             repo.restore(ticked)
+            assertEquals(listOf("Onions", "Rice", "Batteries"), repo.items.first().map { it.name })
             val all = repo.clearAll()
             assertEquals(0, repo.items.first().size)
             assertEquals(null, repo.getPlanned("chilli"))
 
             repo.restore(all)
+            assertEquals(listOf("Onions", "Rice", "Batteries"), repo.items.first().map { it.name })
             assertEquals(true, repo.items.first().first { it.name == "Rice" }.checked)
             assertEquals(choice, repo.getPlanned("chilli"))
         }

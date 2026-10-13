@@ -244,7 +244,6 @@ class RecipeFlowViewModel @Inject constructor(
         viewModelScope.launch {
             shopping.removeRecipe(state.recipe.id)
             phase1.update { it?.copy(added = null) }
-            toast.value = null
         }
     }
 
