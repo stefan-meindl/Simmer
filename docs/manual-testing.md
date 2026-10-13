@@ -157,7 +157,18 @@ Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to li
 - Row look (also the add-in rows on Flow Phase 1): checkbox on the left, a 24dp rounded square with a 2dp grey outline; ticked it fills orange with a black check. 16dp gap between box and text. Name 16sp, note below in small grey, amount right-aligned in grey. Ticked rows show a struck-through grey name. Rows are at least 56dp.
 - Card look: each aisle, "Other items" and "In your basket" is its own rounded card with a 2dp light outline, thin dividers between rows, and a small uppercase label above. Compare with `Design/shots/`; no progress bar or "Clear checked" by design.
 - Aisle order is fixed (Produce, Meat, Chilled, ... Spices, Drinks) whichever recipe you add first: add `curry` then `chilli` and compare with the reverse after `pm clear`.
-- Tick an item: it leaves its group, badge drops by 1. "In your basket" (de: "Im Einkaufskorb") row appears collapsed with "1 item"; tap it to expand (chevron turns), tap the item to return it to its aisle. Tick every item: badge disappears (not "0").
+- Tick an item (grace period, see the dedicated list below): it stays 3s, then leaves its group; badge drops by 1 at once. "In your basket" (de: "Im Einkaufskorb") row appears collapsed with "1 item"; tap it to expand (chevron turns), tap the item to return it to its aisle. Tick every item: badge disappears (not "0").
+- Grace period (#34), no throwaway branch needed:
+  - Tick one item: checkbox fills orange and the name strikes through over a fraction of a second; the row stays in its aisle card for 3s, then fades out and collapses, and "In your basket" gains it (expand it to check).
+  - Tick, then tap the row again within 3s: strikethrough and fill go, the row stays put, and after 3s nothing moves. No snackbar or Undo button appears.
+  - Tick three items a second apart: each leaves 3s after its own tick (staggered), not together.
+  - Tick an item and watch the tab badge: it drops by 1 immediately, not after the 3s.
+  - Tick an item, then at once `adb shell am kill com.simmer.app` and reopen: the tick is saved (item in the basket).
+  - Tick an item, switch to another tab within 3s and come back: the item is already in the basket, nothing lingers. Repeat with Home (backgrounding) instead of switching tab.
+  - Tick an item and rotate the device within 3s: the row keeps its place and still leaves on its own timer (rotation does not clear).
+  - Expand "In your basket" and untick an item: it returns to its aisle instantly, no fade or delay.
+  - Turn on reduced motion (Settings > Accessibility > Remove animations, or `adb shell settings put global animator_duration_scale 0`): tick an item, it stays struck through for 3s, then jumps to the basket with no fade or collapse. Restore with `... animator_duration_scale 1`.
+  - TalkBack: during the 3s the row still reads as a checked checkbox and a double tap unticks it.
 - Re-add: open `chilli`, change servings to 2, Add to list again: aisle amounts change, no duplicate rows; manual items stay; items you had ticked and that remain stay ticked. Add `curry` too: both recipes' items show, notes differ.
 - `adb shell am kill com.simmer.app`, reopen: list, ticks, badge kept. Typed-but-unsent text and the open basket survive rotation.
 - German: switch in Settings, all strings above translate (built-in recipe ingredient names and aisles stay English).

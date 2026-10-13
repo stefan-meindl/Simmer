@@ -1,5 +1,9 @@
 package com.simmer.app.ui.components
 
+import androidx.compose.animation.core.snap
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,10 +22,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextDecoration
@@ -31,6 +37,9 @@ import com.simmer.app.ui.theme.LocalSimmerColors
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
 import com.simmer.app.ui.theme.SimmerTextStyle_BodySmMedium
 import com.simmer.app.ui.theme.SimmerTextStyle_Caption
+
+/** `duration-fast`. */
+private const val CHECK_ANIM_MS = 150
 
 private val CheckBoxShape = RoundedCornerShape(6.dp)
 private val RowCardShape = RoundedCornerShape(12.dp)
@@ -49,6 +58,7 @@ private val RowCardShape = RoundedCornerShape(12.dp)
  * @param checked Whether the box is checked.
  * @param onCheckedChange Callback when the user toggles the row.
  * @param subtitle Optional note below the label.
+ * @param animate Animate the box fill and label colour over `duration-fast` when [checked] changes.
  * @param trailing Optional short text (e.g. an amount) at the end of the row.
  */
 @Composable
@@ -59,8 +69,14 @@ fun CheckRow(
     modifier: Modifier = Modifier,
     subtitle: String? = null,
     trailing: String? = null,
+    animate: Boolean = false,
 ) {
     val colors = LocalSimmerColors.current
+    val spec = if (animate) tween<Color>(CHECK_ANIM_MS) else snap()
+    val fill by animateColorAsState(if (checked) colors.accent else Color.Transparent, spec, label = "fill")
+    val outline by animateColorAsState(if (checked) colors.accent else colors.borderStrong, spec, label = "outline")
+    val checkAlpha by animateFloatAsState(if (checked) 1f else 0f, if (animate) tween(CHECK_ANIM_MS) else snap(), label = "check")
+    val labelColor by animateColorAsState(if (checked) colors.textTertiary else colors.textPrimary, spec, label = "label")
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -76,17 +92,17 @@ fun CheckRow(
             modifier = Modifier
                 .size(24.dp)
                 .clip(CheckBoxShape)
-                .background(if (checked) colors.accent else Color.Transparent)
-                .border(BorderStroke(2.dp, if (checked) colors.accent else colors.borderStrong), CheckBoxShape),
+                .background(fill)
+                .border(BorderStroke(2.dp, outline), CheckBoxShape),
         ) {
-            if (checked) {
-                Icon(
-                    painter = painterResource(R.drawable.ic_check_bold),
-                    contentDescription = null,
-                    tint = colors.accentFg,
-                    modifier = Modifier.size(16.dp),
-                )
-            }
+            Icon(
+                painter = painterResource(R.drawable.ic_check_bold),
+                contentDescription = null,
+                tint = colors.accentFg,
+                modifier = Modifier
+                    .size(16.dp)
+                    .graphicsLayer { alpha = checkAlpha },
+            )
         }
         Column(
             modifier = Modifier.weight(1f),
@@ -95,7 +111,7 @@ fun CheckRow(
             Text(
                 text = label,
                 style = SimmerTextStyle_BodyMd,
-                color = if (checked) colors.textTertiary else colors.textPrimary,
+                color = labelColor,
                 textDecoration = if (checked) TextDecoration.LineThrough else null,
             )
             if (subtitle != null) {

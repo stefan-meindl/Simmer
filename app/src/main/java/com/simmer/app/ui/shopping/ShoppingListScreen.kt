@@ -1,5 +1,14 @@
 package com.simmer.app.ui.shopping
 
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.provider.Settings
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -21,11 +30,13 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -36,8 +47,12 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simmer.app.R
+import com.simmer.app.domain.GracePeriod
+import com.simmer.app.domain.GracePhase
 import com.simmer.app.domain.ShoppingItem
 import com.simmer.app.ui.components.CheckRow
 import com.simmer.app.ui.components.PrimaryButton
@@ -60,6 +75,21 @@ fun ShoppingListScreen(
     val listView by viewModel.listView.collectAsStateWithLifecycle()
     val draft by viewModel.draft.collectAsStateWithLifecycle()
     val basketOpen by viewModel.basketOpen.collectAsStateWithLifecycle()
+    val phases by viewModel.gracePhases.collectAsStateWithLifecycle()
+
+    // The system "remove animations" setting (animator duration scale 0): keep the strikethrough, skip fade and collapse.
+    // Read on each recomposition, not observed live: a change made while the tab is open applies after the next tick or recomposition.
+    val context = LocalContext.current
+    val reducedMotion = Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) == 0f
+    val onChecked: (String, Boolean) -> Unit = { id, checked -> viewModel.setChecked(id, checked, reducedMotion) }
+
+    // Leaving the tab or backgrounding the app releases every held row to the basket; a rotation does not.
+    DisposableEffect(Unit) {
+        onDispose { if (!context.findActivity().isChangingConfigurations) viewModel.leaveScreen() }
+    }
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) {
+        if (!context.findActivity().isChangingConfigurations) viewModel.leaveScreen()
+    }
 
     Box(
         modifier = modifier
@@ -101,7 +131,7 @@ fun ShoppingListScreen(
             }
             view.aisles.forEach { group ->
                 item(key = "aisle-${group.aisle}") {
-                    ItemGroup(label = group.aisle, items = group.items, onChecked = viewModel::setChecked)
+                    ItemGroup(label = group.aisle, items = group.items, onChecked = onChecked, phases = phases, reducedMotion = reducedMotion)
                 }
             }
             if (view.manual.isNotEmpty()) {
@@ -109,7 +139,9 @@ fun ShoppingListScreen(
                     ItemGroup(
                         label = stringResource(R.string.shopping_other_items),
                         items = view.manual,
-                        onChecked = viewModel::setChecked,
+                        onChecked = onChecked,
+                        phases = phases,
+                        reducedMotion = reducedMotion,
                     )
                 }
             }
@@ -119,12 +151,21 @@ fun ShoppingListScreen(
                 }
                 if (basketOpen) {
                     item(key = "basket-items") {
-                        ItemGroup(label = null, items = view.basket, onChecked = viewModel::setChecked)
+                        ItemGroup(label = null, items = view.basket, onChecked = onChecked)
                     }
                 }
             }
         }
     }
+}
+
+private fun Context.findActivity(): Activity {
+    var c = this
+    while (c is ContextWrapper) {
+        if (c is Activity) return c
+        c = c.baseContext
+    }
+    error("No Activity in context")
 }
 
 @Composable
@@ -155,7 +196,13 @@ private fun AddItemRow(draft: String, onDraftChange: (String) -> Unit, onAdd: ()
 
 /** One section: optional micro label above a bordered card with a divider between rows. */
 @Composable
-private fun ItemGroup(label: String?, items: List<ShoppingItem>, onChecked: (String, Boolean) -> Unit) {
+private fun ItemGroup(
+    label: String?,
+    items: List<ShoppingItem>,
+    onChecked: (String, Boolean) -> Unit,
+    phases: Map<String, GracePhase> = emptyMap(),
+    reducedMotion: Boolean = false,
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -172,21 +219,36 @@ private fun ItemGroup(label: String?, items: List<ShoppingItem>, onChecked: (Str
         }
         RowCard {
             items.forEachIndexed { i, item ->
-                if (i > 0) RowDivider()
-                key(item.id) { ItemRow(item, onChecked) }
+                key(item.id) {
+                    // A ticked row keeps its place; once its grace period ends it fades out and collapses (duration-base).
+                    AnimatedVisibility(
+                        visible = phases[item.id] != GracePhase.Fading,
+                        exit = if (reducedMotion) {
+                            ExitTransition.None
+                        } else {
+                            fadeOut(tween(GracePeriod.FADE_MS.toInt())) + shrinkVertically(tween(GracePeriod.FADE_MS.toInt()))
+                        },
+                    ) {
+                        Column {
+                            if (i > 0) RowDivider()
+                            ItemRow(item, onChecked, animate = !reducedMotion)
+                        }
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-private fun ItemRow(item: ShoppingItem, onChecked: (String, Boolean) -> Unit) {
+private fun ItemRow(item: ShoppingItem, onChecked: (String, Boolean) -> Unit, animate: Boolean) {
     CheckRow(
         label = item.name,
         checked = item.checked,
         onCheckedChange = { onChecked(item.id, it) },
         subtitle = item.note.ifBlank { null },
         trailing = item.amount.ifBlank { null },
+        animate = animate,
     )
 }
 
