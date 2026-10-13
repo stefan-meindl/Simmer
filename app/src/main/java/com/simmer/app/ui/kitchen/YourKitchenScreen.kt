@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
@@ -82,6 +83,7 @@ fun YourKitchenScreen(
     val choice by viewModel.choice.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
     val context = LocalContext.current
+    val resources = LocalResources.current
     val configuration = LocalConfiguration.current
     val english = remember(context, configuration) {
         context.createConfigurationContext(Configuration(configuration).apply { setLocale(Locale.ENGLISH) })
@@ -100,7 +102,7 @@ fun YourKitchenScreen(
         } else {
             val rows = kitchenRows(current.custom) { key ->
                 val res = APPLIANCE_LABELS.getValue(key)
-                ApplianceRow(key, label = stringResource(res), english = english.getString(res))
+                ApplianceRow(key, label = resources.getString(res), english = english.getString(res))
             }
             val shown = matchingAppliances(rows, query)
             val offer = addOffer(rows, query)
