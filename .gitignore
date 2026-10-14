@@ -10,3 +10,7 @@
 local.properties
 
 /Design/
+
+# Signing keystores must never be committed
+*.jks
+*.keystore
