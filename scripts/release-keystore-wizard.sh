@@ -155,13 +155,13 @@ write_env() {
 set_secret() {
   local name="$1" value="$2"
   if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-    if printf '%s' "$value" | gh secret set "$name" >/dev/null 2>&1; then
+    if printf '%s' "$value" | gh secret set "$name" -R "$REPO_SLUG" >/dev/null; then
       WRITTEN_SECRET+=("$name")
       printf '  %s✓ set%s GitHub secret %s\n' "$GREEN" "$RESET" "$name"
       return
     fi
   fi
-  SKIPPED+=("GitHub secret $name (set it manually: gh secret set $name)")
+  SKIPPED+=("GitHub secret $name (set it manually: gh secret set $name -R $REPO_SLUG)")
   warn "skipped GitHub secret $name: gh not ready; set it later"
 }
 
@@ -252,19 +252,15 @@ ask KEY_ALIAS "Key alias [release]:"
 KEY_ALIAS="${KEY_ALIAS:-release}"
 ask KEY_DNAME "Certificate name [CN=Recipe App]:"
 KEY_DNAME="${KEY_DNAME:-CN=Recipe App}"
-say "Choose passwords (min 6 chars). Input is hidden and never printed."
+say "Choose a password (min 6 chars). Input is hidden and never printed."
+say "PKCS12 keystores use one password for store and key, so it is used for both."
 while :; do
   ask_secret KEYSTORE_PASSWORD "Keystore password:"
   ask_secret _confirm "Repeat keystore password:"
   [[ "$KEYSTORE_PASSWORD" == "$_confirm" && ${#KEYSTORE_PASSWORD} -ge 6 ]] && break
   warn "passwords differ or are shorter than 6 characters; try again"
 done
-while :; do
-  ask_secret KEY_PASSWORD "Key password (may equal the keystore password):"
-  ask_secret _confirm "Repeat key password:"
-  [[ "$KEY_PASSWORD" == "$_confirm" && ${#KEY_PASSWORD} -ge 6 ]] && break
-  warn "passwords differ or are shorter than 6 characters; try again"
-done
+KEY_PASSWORD="$KEYSTORE_PASSWORD"
 _confirm=""
 
 # ── 3. Generate the keystore ──────────────────────────────────────────────
@@ -290,10 +286,10 @@ warn "If you lose this keystore or its passwords, installed users can NEVER"
 warn "receive an update signed as this app. There is no recovery."
 say ""
 step "Copy $KEYSTORE_PATH to a password manager attachment or encrypted drive."
-step "Store the keystore password, key alias ($KEY_ALIAS) and key password with it."
+step "Store the keystore password (also the key password) and key alias ($KEY_ALIAS) with it."
 step "Do NOT rely on GitHub: secrets are write-only and cannot be read back."
 say ""
-until confirm "Have you backed up the keystore AND all three values outside GitHub?"; do
+until confirm "Have you backed up the keystore AND the alias and password outside GitHub?"; do
   say "Please back it up before continuing."
 done
 
@@ -309,7 +305,7 @@ set_secret KEY_PASSWORD "$KEY_PASSWORD"
 
 say ""
 say "Verifying with gh secret list:"
-listed=$(gh secret list 2>/dev/null || true)
+listed=$(gh secret list -R "$REPO_SLUG" 2>/dev/null || true)
 for name in KEYSTORE_BASE64 KEYSTORE_PASSWORD KEY_ALIAS KEY_PASSWORD; do
   if grep -q "^${name}[[:space:]]" <<<"$listed"; then
     printf '  %s✓ present%s %s\n' "$GREEN" "$RESET" "$name"
