@@ -15,3 +15,7 @@ Single-context layout (`GLOSSARY.md` + `docs/adr/` at repo root). See `docs/agen
 ### Running and testing
 
 Run the app, read crash logs, or check a change on a device: `docs/manual-testing.md`.
+
+### Releasing
+
+Cut a tagged release, set up signing secrets, or ship a pre-release: `docs/releasing.md`.
