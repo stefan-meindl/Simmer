@@ -214,7 +214,7 @@ class RecipeFlowViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun toggleTimer(stepId: String, title: String, durationSecs: Int) =
-        stepTimers.toggle(timerKey(recipeId, stepId), title, durationSecs)
+        stepTimers.toggle(timerKey(recipeId, stepId), title, durationSecs, phase1.value?.recipe?.title.orEmpty())
 
     /** Called by visible running timers, so they finish even without the foreground service. */
     fun tickTimers() = stepTimers.tick()

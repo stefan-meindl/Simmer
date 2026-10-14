@@ -43,7 +43,7 @@ The unsaved Recipe the Add recipe review shows (`RecipeDraftStore`). Edit recipe
 _Avoid_: Pending recipe, import result
 
 **Add recipe**:
-The screen that turns pasted text into a User Recipe. It opens on the start stage, "How do you want to add this recipe?", with two cards: "On this phone" (shows the Reader model's state; leads to the paste stage) and "With a chatbot" (leads to the chatbot screen). Back from the paste stage or the chatbot screen returns to the start stage. The start stage shows on every visit; only a Working conversion or a never-reviewed finished recipe from an earlier visit (see Import job) opens it on Working or review instead. On the phone path: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), a Working stage while the Pipeline runs (or the error stage if it fails), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe and lands on the Recipes overview, scrolled to the top where the new card is listed first). The review's top row stays pinned with the "Edit details" action. Change on the paste stage opens Settings on top; a bottom tab tap there abandons Add recipe and its draft. On the chatbot path: the chatbot screen has step 1 (an optional recipe text field, kept in saved state, and "Copy prompt", which copies the Reader prompt) and step 2, a "Chatbot reply" field (Paste/Clear, kept in saved state) and an "Add recipe" button; the Reply parser turns the reply straight into the Add recipe draft and the review takes over, with no Pipeline, Working stage or Import job. A reply that is not a usable recipe changes nothing: the screen keeps the pasted text and shows "That doesn't look like a recipe from the prompt." with a "Copy fix prompt" button (the Fix prompt) until the reply is edited. Convert runs the Pipeline once the Reader model is ready; the built-in example still converts at once to its fixed result (`stubConvert`), and other text shows an inactive Download recipe reader button until the model is downloaded.
+The screen that turns pasted text into a User Recipe. It opens on the start stage, "How do you want to add this recipe?", with two cards: "On this phone" (shows the Reader model's state; leads to the paste stage) and "With a chatbot" (leads to the chatbot screen). Back from the paste stage or the chatbot screen returns to the start stage. The start stage shows on every visit; only a Working conversion or a never-reviewed finished recipe from an earlier visit (see Import job) opens it on Working or review instead. On the phone path: a paste stage (text, Paste/Clear, "Try an example", the kitchen line), a Working stage while the Pipeline runs (or the error stage if it fails), then a review stage showing the Add recipe draft, then Save recipe (stores it as a User Recipe and lands on the Recipes overview, scrolled to the top where the new card is listed first). The review's top row stays pinned with the "Edit details" action. The pencil in the paste stage's "What happens next" title row ("Change kitchen settings") opens Settings on top, scrolled to its Recipe creator section, with a Back banner; a bottom tab tap there abandons Add recipe and its draft. On the chatbot path: the chatbot screen has step 1 (an optional recipe text field, kept in saved state, and "Copy prompt", which copies the Reader prompt) and step 2, a "Chatbot reply" field (Paste/Clear, kept in saved state) and an "Add recipe" button; the Reply parser turns the reply straight into the Add recipe draft and the review takes over, with no Pipeline, Working stage or Import job. A reply that is not a usable recipe changes nothing: the screen keeps the pasted text and shows "That doesn't look like a recipe from the prompt." with a "Copy fix prompt" button (the Fix prompt) until the reply is edited. Convert runs the Pipeline once the Reader model is ready; the built-in example still converts at once to its fixed result (`stubConvert`), and other text shows an inactive Download recipe reader button until the model is downloaded.
 _Avoid_: Import screen, new recipe screen
 
 **Chatbot path**:
@@ -114,6 +114,7 @@ _Avoid_: Instruction, task
 
 **StepTimer**:
 The countdown button on a Step that has a timer duration; a Step without one shows no StepTimer. Cycles idle, running, paused, done. Keyed by recipe and step, so several run at once; a running StepTimer lives in the TimerService foreground service and is restored after process death from its end time.
+While running it has an ongoing notification (progress bar, countdown, public on the lockscreen; a Live Update on API 36+) with a **Pause** action. Pause from the notification gives the *paused-from-notification* state: still Paused, but the notification stays with **Resume** (continues from the remaining time) and **Reset** (back to idle at full duration, notification dismissed), and the service stays alive. Pausing in the app clears the notification instead, and Resume and Reset never show for it. Notification actions that no longer match the state (stale taps) are ignored.
 _Avoid_: Countdown, alarm
 
 **Phase**:
@@ -138,7 +139,7 @@ The Recipes tab card for an In-progress recipe: "Cooking now" heading, Planned-c
 _Avoid_: Resume card
 
 **Stop cooking**:
-The destructive answer of the leave-cooking dialog, also a swipe on the Cooking now card: cancels all of the recipe's StepTimers (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps). After a swipe, Undo restores the done Steps (`StoppedCooking`) but not the cancelled StepTimers.
+The destructive answer of the leave-cooking dialog, also a swipe on the Cooking now card: cancels all of the recipe's StepTimers, whether running, paused or paused-from-notification (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps). After a swipe, Undo restores the done Steps (`StoppedCooking`) but not the cancelled StepTimers.
 _Avoid_: Reset, abandon
 
 **Active Step**:
@@ -176,6 +177,16 @@ _Avoid_: Rule, filter, visibility flag
 **Appliance**:
 A piece of kitchen equipment the user owns, picked from a catalogue or added by the user.
 _Avoid_: Tool, gadget, equipment
+
+**Back banner**:
+The pinned full-width bar (48dp or more, arrow plus label, whole bar tappable) at the top of a tab screen (Recipes, Shopping list, Settings) when a Back origin sits under that tab on the back stack. Tapping it, or device Back, pops to the origin with its state intact (draft text, flow selection). Not shown on other pushed screens such as Your kitchen. Tapping a different tab abandons the origin and its state; tapping the shown tab does nothing. Derived from the previous back-stack entry's route (`backOriginFor`), no nav args.
+_Avoid_: Breadcrumb, return bar
+
+**Back origin**:
+A non-tab screen a tab was opened from, named by the Back banner: Add recipe ("Back to recipe creator", de "Zurück zum Rezept-Assistenten") or the recipe flow's Phase 1 ("Back to recipe", de "Zurück zum Rezept"). Reached by Add recipe's pencil (Settings) and the flow's "View list" (Shopping list, which no longer pops the flow). Back from Your kitchen is a real pop to Settings, so with Add recipe underneath Settings still shows its banner. A new origin is one `when` branch in `backOriginFor`.
+
+**Recipe creator (Settings section)**:
+The Settings group, after Language, Units and Spices, holding what Add recipe depends on: Your kitchen (with the kitchen mode) and the Recipe reader. Arriving from Add recipe's pencil scrolls to it.
 
 **Your kitchen**:
 The Settings sub-screen where the user ticks their Appliances: a searchable checklist of the 28 catalogue Appliances, with "n selected", where a name that matches nothing can be added as the user's own ("Added by you", kept in the list even when unticked). Every tap is saved at once; first-run defaults are Hob, Oven and Microwave.

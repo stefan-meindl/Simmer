@@ -44,15 +44,41 @@ class StepTimerStore(
 
     init {
         tick()
-        if (runningKeys().isNotEmpty()) host.ensureRunning()
+        if (activeKeys().isNotEmpty()) host.ensureRunning()
     }
 
     fun runningKeys(): Set<String> =
         state.value.filterValues { it.status == TimerStatus.Running }.keys
 
+    /** Timers the service keeps a notification for: running, or paused with the notification's Pause. */
+    fun activeKeys(): Set<String> =
+        state.value.filterValues { it.status == TimerStatus.Running || it.pausedFromNotification }.keys
+
+    /** The notification's Pause action; ignored unless the timer is running. */
+    fun pauseFromNotification(key: String) {
+        val current = state.value[key] ?: return
+        if (current.status != TimerStatus.Running) return
+        put(key, current.pauseFromNotification(clock()))
+    }
+
+    /** The notification's Resume action; ignored unless the timer is paused. */
+    fun resume(key: String) {
+        val current = state.value[key] ?: return
+        if (current.status != TimerStatus.Paused) return
+        put(key, current.toggle(clock()))
+        host.ensureRunning()
+    }
+
+    /** The notification's Reset action; ignored unless the timer is paused with the notification's Pause. */
+    fun resetFromNotification(key: String) {
+        val current = state.value[key] ?: return
+        if (current.status != TimerStatus.Paused || !current.pausedFromNotification) return
+        put(key, current.reset())
+    }
+
     /** Tap on the timer button; [durationSecs] and [title] are used when the timer is not kept yet. */
-    fun toggle(key: String, title: String, durationSecs: Int) {
-        val current = state.value[key] ?: TimerState.idle(durationSecs, title)
+    fun toggle(key: String, title: String, durationSecs: Int, recipeTitle: String = "") {
+        val current = state.value[key] ?: TimerState.idle(durationSecs, title, recipeTitle)
         val next = current.toggle(clock())
         put(key, next)
         if (current.status == TimerStatus.Done) host.dismissFinished(key)

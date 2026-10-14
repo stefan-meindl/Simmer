@@ -1,11 +1,17 @@
 package com.simmer.app.ui.nav
 
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.systemBars
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -28,6 +34,7 @@ import com.simmer.app.ui.kitchen.YourKitchenScreen
  * @param navController the nav controller shared with [BottomTabBar] and callers
  * @param isDarkTheme   current resolved dark-theme state (for theme toggle icon)
  * @param onThemeToggle callback to toggle the theme
+ * @param badgeCount    Shopping list badge shown on the tab bar of each tab screen
  * @param modifier      applied to the [NavHost]
  */
 @Composable
@@ -35,12 +42,25 @@ fun SimmerNavHost(
     navController: NavHostController,
     isDarkTheme: Boolean,
     onThemeToggle: () -> Unit,
+    badgeCount: Int,
     modifier: Modifier = Modifier,
 ) {
+    // Each tab screen frames itself (Back banner above, tab bar below), so both move with its transition
+    // instead of switching instantly beside it.
+    @Composable
+    fun TabFrame(entry: NavBackStackEntry, content: @Composable () -> Unit) {
+        BackBannerFrame(
+            navController = navController,
+            entry = entry,
+            bottomBar = { BottomTabBar(navController, badgeCount, currentRoute = entry.destination.route) },
+            content = content,
+        )
+    }
     NavHost(
         navController = navController,
         startDestination = RecipesTab,
-        modifier = modifier,
+        // Screens pad for the status and navigation bars themselves; only the sides are padded here.
+        modifier = modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
     ) {
         // ----------------------------------------------------------------
         // Bottom tab destinations
@@ -49,23 +69,33 @@ fun SimmerNavHost(
         composable<RecipesTab> { backStackEntry ->
             val saved by backStackEntry.savedStateHandle
                 .getStateFlow(RECIPE_SAVED_KEY, false).collectAsStateWithLifecycle()
-            RecipesScreen(
-                recipeSaved = saved,
-                onRecipeSavedShown = { backStackEntry.savedStateHandle[RECIPE_SAVED_KEY] = false },
-                isDarkTheme = isDarkTheme,
-                onThemeToggle = onThemeToggle,
-                onAddRecipe = { navController.navigate(AddRecipe) },
-                onOpenRecipe = { navController.navigate(RecipeFlow(it)) },
-                onContinueCooking = { navController.continueCooking(it) },
-            )
+            TabFrame(backStackEntry) {
+                RecipesScreen(
+                    recipeSaved = saved,
+                    onRecipeSavedShown = { backStackEntry.savedStateHandle[RECIPE_SAVED_KEY] = false },
+                    isDarkTheme = isDarkTheme,
+                    onThemeToggle = onThemeToggle,
+                    onAddRecipe = { navController.navigate(AddRecipe) },
+                    onOpenRecipe = { navController.navigate(RecipeFlow(it)) },
+                    onContinueCooking = { navController.continueCooking(it) },
+                )
+            }
         }
 
-        composable<ShoppingListTab> {
-            ShoppingListScreen()
+        composable<ShoppingListTab> { backStackEntry ->
+            TabFrame(backStackEntry) { ShoppingListScreen() }
         }
 
-        composable<SettingsTab> {
-            SettingsScreen(onEditKitchen = { navController.navigate(YourKitchen) })
+        composable<SettingsTab> { backStackEntry ->
+            val scrollToCreator by backStackEntry.savedStateHandle
+                .getStateFlow(SCROLL_TO_CREATOR_KEY, false).collectAsStateWithLifecycle()
+            TabFrame(backStackEntry) {
+                SettingsScreen(
+                    onEditKitchen = { navController.navigate(YourKitchen) },
+                    scrollToCreator = scrollToCreator,
+                    onScrolledToCreator = { backStackEntry.savedStateHandle[SCROLL_TO_CREATOR_KEY] = false },
+                )
+            }
         }
 
         // ----------------------------------------------------------------
@@ -77,12 +107,8 @@ fun SimmerNavHost(
             RecipeFlowPhase1Screen(
                 onBack = { navController.popBackStack() },
                 onEdit = { navController.navigate(EditRecipe(route.recipeId)) },
-                onViewList = {
-                    navController.navigate(ShoppingListTab) {
-                        popUpTo(navController.graph.startDestinationId)
-                        launchSingleTop = true
-                    }
-                },
+                // The flow stays underneath, so Shopping list shows "Back to recipe".
+                onViewList = { navController.openShoppingFromFlow() },
                 onPreparation = { navController.navigate(RecipeFlowPhase2(route.recipeId)) },
                 // No Method to pick: Phase 3 sits directly on Phase 1, so Back returns here.
                 onStartCooking = { navController.navigate(RecipeFlowPhase3(route.recipeId)) },
@@ -133,7 +159,7 @@ fun SimmerNavHost(
         composable<AddRecipe> {
             AddRecipeScreen(
                 onBack = { navController.popBackStack() },
-                // Settings opens on top, so back returns here with the pasted text.
+                // Settings opens on top (with a Back banner), so back returns here with the pasted text.
                 onChangeKitchen = { navController.openSettingsOnTop() },
                 onEditDetails = { navController.navigate(EditRecipe()) },
                 // The new recipe is listed first on the Recipes tab, which scrolls there.

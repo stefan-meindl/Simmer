@@ -45,6 +45,13 @@ import com.simmer.app.ui.components.readerModelSize
 import com.simmer.app.ui.components.readerStateText
 import com.simmer.app.ui.flow.rememberNotificationPermissionRequest
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import kotlin.math.roundToInt
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -76,6 +83,8 @@ import com.simmer.app.ui.theme.SimmerTextStyle_ScreenTitle
 fun SettingsScreen(
     onEditKitchen: () -> Unit,
     modifier: Modifier = Modifier,
+    scrollToCreator: Boolean = false,
+    onScrolledToCreator: () -> Unit = {},
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val colors = LocalSimmerColors.current
@@ -88,11 +97,21 @@ fun SettingsScreen(
             .windowInsetsPadding(WindowInsets.statusBars),
     ) {
         val state = ui ?: return@Box
+        val scroll = rememberScrollState()
+        // Where the "Recipe creator" group starts inside the scrolled column, once it has been laid out.
+        var creatorTop by remember { mutableStateOf<Int?>(null) }
+        LaunchedEffect(scrollToCreator, creatorTop) {
+            val top = creatorTop
+            if (scrollToCreator && top != null) {
+                scroll.scrollTo(top)
+                onScrolledToCreator()
+            }
+        }
         Column(
             verticalArrangement = Arrangement.spacedBy(28.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
+                .verticalScroll(scroll)
                 .padding(horizontal = 16.dp, vertical = 12.dp),
         ) {
             Text(
@@ -131,6 +150,12 @@ fun SettingsScreen(
                 selected = state.spices,
                 onSelect = viewModel::setSpices,
             )
+            // Add recipe's pencil lands here: what the creator needs from the user (kitchen and reader).
+            SectionHeader(
+                R.string.settings_creator,
+                R.string.settings_creator_hint,
+                modifier = Modifier.onGloballyPositioned { creatorTop = it.positionInParent().y.roundToInt() },
+            )
             KitchenSection(
                 appliances = state.appliances,
                 mode = state.kitchenMode,
@@ -153,9 +178,9 @@ fun SettingsScreen(
 private data class Choice(val key: String, @StringRes val label: Int, @StringRes val description: Int)
 
 @Composable
-private fun SectionHeader(@StringRes title: Int, @StringRes hint: Int) {
+private fun SectionHeader(@StringRes title: Int, @StringRes hint: Int, modifier: Modifier = Modifier) {
     val colors = LocalSimmerColors.current
-    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = modifier) {
         Text(
             text = stringResource(title),
             style = SimmerTextStyle_BodyMdMedium,

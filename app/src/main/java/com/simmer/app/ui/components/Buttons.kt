@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.layout.size
 import com.simmer.app.R
@@ -224,19 +226,33 @@ fun EditAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val colors = LocalSimmerColors.current
     LinkButton(
         text = text,
         onClick = onClick,
         modifier = modifier,
-        icon = {
-            Icon(
-                painter = painterResource(R.drawable.ic_pencil),
-                contentDescription = null,
-                tint = colors.textLink,
-                modifier = Modifier.size(16.dp),
-            )
-        },
+        icon = { PencilIcon(size = 16.dp) },
+    )
+}
+
+/** Icon-only [EditAction] (pencil), a 44 dp touch target; [contentDescription] says what it edits. */
+@Composable
+fun EditIconAction(
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    IconButton(onClick = onClick, modifier = modifier.size(44.dp)) {
+        PencilIcon(size = 18.dp, contentDescription = contentDescription)
+    }
+}
+
+@Composable
+private fun PencilIcon(size: Dp, contentDescription: String? = null) {
+    Icon(
+        painter = painterResource(R.drawable.ic_pencil),
+        contentDescription = contentDescription,
+        tint = LocalSimmerColors.current.textLink,
+        modifier = Modifier.size(size),
     )
 }
 
