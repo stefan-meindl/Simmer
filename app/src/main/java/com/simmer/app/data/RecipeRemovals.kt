@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/** How long the Undo offer after a swipe stays, like the Shopping list's clear. */
-const val REMOVAL_UNDO_MS = 5_000L
+/** How long an Undo offer stays: after a swipe removal on the Recipes tab and after a Shopping list clear. */
+const val UNDO_WINDOW_MS = 5_000L
 
 /** What a swipe on a Recipes tab card removed, kept for Undo. */
 sealed interface Removal {
@@ -29,11 +29,11 @@ class RecipeRemovals(
     private val sessions: CookingSessions,
     private val scope: CoroutineScope,
 ) {
-    private val _last = MutableStateFlow<Removal?>(null)
+    private val _lastRemoval = MutableStateFlow<Removal?>(null)
     private var expiry: Job? = null
 
-    /** The removal Undo would reverse; null after Undo, after [REMOVAL_UNDO_MS] or once dismissed. */
-    val last: StateFlow<Removal?> = _last
+    /** The removal Undo would reverse; null after Undo, after [UNDO_WINDOW_MS] or once dismissed. */
+    val lastRemoval: StateFlow<Removal?> = _lastRemoval
 
     /** Unplan: the recipe's Shopping items and Planned state go. */
     fun unplan(recipeId: String, title: String) {
@@ -46,7 +46,7 @@ class RecipeRemovals(
     }
 
     fun undo() {
-        val removal = _last.value ?: return
+        val removal = _lastRemoval.value ?: return
         dismiss()
         when (removal) {
             is Removal.Unplanned -> scope.launch { shopping.restore(removal.snapshot) }
@@ -56,15 +56,15 @@ class RecipeRemovals(
 
     fun dismiss() {
         expiry?.cancel()
-        _last.value = null
+        _lastRemoval.value = null
     }
 
     private fun announce(removal: Removal) {
         expiry?.cancel()
-        _last.value = removal
+        _lastRemoval.value = removal
         expiry = scope.launch {
-            delay(REMOVAL_UNDO_MS)
-            _last.value = null
+            delay(UNDO_WINDOW_MS)
+            _lastRemoval.value = null
         }
     }
 }

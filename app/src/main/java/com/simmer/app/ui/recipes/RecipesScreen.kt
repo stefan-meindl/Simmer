@@ -103,9 +103,9 @@ fun RecipesScreen(
     val query by viewModel.query.collectAsStateWithLifecycle()
     val content = ui as? RecipesUi.Content
     val listState = rememberLazyListState()
-    val removed by viewModel.removed.collectAsStateWithLifecycle()
+    val lastRemoval by viewModel.lastRemoval.collectAsStateWithLifecycle()
     val snackbar = remember { SnackbarHostState() }
-    RemovalSnackbar(removed, snackbar, onUndo = viewModel::undoRemoval, onDismiss = viewModel::dismissRemoval)
+    RemovalSnackbar(lastRemoval, snackbar, onUndo = viewModel::undoRemoval, onDismiss = viewModel::dismissRemoval)
 
     // A recipe was just saved: it is listed first, so drop the filters that could hide it and show the top.
     LaunchedEffect(recipeSaved) {
@@ -337,15 +337,15 @@ private fun SwipeAwayCard(actionLabel: String, onRemove: () -> Unit, content: @C
 /** "Unplanned X · Undo" / "Stopped cooking X · Undo" for a few seconds after a card is swiped away. */
 @Composable
 private fun RemovalSnackbar(removal: Removal?, snackbar: SnackbarHostState, onUndo: () -> Unit, onDismiss: () -> Unit) {
-    val message = when (removal) {
+    val message: String? = when (removal) {
         is Removal.Unplanned -> stringResource(R.string.recipes_unplanned, removal.title)
         is Removal.Stopped -> stringResource(R.string.recipes_cooking_stopped, removal.title)
-        null -> ""
+        null -> null
     }
     val undoLabel = stringResource(R.string.recipes_removal_undo)
     // The view model owns the 5 s timer and clears the state, so rotation neither restarts nor cuts it short.
     LaunchedEffect(removal) {
-        if (removal == null) {
+        if (message == null) {
             snackbar.currentSnackbarData?.dismiss()
             return@LaunchedEffect
         }

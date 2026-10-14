@@ -58,8 +58,8 @@ class RecipeRemovalsTest {
 
         assertTrue(dao.items.isEmpty())
         assertTrue(dao.planned.isEmpty())
-        assertEquals("Chilli", r.last.value?.title)
-        assertTrue(r.last.value is Removal.Unplanned)
+        assertEquals("Chilli", r.lastRemoval.value?.title)
+        assertTrue(r.lastRemoval.value is Removal.Unplanned)
     }
 
     @Test fun `undo after unplan restores items and the Planned choice`() = runTest {
@@ -73,7 +73,7 @@ class RecipeRemovalsTest {
 
         assertEquals(listOf("Onions"), dao.items.map { it.name })
         assertEquals(choice, shopping.getPlanned("chilli"))
-        assertNull(r.last.value)
+        assertNull(r.lastRemoval.value)
     }
 
     @Test fun `stop cooking cancels timers, clears progress, keeps Planned and the choice`() = runTest {
@@ -90,7 +90,7 @@ class RecipeRemovalsTest {
         assertTrue(progress.doneSteps("chilli").isEmpty())
         assertEquals(choice, progress.choice("chilli"))
         assertEquals(choice, shopping.getPlanned("chilli"))
-        assertTrue(r.last.value is Removal.Stopped)
+        assertTrue(r.lastRemoval.value is Removal.Stopped)
     }
 
     @Test fun `undo after stop cooking restores done Steps but not timers`() = runTest {
@@ -114,9 +114,9 @@ class RecipeRemovalsTest {
         runCurrent()
 
         advanceTimeBy(4_999)
-        assertTrue(r.last.value != null)
+        assertTrue(r.lastRemoval.value != null)
         advanceTimeBy(2)
-        assertNull(r.last.value)
+        assertNull(r.lastRemoval.value)
 
         r.undo()
         runCurrent()
@@ -134,6 +134,6 @@ class RecipeRemovalsTest {
         runCurrent()
         advanceTimeBy(3_000)
 
-        assertEquals("Curry", r.last.value?.title)
+        assertEquals("Curry", r.lastRemoval.value?.title)
     }
 }

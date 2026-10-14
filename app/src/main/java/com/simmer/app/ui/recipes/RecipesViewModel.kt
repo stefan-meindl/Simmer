@@ -47,7 +47,7 @@ class RecipesViewModel @Inject constructor(
     private val removals = RecipeRemovals(shopping, sessions, viewModelScope)
 
     /** The last swiped-away card, for the Undo snackbar. Null after Undo, after 5 s, or once dismissed. */
-    val removed: StateFlow<Removal?> = removals.last
+    val lastRemoval: StateFlow<Removal?> = removals.lastRemoval
 
     /** Straight from saved state so typing never lags behind the filtered list. */
     val query: StateFlow<String> = savedState.getStateFlow(KEY_QUERY, "")
