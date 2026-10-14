@@ -19,7 +19,13 @@ import com.simmer.app.domain.TimerNotificationContent
 
 /** Notification channels and notifications of the step timers. */
 object TimerNotifications {
-    const val CHANNEL_RUNNING = "timers_running"
+    /**
+     * Not IMPORTANCE_LOW: with "Show silent conversations and notifications" off, the lockscreen and
+     * always-on display hide LOW notifications, promoted or not. DEFAULT with no sound or vibration
+     * stays quiet. Channel importance can't be raised after creation, hence the new id.
+     */
+    const val CHANNEL_RUNNING = "timers_running_v2"
+    private const val LEGACY_CHANNEL_RUNNING = "timers_running"
     const val CHANNEL_DONE = "timers_done"
 
     /** Vibration when a timer ends: wait 0, buzz 200 ms, pause 100 ms, buzz 200 ms. */
@@ -31,8 +37,12 @@ object TimerNotifications {
         val running = NotificationChannel(
             CHANNEL_RUNNING,
             context.getString(R.string.timer_channel_running),
-            NotificationManager.IMPORTANCE_LOW,
-        ).apply { description = context.getString(R.string.timer_channel_running_description) }
+            NotificationManager.IMPORTANCE_DEFAULT,
+        ).apply {
+            description = context.getString(R.string.timer_channel_running_description)
+            setSound(null, null)
+            enableVibration(false)
+        }
         val done = NotificationChannel(
             CHANNEL_DONE,
             context.getString(R.string.timer_channel_done),
@@ -49,6 +59,7 @@ object TimerNotifications {
             enableVibration(true)
             vibrationPattern = DONE_VIBRATION
         }
+        manager.deleteNotificationChannel(LEGACY_CHANNEL_RUNNING)
         manager.createNotificationChannels(listOf(running, done))
     }
 
