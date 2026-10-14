@@ -180,9 +180,12 @@
     <string name="settings_reader">Rezept-Leser</string>
     <string name="settings_reader_hint">Liest eingefügte Rezepte und macht daraus Schritte.</string>
     <string name="settings_reader_where">Auf diesem Handy · Gemma 4 E2B</string>
+    <string name="settings_reader_where_nano">Auf diesem Handy · Gemini Nano</string>
+    <string name="settings_reader_state_nano">Nicht geladen</string>
     <string name="settings_reader_state">Nicht geladen · %1$s</string>
     <string name="settings_reader_private">Eingefügte Rezepte verlassen nie dein Handy.</string>
     <string name="settings_reader_state_downloading">Wird geladen · %1$d %%</string>
+    <string name="settings_reader_state_downloading_unknown">Wird geladen</string>
     <string name="settings_reader_state_waiting">Warte auf Verbindung · %1$d %%</string>
     <string name="settings_reader_state_ready">Bereit</string>
     <string name="settings_reader_state_no_space">Nicht genug Speicher. %1$s frei benötigt.</string>

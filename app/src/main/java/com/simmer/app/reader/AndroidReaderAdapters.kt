@@ -10,13 +10,21 @@ import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.SamplerConfig
+import com.google.mlkit.genai.prompt.Generation
+import com.google.mlkit.genai.prompt.GenerativeModel
+import com.google.mlkit.genai.prompt.SystemInstruction
+import com.google.mlkit.genai.prompt.TextPart
+import com.google.mlkit.genai.prompt.generateContentRequest
+import com.simmer.app.domain.DownloadProgress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.transformWhile
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -98,7 +106,34 @@ class GemmaReaderRegistry @Inject constructor() {
     }
 }
 
-/** SEAM: replace with an ML Kit GenAI availability check when GeminiNanoReader is built. */
-class NoNanoAvailability : NanoAvailabilityCheck {
-    override suspend fun check(): NanoAvailability = NanoAvailability.Unavailable
+/** The real ML Kit GenAI Prompt API (Gemini Nano). Thin: the mappings are in NanoMapping.kt (JVM-tested); see docs/manual-testing.md. */
+class MlKitNanoClient : NanoClient {
+    private val model: GenerativeModel by lazy { Generation.getClient() }
+
+    override suspend fun availability(): NanoAvailability = nanoAvailabilityOf(model.checkStatus())
+
+    override fun download(): Flow<DownloadProgress> = model.download()
+        .map(::downloadProgressOf)
+        .transformWhile { progress ->
+            emit(progress)
+            progress is DownloadProgress.Running
+        }
+
+    override fun generate(system: String, user: String, maxTokens: Int, temperature: Double): Flow<String> {
+        val request = generateContentRequest(SystemInstruction(system), TextPart(user)) {
+            this.temperature = temperature.toFloat()
+            this.maxOutputTokens = maxTokens.coerceAtMost(MAX_OUTPUT_TOKENS)
+        }
+        return model.generateContentStream(request)
+            .map { it.candidates.firstOrNull()?.text.orEmpty() }
+            .catch { throw it.asNanoFailure() }
+    }
+
+    private companion object {
+        /**
+         * ML Kit rejects a larger `maxOutputTokens`. Safe to clamp: the Pipeline asks for at most 2,000
+         * in any of its four passes (and in their repair retries), so the clamp never changes a request.
+         */
+        const val MAX_OUTPUT_TOKENS = 4096
+    }
 }

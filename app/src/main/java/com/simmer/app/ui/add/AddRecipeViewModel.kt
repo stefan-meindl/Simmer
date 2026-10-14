@@ -7,7 +7,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.AddRecipeSession
 import com.simmer.app.data.ImportJob
-import com.simmer.app.data.ReaderController
+import com.simmer.app.reader.ReaderState
+import com.simmer.app.reader.ReaderStateSource
 import com.simmer.app.data.PrefsRepository
 import com.simmer.app.data.RecipeDraftStore
 import com.simmer.app.data.draftFromJson
@@ -68,8 +69,8 @@ enum class ReviewTab { Ingredients, Steps }
 sealed interface AddRecipeUi {
     data object Loading : AddRecipeUi
 
-    /** The start stage: how to add the recipe. [reader] is the Reader model's state, shown on "On this phone". */
-    data class Start(val reader: ReaderStatus) : AddRecipeUi
+    /** The start stage: how to add the recipe. [reader] is the engine and the Reader model's state, shown on "On this phone". */
+    data class Start(val reader: ReaderState) : AddRecipeUi
 
     /**
      * The chatbot path: the optional recipe text for the Reader prompt, what the prompt needs besides it
@@ -116,7 +117,7 @@ class AddRecipeViewModel @Inject constructor(
     private val drafts: RecipeDraftStore,
     private val job: ImportJob,
     private val prefs: PrefsRepository,
-    reader: ReaderController,
+    readerState: ReaderStateSource,
 ) : ViewModel() {
 
     /** Straight from saved state so typing never lags behind the screen state. */
@@ -148,8 +149,8 @@ class AddRecipeViewModel @Inject constructor(
         kitchenLine(appliances, KitchenMode.fromKey(mode))
     }
 
-    private val readerStatus = reader.status
-    private val readerReady = readerStatus.map { it == ReaderStatus.Ready }
+    private val readerFlow = readerState.state
+    private val readerReady = readerFlow.map { it.status == ReaderStatus.Ready }
 
     private val step = savedState.getStateFlow(KEY_STEP, AddStep.Start.key)
 
@@ -163,9 +164,9 @@ class AddRecipeViewModel @Inject constructor(
         ChatbotInputs(PromptKitchen(orderAppliances(appliances), KitchenMode.fromKey(mode)), lang, promptText, reply, error)
     }
 
-    private val start = combine(step, paste, readerStatus, chatbotInputs) { step, paste, status, chatbot ->
+    private val start = combine(step, paste, readerFlow, chatbotInputs) { step, paste, reader, chatbot ->
         when (addStepFromKey(step)) {
-            AddStep.Start -> AddRecipeUi.Start(status)
+            AddStep.Start -> AddRecipeUi.Start(reader)
             AddStep.Chatbot -> AddRecipeUi.Chatbot(chatbot.promptText, chatbot.kitchen, chatbot.lang, chatbot.reply, chatbot.reply.isNotBlank(), chatbot.error)
             AddStep.Phone -> paste
         }

@@ -4,10 +4,12 @@ import com.simmer.app.domain.DownloadProgress
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.RecipeReader
 import com.simmer.app.reader.NanoAvailability
+import com.simmer.app.reader.ReaderEngine
 import com.simmer.app.reader.ReaderSelector
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -21,8 +23,8 @@ class ReaderSelectorTest {
     private val nano = NamedReader()
     private val gemma = NamedReader()
 
-    private fun select(availability: NanoAvailability, nanoReader: RecipeReader? = nano) =
-        ReaderSelector(availability = { availability }, nano = nanoReader, gemma = gemma)
+    private fun select(availability: NanoAvailability) =
+        ReaderSelector(availability = { availability }, nano = nano, gemma = gemma)
 
     @Test
     fun nanoWhenAvailable() = runTest {
@@ -35,13 +37,21 @@ class ReaderSelectorTest {
     }
 
     @Test
-    fun gemmaWhenNanoUnavailable() = runTest {
-        assertSame(gemma, select(NanoAvailability.Unavailable).current())
+    fun gemmaWhileNanosModelIsDownloading() = runTest {
+        // Only Available or Downloadable pick Nano (issue #18).
+        assertSame(gemma, select(NanoAvailability.Downloading).current())
+        assertEquals(ReaderEngine.Gemma, select(NanoAvailability.Downloading).engine())
     }
 
     @Test
-    fun gemmaWhenNanoIsNotImplementedYet() = runTest {
-        assertSame(gemma, select(NanoAvailability.Available, nanoReader = null).current())
+    fun engineNamesTheChoice() = runTest {
+        assertEquals(ReaderEngine.Nano, select(NanoAvailability.Available).engine())
+        assertEquals(ReaderEngine.Gemma, select(NanoAvailability.Unavailable).engine())
+    }
+
+    @Test
+    fun gemmaWhenNanoUnavailable() = runTest {
+        assertSame(gemma, select(NanoAvailability.Unavailable).current())
     }
 
     @Test

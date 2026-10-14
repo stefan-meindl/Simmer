@@ -2,23 +2,27 @@ package com.simmer.app.reader
 
 import com.simmer.app.domain.RecipeReader
 
+enum class ReaderEngine { Nano, Gemma }
+
 /**
  * Picks the [RecipeReader] at runtime: Gemini Nano when ML Kit reports it Available or Downloadable,
- * otherwise (or when the check fails) Gemma.
- *
- * SEAM: [nano] is null until a GeminiNanoReader exists (not part of #16), so today every phone gets Gemma.
+ * otherwise (Unavailable, Downloading, or when the check fails) Gemma.
  */
 class ReaderSelector(
     private val availability: NanoAvailabilityCheck,
-    private val nano: RecipeReader?,
+    private val nano: RecipeReader,
     private val gemma: RecipeReader,
 ) {
-    suspend fun current(): RecipeReader {
-        if (nano == null) return gemma
-        val nanoAvailability = attempt { availability.check() }.getOrDefault(NanoAvailability.Unavailable)
-        return when (nanoAvailability) {
-            NanoAvailability.Available, NanoAvailability.Downloadable -> nano
-            NanoAvailability.Unavailable -> gemma
+    /** The chosen [engine] and its [reader]. */
+    data class Selection(val engine: ReaderEngine, val reader: RecipeReader)
+
+    suspend fun select(): Selection =
+        when (attempt { availability.check() }.getOrDefault(NanoAvailability.Unavailable)) {
+            NanoAvailability.Available, NanoAvailability.Downloadable -> Selection(ReaderEngine.Nano, nano)
+            NanoAvailability.Downloading, NanoAvailability.Unavailable -> Selection(ReaderEngine.Gemma, gemma)
         }
-    }
+
+    suspend fun engine(): ReaderEngine = select().engine
+
+    suspend fun current(): RecipeReader = select().reader
 }

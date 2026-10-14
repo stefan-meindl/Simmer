@@ -94,7 +94,7 @@ class GemmaReader(
                 }
             }
             try {
-                emitAll(loaded.generate(system, user, maxTokens, TEMPERATURE))
+                emitAll(loaded.generate(system, user, maxTokens, READER_TEMPERATURE))
             } finally {
                 withContext(NonCancellable) {
                     state.withLock {
@@ -153,7 +153,6 @@ class GemmaReader(
         const val IDLE_TIMEOUT_MS = 60_000L
         const val THERMAL_POLL_MS = 5_000L
         const val THERMAL_MAX_WAIT_MS = 5 * 60_000L
-        const val TEMPERATURE = 0.2
     }
 }
 

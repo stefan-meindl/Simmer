@@ -18,7 +18,7 @@ import com.simmer.app.domain.ReaderModel
 import com.simmer.app.domain.READER_REQUIRED_FREE_BYTES
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.readerStatus
-import com.simmer.app.reader.ReaderModelSource
+import com.simmer.app.reader.GemmaModelControl
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -48,7 +48,7 @@ interface ReaderEntryPoint {
 class ReaderController @Inject constructor(
     @ApplicationContext private val context: Context,
     private val prefs: PrefsRepository,
-) : ReaderModelSource {
+) : GemmaModelControl {
     private val modelDir = File(context.filesDir, "models")
 
     val downloader = ModelDownloader(
@@ -100,7 +100,7 @@ class ReaderController @Inject constructor(
     override fun modelPath(): String = File(modelDir, ReaderModel.FILE_NAME).path
 
     /** Stops the task. The partial file stays, so a later Download resumes where it stopped. */
-    fun cancel() {
+    override fun cancel() {
         work.cancelUniqueWork(WORK_NAME)
     }
 
@@ -118,7 +118,7 @@ class ReaderController @Inject constructor(
     }
 
     /** Deletes the model; the status goes back to Not downloaded. */
-    fun remove() {
+    override fun remove() {
         work.cancelUniqueWork(WORK_NAME)
         work.pruneWork()
         downloader.remove()
