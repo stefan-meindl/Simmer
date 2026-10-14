@@ -38,6 +38,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
@@ -309,8 +311,15 @@ private fun SwipeAwayCard(modifier: Modifier = Modifier, actionLabel: String, on
         positionalThreshold = { distance -> distance * SWIPE_DELETE_THRESHOLD },
     )
     val alpha = remember { Animatable(1f) }
-    LaunchedEffect(state.currentValue) {
-        if (state.currentValue != SwipeToDismissBoxValue.Settled) {
+    // The swipe state is saveable and keyed by the list item, so an Undo that brings the card back
+    // can restore it as already swiped away. Reset that before arming the delete.
+    var armed by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (state.currentValue != SwipeToDismissBoxValue.Settled) state.snapTo(SwipeToDismissBoxValue.Settled)
+        armed = true
+    }
+    LaunchedEffect(state.currentValue, armed) {
+        if (armed && state.currentValue != SwipeToDismissBoxValue.Settled) {
             alpha.animateTo(0f, tween(durationMillis = REMOVE_FADE_MS))
             currentOnRemove()
         }
