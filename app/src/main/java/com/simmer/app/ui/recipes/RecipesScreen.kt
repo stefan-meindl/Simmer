@@ -33,7 +33,7 @@ import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.material3.SwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -45,6 +45,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
@@ -304,22 +305,22 @@ private const val REMOVE_FADE_MS = 200
 @Composable
 private fun SwipeAwayCard(modifier: Modifier = Modifier, actionLabel: String, onRemove: () -> Unit, content: @Composable () -> Unit) {
     val currentOnRemove by rememberUpdatedState(onRemove)
-    val state = rememberSwipeToDismissBoxState(
-        // No side effect here: Material calls this while the finger is still down once the drag
-        // crosses the threshold. The delete runs below, after the card has settled off-screen.
-        confirmValueChange = { target -> target != SwipeToDismissBoxValue.Settled },
-        positionalThreshold = { distance -> distance * SWIPE_DELETE_THRESHOLD },
-    )
-    val alpha = remember { Animatable(1f) }
-    // The swipe state is saveable and keyed by the list item, so an Undo that brings the card back
-    // can restore it as already swiped away. Reset that before arming the delete.
-    var armed by remember { mutableStateOf(false) }
-    LaunchedEffect(Unit) {
-        if (state.currentValue != SwipeToDismissBoxValue.Settled) state.snapTo(SwipeToDismissBoxValue.Settled)
-        armed = true
+    // Not rememberSwipeToDismissBoxState: that one is saveable and keyed by the list item, so an
+    // Undo that brings the card back restored it as already swiped away and it vanished again.
+    val density = LocalDensity.current
+    val state = remember {
+        SwipeToDismissBoxState(
+            initialValue = SwipeToDismissBoxValue.Settled,
+            density = density,
+            // No side effect here: Material calls this while the finger is still down once the drag
+            // crosses the threshold. The delete runs below, after the card has settled off-screen.
+            confirmValueChange = { target -> target != SwipeToDismissBoxValue.Settled },
+            positionalThreshold = { distance -> distance * SWIPE_DELETE_THRESHOLD },
+        )
     }
-    LaunchedEffect(state.currentValue, armed) {
-        if (armed && state.currentValue != SwipeToDismissBoxValue.Settled) {
+    val alpha = remember { Animatable(1f) }
+    LaunchedEffect(state.currentValue) {
+        if (state.currentValue != SwipeToDismissBoxValue.Settled) {
             alpha.animateTo(0f, tween(durationMillis = REMOVE_FADE_MS))
             currentOnRemove()
         }
