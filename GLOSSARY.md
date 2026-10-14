@@ -239,19 +239,39 @@ The 22 recipe texts (English and German: blog-style, terse, imperial, optional i
 _Avoid_: Test data, samples
 
 **RecipeReader**:
-The interface abstracts over the two on-device AI engines (GemmaReader and GeminiNanoReader): `status()`, `download()` (a flow of `DownloadProgress`) and `generate()` (a flow of tokens). `ReaderSelector` picks one at runtime: Gemini Nano (`GeminiNanoReader`, ML Kit GenAI Prompt API) when ML Kit reports it Available, Downloadable or Downloading, else Gemma. If Nano reports BUSY (per-app quota) before any token, it waits and retries once.
+The interface abstracts over the two on-device AI engines (GemmaReader and GeminiNanoReader): `status()`, `download()` (a flow of `DownloadProgress`) and `generate()` (a flow of tokens). `ReaderSelector` picks one at runtime: Gemini Nano (`GeminiNanoReader`, ML Kit GenAI Prompt API) when ML Kit reports it Available or Downloadable, else Gemma (Unavailable, Downloading, or a failed check). Both generate at the shared `READER_TEMPERATURE` 0.2.
 _Avoid_: AI engine, model, backend
 
 **GemmaReader**:
-The RecipeReader that runs the Reader model through LiteRT-LM. Holds one engine per app lifetime: loaded on first use (GPU first, CPU as fallback, off the main thread), closed after 60 s idle or under real memory pressure (not when the app merely goes to the background), and waits (up to 5 minutes, then fails) before a pass while the phone's thermal status is severe. One generation runs at a time. Generates at temperature 0.2.
+The RecipeReader that runs the Reader model through LiteRT-LM. Holds one engine per app lifetime: loaded on first use (GPU first, CPU as fallback, off the main thread), closed after 60 s idle or under real memory pressure (not when the app merely goes to the background), and waits (up to 5 minutes, then fails) before a pass while the phone's thermal status is severe. One generation runs at a time.
 _Avoid_: Gemma engine, LLM
 
+**GeminiNanoReader**:
+The RecipeReader that runs Gemini Nano through the ML Kit GenAI Prompt API (Pixel 9 and other supported phones). The system (AICore) owns the model, so there is nothing to load, unload, cool down, cancel or remove. All ML Kit calls go through `NanoClient`; the real one is `MlKitNanoClient`, whose mappings (`FeatureStatus`, `DownloadStatus`, BUSY) are pure, JVM-tested functions. Requests ask for at most 4,096 output tokens (ML Kit's limit; the Pipeline never asks for more than 2,000).
+_Avoid_: Nano engine
+
+**NanoClient**:
+The seam between GeminiNanoReader and ML Kit: `availability()` (Available, Downloadable, Downloading, Unavailable), `download()` and `generate()`. Tests use a fake.
+_Avoid_: Nano adapter
+
+**BUSY wait-and-retry**:
+Gemini Nano has a per-app quota; when it is hit, ML Kit fails with `ErrorCode.BUSY` (`NanoBusyException`). Before any token has been emitted, GeminiNanoReader waits (ML Kit's retry hint, else 2 s) and retries once; a second BUSY, or BUSY after tokens, reaches the caller because a retry would repeat tokens.
+_Avoid_: Quota handling
+
+**ReaderEngine**:
+Which RecipeReader runs on this phone: Nano or Gemma. Chosen by `ReaderSelector` (`select()` returns the engine with its reader). Settings differs per engine in one place (`ReaderEngine.ui()`): Gemini Nano has no Cancel, Remove or "Download on Wi-Fi only" and no model size.
+_Avoid_: Backend, provider
+
+**ReaderState** and **ReaderStateSource**:
+`ReaderState` is the ReaderEngine plus the ReaderStatus the UI shows. `ReaderStateSource` supplies it to Settings and Add recipe and routes Settings' Download, Cancel and Remove to the engine in use. Gemma: the model file's status. Nano: ML Kit's status, polled again on every collection; a Nano download runs in an app-lifetime scope and its progress overrides the polled status (a failure until the next collection, a finished download until the next poll).
+_Avoid_: Reader view model
+
 **DownloadProgress**:
-What `RecipeReader.download()` reports: Running (percent, possibly waiting for a connection), then Complete or Failed (carrying a `DownloadFailure`). It is `ReaderStatus` reduced to the download's own steps.
+What `RecipeReader.download()` reports: Running (percent, possibly waiting for a connection; no percent for Gemini Nano, shown as an indeterminate bar), then Complete or Failed (carrying a `DownloadFailure`). It is `ReaderStatus` reduced to the download's own steps.
 _Avoid_: Download state
 
 **Reader model**:
-The Gemma 4 E2B file (`gemma-4-E2B-it-web.litertlm`, `ReaderModel`) that GemmaReader runs on. It is downloaded once by a unique WorkManager task (Wi-Fi only by default, resumable, SHA-256 checked, needs 3.5 GB free) into `filesDir/models/`. The file only exists under its final name once verified; until then the bytes sit in a `.part` file.
+The model the active ReaderEngine runs. On Gemma phones, the Gemma 4 E2B file (`gemma-4-E2B-it-web.litertlm`, `ReaderModel`). It is downloaded once by a unique WorkManager task (Wi-Fi only by default, resumable, SHA-256 checked, needs 3.5 GB free) into `filesDir/models/`. The file only exists under its final name once verified; until then the bytes sit in a `.part` file. On Gemini Nano phones it is the system's Gemini Nano, fetched by ML Kit when Download is tapped; Simmer holds no file.
 _Avoid_: AI model file, weights
 
 **DownloadWork**:
@@ -263,7 +283,7 @@ Why a download ended for good without a model: ChecksumMismatch (file deleted), 
 _Avoid_: Error code
 
 **ReaderStatus**:
-The state of the Reader model that Settings shows, derived by `readerStatus`: Not downloaded, Downloading (percent, possibly waiting for a connection), Ready, Not enough storage, Not supported, or Failed (carrying a `DownloadFailure`: checksum mismatch, not enough storage, server error, unknown). Never stored; recomputed from the file, the download task and free storage.
+The state of the Reader model that Settings shows, derived by `readerStatus`: Not downloaded, Downloading (percent, possibly waiting for a connection; no percent for Gemini Nano), Ready, Not enough storage, Not supported, or Failed (carrying a `DownloadFailure`: checksum mismatch, not enough storage, server error, unknown). Not persisted. Gemma: recomputed from the file, the download task and free storage. Gemini Nano: polled from ML Kit, with a running Nano download (or its failure) held in `ReaderStateSource` meanwhile.
 _Avoid_: Model state, download state
 
 ### Shopping

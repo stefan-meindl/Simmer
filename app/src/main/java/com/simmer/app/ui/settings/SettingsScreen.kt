@@ -39,6 +39,7 @@ import com.simmer.app.domain.READER_REQUIRED_FREE_BYTES
 import com.simmer.app.domain.ReaderModel
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.reader.ReaderEngine
+import com.simmer.app.ui.components.ui
 import com.simmer.app.domain.formatGigabytes
 import androidx.compose.ui.platform.LocalConfiguration
 import com.simmer.app.ui.components.PrimaryButton
@@ -450,8 +451,7 @@ private fun ReaderSection(
     val colors = LocalSimmerColors.current
     val shape = RoundedCornerShape(12.dp)
     val requestNotifications = rememberNotificationPermissionRequest()
-    // Gemini Nano is the system's model: nothing to cancel, remove or limit to Wi-Fi.
-    val nano = engine == ReaderEngine.Nano
+    val engineUi = engine.ui()
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(R.string.settings_reader, R.string.settings_reader_hint)
         Row(
@@ -480,27 +480,33 @@ private fun ReaderSection(
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(if (nano) R.string.settings_reader_where_nano else R.string.settings_reader_where),
+                    text = stringResource(engineUi.whereRes),
                     style = SimmerTextStyle_BodyMdMedium,
                     color = colors.textPrimary,
                 )
                 Text(
-                    text = readerStateText(status, nano),
+                    text = readerStateText(status, engine),
                     style = SimmerTextStyle_Caption,
                     color = colors.textTertiary,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
                 )
                 if (status is ReaderStatus.Downloading) {
-                    LinearProgressIndicator(
-                        progress = { status.percent / 100f },
-                        color = colors.accent,
-                        trackColor = colors.borderSubtle,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp)
-                            .height(6.dp)
-                            .clip(CircleShape),
-                    )
+                    val barModifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 6.dp)
+                        .height(6.dp)
+                        .clip(CircleShape)
+                    // No percentage (Gemini Nano): an indeterminate bar instead of a stuck 0 %.
+                    if (status.percent == null) {
+                        LinearProgressIndicator(color = colors.accent, trackColor = colors.borderSubtle, modifier = barModifier)
+                    } else {
+                        LinearProgressIndicator(
+                            progress = { status.percent / 100f },
+                            color = colors.accent,
+                            trackColor = colors.borderSubtle,
+                            modifier = barModifier,
+                        )
+                    }
                 }
             }
         }
@@ -517,14 +523,14 @@ private fun ReaderSection(
                     icon = { Icon(painterResource(R.drawable.ic_download), null, Modifier.size(18.dp)) },
                 )
             is ReaderStatus.Downloading ->
-                if (!nano) SecondaryButton(
+                if (engineUi.ownsModelFile) SecondaryButton(
                     text = stringResource(R.string.settings_reader_cancel),
                     onClick = onCancel,
                     modifier = Modifier.fillMaxWidth(),
                     icon = { Icon(painterResource(R.drawable.ic_x), null, Modifier.size(18.dp)) },
                 )
             ReaderStatus.Ready ->
-                if (!nano) SecondaryButton(
+                if (engineUi.ownsModelFile) SecondaryButton(
                     text = stringResource(R.string.settings_reader_remove),
                     onClick = onRemove,
                     modifier = Modifier.fillMaxWidth(),
@@ -532,7 +538,7 @@ private fun ReaderSection(
                 )
             ReaderStatus.NotSupported -> Unit
         }
-        if (status != ReaderStatus.NotSupported && !nano) WifiOnlyRow(wifiOnly, onWifiOnly)
+        if (status != ReaderStatus.NotSupported && engineUi.ownsModelFile) WifiOnlyRow(wifiOnly, onWifiOnly)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),

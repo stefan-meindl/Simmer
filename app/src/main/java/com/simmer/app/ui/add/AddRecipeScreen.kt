@@ -242,7 +242,7 @@ private fun ColumnScope.StartStage(ui: AddRecipeUi.Start, viewModel: AddRecipeVi
             iconRes = R.drawable.ic_cpu,
             title = stringResource(R.string.add_choose_phone),
             body = stringResource(R.string.add_choose_phone_body),
-            detail = readerStateText(ui.reader),
+            detail = readerStateText(ui.reader.status, ui.reader.engine),
             onClick = { viewModel.choose(AddStep.Phone) },
         )
         StartCard(

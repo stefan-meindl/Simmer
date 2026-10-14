@@ -52,7 +52,7 @@ sealed interface ReaderStatus {
     data object NotDownloaded : ReaderStatus
 
     /** [waiting] is true while the task waits for a connection (Wi-Fi when "Wi-Fi only" is on). */
-    data class Downloading(val percent: Int, val waiting: Boolean) : ReaderStatus
+    data class Downloading(val percent: Int?, val waiting: Boolean) : ReaderStatus
     data object Ready : ReaderStatus
     data object NotEnoughStorage : ReaderStatus
     data object NotSupported : ReaderStatus

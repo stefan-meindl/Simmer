@@ -187,6 +187,7 @@
     <string name="settings_reader_state">Not downloaded · %1$s</string>
     <string name="settings_reader_private">Recipes you paste never leave your phone.</string>
     <string name="settings_reader_state_downloading">Downloading · %1$d%%</string>
+    <string name="settings_reader_state_downloading_unknown">Downloading</string>
     <string name="settings_reader_state_waiting">Waiting for connection · %1$d%%</string>
     <string name="settings_reader_state_ready">Ready</string>
     <string name="settings_reader_state_no_space">Not enough storage. Needs %1$s free.</string>

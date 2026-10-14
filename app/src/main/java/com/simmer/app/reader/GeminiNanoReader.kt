@@ -25,7 +25,7 @@ class GeminiNanoReader(
     override suspend fun status(): ReaderStatus = when (client.availability()) {
         NanoAvailability.Available -> ReaderStatus.Ready
         NanoAvailability.Downloadable -> ReaderStatus.NotDownloaded
-        NanoAvailability.Downloading -> ReaderStatus.Downloading(percent = 0, waiting = false)
+        NanoAvailability.Downloading -> ReaderStatus.Downloading(percent = null, waiting = false)
         NanoAvailability.Unavailable -> ReaderStatus.NotSupported
     }
 
@@ -36,7 +36,7 @@ class GeminiNanoReader(
         var retried = false
         while (true) {
             try {
-                client.generate(system, user, maxTokens, GemmaReader.TEMPERATURE).collect {
+                client.generate(system, user, maxTokens, READER_TEMPERATURE).collect {
                     emitted = true
                     emit(it)
                 }

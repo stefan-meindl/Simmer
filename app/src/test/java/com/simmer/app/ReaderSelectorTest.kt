@@ -23,8 +23,8 @@ class ReaderSelectorTest {
     private val nano = NamedReader()
     private val gemma = NamedReader()
 
-    private fun select(availability: NanoAvailability, nanoReader: RecipeReader? = nano) =
-        ReaderSelector(availability = { availability }, nano = nanoReader, gemma = gemma)
+    private fun select(availability: NanoAvailability) =
+        ReaderSelector(availability = { availability }, nano = nano, gemma = gemma)
 
     @Test
     fun nanoWhenAvailable() = runTest {
@@ -37,8 +37,10 @@ class ReaderSelectorTest {
     }
 
     @Test
-    fun nanoWhileItsModelIsDownloading() = runTest {
-        assertSame(nano, select(NanoAvailability.Downloading).current())
+    fun gemmaWhileNanosModelIsDownloading() = runTest {
+        // Only Available or Downloadable pick Nano (issue #18).
+        assertSame(gemma, select(NanoAvailability.Downloading).current())
+        assertEquals(ReaderEngine.Gemma, select(NanoAvailability.Downloading).engine())
     }
 
     @Test
@@ -50,11 +52,6 @@ class ReaderSelectorTest {
     @Test
     fun gemmaWhenNanoUnavailable() = runTest {
         assertSame(gemma, select(NanoAvailability.Unavailable).current())
-    }
-
-    @Test
-    fun gemmaWhenTheBuildHasNoNanoReader() = runTest {
-        assertSame(gemma, select(NanoAvailability.Available, nanoReader = null).current())
     }
 
     @Test

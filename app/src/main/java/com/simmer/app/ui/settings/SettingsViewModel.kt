@@ -100,12 +100,10 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun downloadReader() {
-        viewModelScope.launch {
-            if (ui.value?.readerEngine == ReaderEngine.Nano) readerState.downloadNano() else reader.download()
-        }
+        viewModelScope.launch { readerState.download() }
     }
 
-    fun cancelReaderDownload() = reader.cancel()
+    fun cancelReaderDownload() = readerState.cancel()
 
-    fun removeReader() = reader.remove()
+    fun removeReader() = readerState.remove()
 }

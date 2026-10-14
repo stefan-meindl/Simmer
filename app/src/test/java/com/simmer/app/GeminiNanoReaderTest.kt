@@ -111,7 +111,7 @@ class GeminiNanoReaderTest {
         suspend fun statusOf(a: NanoAvailability) = reader(FakeNano(availability = a)).status()
         assertEquals(ReaderStatus.Ready, statusOf(NanoAvailability.Available))
         assertEquals(ReaderStatus.NotDownloaded, statusOf(NanoAvailability.Downloadable))
-        assertEquals(ReaderStatus.Downloading(0, false), statusOf(NanoAvailability.Downloading))
+        assertEquals(ReaderStatus.Downloading(null, false), statusOf(NanoAvailability.Downloading))
         assertEquals(ReaderStatus.NotSupported, statusOf(NanoAvailability.Unavailable))
     }
 

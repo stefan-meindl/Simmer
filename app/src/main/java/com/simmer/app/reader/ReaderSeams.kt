@@ -4,6 +4,9 @@ import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.DownloadProgress
 import kotlinx.coroutines.flow.Flow
 
+/** Both engines generate at this temperature; the Pipeline above them is identical. */
+const val READER_TEMPERATURE = 0.2
+
 /** Where the Reader model lives and how it gets there. Implemented by `ReaderController`. */
 interface ReaderModelSource {
     val status: Flow<ReaderStatus>
@@ -13,6 +16,15 @@ interface ReaderModelSource {
 
     /** Absolute path of the verified model file (only meaningful once [status] is Ready). */
     fun modelPath(): String
+}
+
+/** What Settings can do to the Gemma model file; implemented by `ReaderController`. */
+interface GemmaModelControl : ReaderModelSource {
+    /** Stops the task; the partial file stays so a later download resumes. */
+    fun cancel()
+
+    /** Deletes the model. */
+    fun remove()
 }
 
 enum class InferenceBackend { Gpu, Cpu }

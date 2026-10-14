@@ -4,8 +4,8 @@ import kotlinx.coroutines.flow.Flow
 
 /** Progress of the Reader model download, as [RecipeReader.download] reports it. */
 sealed interface DownloadProgress {
-    /** [waiting] is true while the task waits for a connection. */
-    data class Running(val percent: Int, val waiting: Boolean) : DownloadProgress
+    /** [percent] is null when the engine cannot tell (Gemini Nano). [waiting] is true while the task waits for a connection. */
+    data class Running(val percent: Int?, val waiting: Boolean) : DownloadProgress
     data object Complete : DownloadProgress
     data class Failed(val reason: DownloadFailure) : DownloadProgress
 }
