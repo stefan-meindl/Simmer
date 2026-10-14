@@ -182,6 +182,8 @@
     <string name="settings_reader">Recipe reader</string>
     <string name="settings_reader_hint">Reads the recipes you paste and turns them into steps.</string>
     <string name="settings_reader_where">On this phone · Gemma 4 E2B</string>
+    <string name="settings_reader_where_nano">On this phone · Gemini Nano</string>
+    <string name="settings_reader_state_nano">Not downloaded</string>
     <string name="settings_reader_state">Not downloaded · %1$s</string>
     <string name="settings_reader_private">Recipes you paste never leave your phone.</string>
     <string name="settings_reader_state_downloading">Downloading · %1$d%%</string>

@@ -1,6 +1,7 @@
 package com.simmer.app.reader
 
 import com.simmer.app.domain.ReaderStatus
+import com.simmer.app.domain.DownloadProgress
 import kotlinx.coroutines.flow.Flow
 
 /** Where the Reader model lives and how it gets there. Implemented by `ReaderController`. */
@@ -33,9 +34,23 @@ fun interface ThermalMonitor {
     fun isSevere(): Boolean
 }
 
-enum class NanoAvailability { Available, Downloadable, Unavailable }
+enum class NanoAvailability { Available, Downloadable, Downloading, Unavailable }
 
 /** Whether Gemini Nano (ML Kit GenAI) can run on this phone. */
 fun interface NanoAvailabilityCheck {
     suspend fun check(): NanoAvailability
+}
+
+/** Per-app quota hit (ML Kit `ErrorCode.BUSY`). [retryAfterMs] is the service's own hint, if it gave one. */
+class NanoBusyException(val retryAfterMs: Long?) : Exception("Gemini Nano is busy")
+
+/** The Gemini Nano model behind ML Kit GenAI, as [GeminiNanoReader] needs it. The real one is `MlKitNanoClient`. */
+interface NanoClient {
+    suspend fun availability(): NanoAvailability
+
+    /** Downloads the model; ends with Complete or Failed. */
+    fun download(): Flow<DownloadProgress>
+
+    /** Streams reply tokens. Throws [NanoBusyException] when the per-app quota is hit. */
+    fun generate(system: String, user: String, maxTokens: Int, temperature: Double): Flow<String>
 }

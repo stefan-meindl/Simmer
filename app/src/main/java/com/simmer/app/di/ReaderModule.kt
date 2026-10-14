@@ -6,8 +6,12 @@ import com.simmer.app.reader.AndroidThermalMonitor
 import com.simmer.app.reader.GemmaReader
 import com.simmer.app.reader.GemmaReaderRegistry
 import com.simmer.app.reader.LiteRtEngineFactory
-import com.simmer.app.reader.NoNanoAvailability
+import com.simmer.app.reader.GeminiNanoReader
+import com.simmer.app.reader.MlKitNanoAvailability
+import com.simmer.app.reader.MlKitNanoClient
+import com.simmer.app.reader.NanoClient
 import com.simmer.app.reader.ReaderSelector
+import com.simmer.app.reader.ReaderStateSource
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -40,6 +44,23 @@ object ReaderModule {
 
     @Provides
     @Singleton
-    fun provideReaderSelector(gemma: GemmaReader): ReaderSelector =
-        ReaderSelector(availability = NoNanoAvailability(), nano = null, gemma = gemma)
+    fun provideNanoClient(): NanoClient = MlKitNanoClient()
+
+    @Provides
+    @Singleton
+    fun provideGeminiNanoReader(client: NanoClient): GeminiNanoReader = GeminiNanoReader(client)
+
+    /** Gemini Nano where ML Kit reports it Available or Downloadable, Gemma everywhere else. */
+    @Provides
+    @Singleton
+    fun provideReaderSelector(client: NanoClient, nano: GeminiNanoReader, gemma: GemmaReader): ReaderSelector =
+        ReaderSelector(availability = MlKitNanoAvailability(client), nano = nano, gemma = gemma)
+
+    @Provides
+    @Singleton
+    fun provideReaderStateSource(
+        selector: ReaderSelector,
+        controller: ReaderController,
+        nano: GeminiNanoReader,
+    ): ReaderStateSource = ReaderStateSource(selector, controller.status, nano)
 }

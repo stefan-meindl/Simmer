@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.PrefsRepository
 import com.simmer.app.data.ReaderController
+import com.simmer.app.reader.ReaderEngine
+import com.simmer.app.reader.ReaderStateSource
 import com.simmer.app.data.RecipeRepository
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.KitchenMode
@@ -34,6 +36,7 @@ data class SettingsUi(
     /** Null until the built-in recipes are seeded. */
     val preview: SettingsPreview?,
     val reader: ReaderStatus,
+    val readerEngine: ReaderEngine,
     val readerWifiOnly: Boolean,
 )
 
@@ -43,6 +46,7 @@ class SettingsViewModel @Inject constructor(
     private val prefs: PrefsRepository,
     recipes: RecipeRepository,
     private val reader: ReaderController,
+    private val readerState: ReaderStateSource,
 ) : ViewModel() {
 
     private val previewRecipe = recipes.recipes.map { list -> list.firstOrNull { it.id == PREVIEW_RECIPE_ID } }
@@ -52,9 +56,9 @@ class SettingsViewModel @Inject constructor(
     }
     private val kitchen = combine(prefs.appliances, prefs.kitchenMode) { appliances, mode -> appliances to mode }
 
-    private val readerUi = combine(reader.status, prefs.readerWifiOnly) { status, wifiOnly -> status to wifiOnly }
+    private val readerUi = combine(readerState.state, prefs.readerWifiOnly) { state, wifiOnly -> state to wifiOnly }
 
-    val ui: StateFlow<SettingsUi?> = combine(display, kitchen, previewRecipe, readerUi) { (lang, units, spices), (appliances, mode), recipe, (readerStatus, wifiOnly) ->
+    val ui: StateFlow<SettingsUi?> = combine(display, kitchen, previewRecipe, readerUi) { (lang, units, spices), (appliances, mode), recipe, (readerUiState, wifiOnly) ->
         SettingsUi(
             lang = lang,
             units = units,
@@ -62,7 +66,8 @@ class SettingsViewModel @Inject constructor(
             appliances = orderAppliances(appliances),
             kitchenMode = KitchenMode.fromKey(mode),
             preview = recipe?.let { settingsPreview(it, units, spices, lang) },
-            reader = readerStatus,
+            reader = readerUiState.status,
+            readerEngine = readerUiState.engine,
             readerWifiOnly = wifiOnly,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -95,7 +100,9 @@ class SettingsViewModel @Inject constructor(
     }
 
     fun downloadReader() {
-        viewModelScope.launch { reader.download() }
+        viewModelScope.launch {
+            if (ui.value?.readerEngine == ReaderEngine.Nano) readerState.downloadNano() else reader.download()
+        }
     }
 
     fun cancelReaderDownload() = reader.cancel()

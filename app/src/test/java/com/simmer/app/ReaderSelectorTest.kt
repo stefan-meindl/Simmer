@@ -4,10 +4,12 @@ import com.simmer.app.domain.DownloadProgress
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.RecipeReader
 import com.simmer.app.reader.NanoAvailability
+import com.simmer.app.reader.ReaderEngine
 import com.simmer.app.reader.ReaderSelector
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -35,12 +37,23 @@ class ReaderSelectorTest {
     }
 
     @Test
+    fun nanoWhileItsModelIsDownloading() = runTest {
+        assertSame(nano, select(NanoAvailability.Downloading).current())
+    }
+
+    @Test
+    fun engineNamesTheChoice() = runTest {
+        assertEquals(ReaderEngine.Nano, select(NanoAvailability.Available).engine())
+        assertEquals(ReaderEngine.Gemma, select(NanoAvailability.Unavailable).engine())
+    }
+
+    @Test
     fun gemmaWhenNanoUnavailable() = runTest {
         assertSame(gemma, select(NanoAvailability.Unavailable).current())
     }
 
     @Test
-    fun gemmaWhenNanoIsNotImplementedYet() = runTest {
+    fun gemmaWhenTheBuildHasNoNanoReader() = runTest {
         assertSame(gemma, select(NanoAvailability.Available, nanoReader = null).current())
     }
 

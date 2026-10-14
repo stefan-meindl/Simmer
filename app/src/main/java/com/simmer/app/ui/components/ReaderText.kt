@@ -20,8 +20,9 @@ fun readerFreeSpaceNeeded(): String =
 
 /** The state line under "On this phone": one string per [ReaderStatus]. */
 @Composable
-fun readerStateText(status: ReaderStatus): String = when (status) {
-    ReaderStatus.NotDownloaded -> stringResource(R.string.settings_reader_state, readerModelSize())
+fun readerStateText(status: ReaderStatus, nano: Boolean = false): String = when (status) {
+    ReaderStatus.NotDownloaded ->
+        if (nano) stringResource(R.string.settings_reader_state_nano) else stringResource(R.string.settings_reader_state, readerModelSize())
     is ReaderStatus.Downloading -> stringResource(
         if (status.waiting) R.string.settings_reader_state_waiting else R.string.settings_reader_state_downloading,
         status.percent,

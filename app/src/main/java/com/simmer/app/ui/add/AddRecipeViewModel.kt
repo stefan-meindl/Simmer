@@ -7,7 +7,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.AddRecipeSession
 import com.simmer.app.data.ImportJob
-import com.simmer.app.data.ReaderController
+import com.simmer.app.reader.ReaderStateSource
 import com.simmer.app.data.PrefsRepository
 import com.simmer.app.data.RecipeDraftStore
 import com.simmer.app.data.draftFromJson
@@ -116,7 +116,7 @@ class AddRecipeViewModel @Inject constructor(
     private val drafts: RecipeDraftStore,
     private val job: ImportJob,
     private val prefs: PrefsRepository,
-    reader: ReaderController,
+    readerState: ReaderStateSource,
 ) : ViewModel() {
 
     /** Straight from saved state so typing never lags behind the screen state. */
@@ -148,7 +148,7 @@ class AddRecipeViewModel @Inject constructor(
         kitchenLine(appliances, KitchenMode.fromKey(mode))
     }
 
-    private val readerStatus = reader.status
+    private val readerStatus = readerState.state.map { it.status }
     private val readerReady = readerStatus.map { it == ReaderStatus.Ready }
 
     private val step = savedState.getStateFlow(KEY_STEP, AddStep.Start.key)

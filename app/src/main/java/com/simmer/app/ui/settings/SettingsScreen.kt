@@ -38,6 +38,7 @@ import com.simmer.app.domain.DownloadFailure
 import com.simmer.app.domain.READER_REQUIRED_FREE_BYTES
 import com.simmer.app.domain.ReaderModel
 import com.simmer.app.domain.ReaderStatus
+import com.simmer.app.reader.ReaderEngine
 import com.simmer.app.domain.formatGigabytes
 import androidx.compose.ui.platform.LocalConfiguration
 import com.simmer.app.ui.components.PrimaryButton
@@ -164,6 +165,7 @@ fun SettingsScreen(
             )
             ReaderSection(
                 status = state.reader,
+                engine = state.readerEngine,
                 wifiOnly = state.readerWifiOnly,
                 onWifiOnly = viewModel::setReaderWifiOnly,
                 onDownload = viewModel::downloadReader,
@@ -438,6 +440,7 @@ internal val APPLIANCE_LABELS: Map<String, Int> = mapOf(
 @Composable
 private fun ReaderSection(
     status: ReaderStatus,
+    engine: ReaderEngine,
     wifiOnly: Boolean,
     onWifiOnly: (Boolean) -> Unit,
     onDownload: () -> Unit,
@@ -447,6 +450,8 @@ private fun ReaderSection(
     val colors = LocalSimmerColors.current
     val shape = RoundedCornerShape(12.dp)
     val requestNotifications = rememberNotificationPermissionRequest()
+    // Gemini Nano is the system's model: nothing to cancel, remove or limit to Wi-Fi.
+    val nano = engine == ReaderEngine.Nano
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         SectionHeader(R.string.settings_reader, R.string.settings_reader_hint)
         Row(
@@ -475,12 +480,12 @@ private fun ReaderSection(
             }
             Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.weight(1f)) {
                 Text(
-                    text = stringResource(R.string.settings_reader_where),
+                    text = stringResource(if (nano) R.string.settings_reader_where_nano else R.string.settings_reader_where),
                     style = SimmerTextStyle_BodyMdMedium,
                     color = colors.textPrimary,
                 )
                 Text(
-                    text = readerStateText(status),
+                    text = readerStateText(status, nano),
                     style = SimmerTextStyle_Caption,
                     color = colors.textTertiary,
                     modifier = Modifier.semantics { liveRegion = LiveRegionMode.Polite },
@@ -512,14 +517,14 @@ private fun ReaderSection(
                     icon = { Icon(painterResource(R.drawable.ic_download), null, Modifier.size(18.dp)) },
                 )
             is ReaderStatus.Downloading ->
-                SecondaryButton(
+                if (!nano) SecondaryButton(
                     text = stringResource(R.string.settings_reader_cancel),
                     onClick = onCancel,
                     modifier = Modifier.fillMaxWidth(),
                     icon = { Icon(painterResource(R.drawable.ic_x), null, Modifier.size(18.dp)) },
                 )
             ReaderStatus.Ready ->
-                SecondaryButton(
+                if (!nano) SecondaryButton(
                     text = stringResource(R.string.settings_reader_remove),
                     onClick = onRemove,
                     modifier = Modifier.fillMaxWidth(),
@@ -527,7 +532,7 @@ private fun ReaderSection(
                 )
             ReaderStatus.NotSupported -> Unit
         }
-        if (status != ReaderStatus.NotSupported) WifiOnlyRow(wifiOnly, onWifiOnly)
+        if (status != ReaderStatus.NotSupported && !nano) WifiOnlyRow(wifiOnly, onWifiOnly)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(8.dp),

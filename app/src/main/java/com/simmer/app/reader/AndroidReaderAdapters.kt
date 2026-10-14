@@ -10,13 +10,25 @@ import com.google.ai.edge.litertlm.Contents
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.SamplerConfig
+import com.google.mlkit.genai.common.DownloadStatus
+import com.google.mlkit.genai.common.FeatureStatus
+import com.google.mlkit.genai.common.GenAiException
+import com.google.mlkit.genai.prompt.Generation
+import com.google.mlkit.genai.prompt.GenerativeModel
+import com.google.mlkit.genai.prompt.SystemInstruction
+import com.google.mlkit.genai.prompt.TextPart
+import com.google.mlkit.genai.prompt.generateContentRequest
+import com.simmer.app.domain.DownloadFailure
+import com.simmer.app.domain.DownloadProgress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.transformWhile
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -98,7 +110,55 @@ class GemmaReaderRegistry @Inject constructor() {
     }
 }
 
-/** SEAM: replace with an ML Kit GenAI availability check when GeminiNanoReader is built. */
-class NoNanoAvailability : NanoAvailabilityCheck {
-    override suspend fun check(): NanoAvailability = NanoAvailability.Unavailable
+/** The real ML Kit GenAI Prompt API (Gemini Nano). Not unit-tested on the JVM; see docs/manual-testing.md. */
+class MlKitNanoClient : NanoClient {
+    private val model: GenerativeModel by lazy { Generation.getClient() }
+
+    override suspend fun availability(): NanoAvailability = when (model.checkStatus()) {
+        FeatureStatus.AVAILABLE -> NanoAvailability.Available
+        FeatureStatus.DOWNLOADABLE -> NanoAvailability.Downloadable
+        FeatureStatus.DOWNLOADING -> NanoAvailability.Downloading
+        else -> NanoAvailability.Unavailable
+    }
+
+    override fun download(): Flow<DownloadProgress> = model.download()
+        .map { status ->
+            when (status) {
+                is DownloadStatus.DownloadFailed -> DownloadProgress.Failed(DownloadFailure.Unknown)
+                DownloadStatus.DownloadCompleted -> DownloadProgress.Complete
+                // ML Kit reports bytes without a total, so no percentage.
+                else -> DownloadProgress.Running(percent = 0, waiting = false)
+            }
+        }
+        .transformWhile { progress ->
+            emit(progress)
+            progress is DownloadProgress.Running
+        }
+
+    override fun generate(system: String, user: String, maxTokens: Int, temperature: Double): Flow<String> {
+        val request = generateContentRequest(SystemInstruction(system), TextPart(user)) {
+            this.temperature = temperature.toFloat()
+            this.maxOutputTokens = maxTokens.coerceIn(1, MAX_OUTPUT_TOKENS)
+        }
+        return model.generateContentStream(request)
+            .map { it.candidates.firstOrNull()?.text.orEmpty() }
+            .catch { throw it.asNanoException() }
+    }
+
+    private fun Throwable.asNanoException(): Throwable =
+        if (this is GenAiException && errorCode == GenAiException.ErrorCode.BUSY) {
+            NanoBusyException(retryDelay?.toMillis())
+        } else {
+            this
+        }
+
+    private companion object {
+        /** ML Kit rejects a larger `maxOutputTokens`. */
+        const val MAX_OUTPUT_TOKENS = 4096
+    }
+}
+
+/** ML Kit's verdict on Gemini Nano; a thrown error is turned into "Unavailable" by [ReaderSelector]. */
+class MlKitNanoAvailability(private val client: NanoClient) : NanoAvailabilityCheck {
+    override suspend fun check(): NanoAvailability = client.availability()
 }

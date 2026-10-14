@@ -239,7 +239,7 @@ The 22 recipe texts (English and German: blog-style, terse, imperial, optional i
 _Avoid_: Test data, samples
 
 **RecipeReader**:
-The interface abstracts over the two on-device AI engines (GemmaReader and GeminiNanoReader): `status()`, `download()` (a flow of `DownloadProgress`) and `generate()` (a flow of tokens). `ReaderSelector` picks one at runtime: Gemini Nano when ML Kit reports it Available or Downloadable, else Gemma. GeminiNanoReader does not exist yet, so every phone gets Gemma.
+The interface abstracts over the two on-device AI engines (GemmaReader and GeminiNanoReader): `status()`, `download()` (a flow of `DownloadProgress`) and `generate()` (a flow of tokens). `ReaderSelector` picks one at runtime: Gemini Nano (`GeminiNanoReader`, ML Kit GenAI Prompt API) when ML Kit reports it Available, Downloadable or Downloading, else Gemma. If Nano reports BUSY (per-app quota) before any token, it waits and retries once.
 _Avoid_: AI engine, model, backend
 
 **GemmaReader**:
