@@ -22,6 +22,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Recipe-App-V2"
+rootProject.name = "Simmer"
 include(":app")
  

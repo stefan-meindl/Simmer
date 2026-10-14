@@ -2,7 +2,7 @@
 
 ### Issue tracker
 
-Issues live in GitHub Issues (`stefan-meindl/recipe-app-v2`). See `docs/agents/issue-tracker.md`.
+Issues live in GitHub Issues (`stefan-meindl/Simmer`). See `docs/agents/issue-tracker.md`.
 
 ### Triage labels
 

@@ -205,7 +205,7 @@ TOTAL_STAGES=5
 # and GitHub Secrets.
 ENV_FILE=/dev/null
 REPO_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-REPO_SLUG="stefan-meindl/recipe-app-v2"
+REPO_SLUG="stefan-meindl/Simmer"
 
 banner "Release keystore + GitHub Secrets (issue #66)"
 
