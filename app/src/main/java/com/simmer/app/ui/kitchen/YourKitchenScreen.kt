@@ -157,6 +157,7 @@ fun YourKitchenScreen(
                                 checked = row.key in current.selected,
                                 onCheckedChange = { viewModel.toggle(row.key) },
                                 subtitle = if (row.isCustom) stringResource(R.string.kitchen_added_by_you) else null,
+                                strikeThroughWhenChecked = false,
                             )
                         }
                     }

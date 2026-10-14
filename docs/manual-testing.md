@@ -438,3 +438,22 @@ Needs the Reader model Ready (Settings, see #15) for real text; the built-in exa
 - Fixture suite on a device (**model**): download the Reader model in the app, then `./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.simmer.app.PipelineFixtureDeviceTest`. It converts all 22 texts with the real Gemma model and fails unless at least 90% pass `normalize()` without a repair retry and each takes under 3 minutes. The per-recipe table is in `adb logcat -s PipelineFixtures` and `adb shell run-as com.simmer.app cat files/pipeline-fixtures.txt`. Target phone is a Pixel 7 Pro; without the model the test is skipped, not failed. Peak memory: run `adb shell dumpsys meminfo com.simmer.app` while it runs.
 - Automated (JVM): `TrimRecipeTextTest`, `ModelJsonTest`, `RecipePipelineTest` (scripted reader: four passes, stage order, token caps, repair retry and its size bound, failure stage, cancel, stall timeout, kitchen-rule filtering, truncation note), `KitchenMethodsTest`, `NewRecipeIdTest`, `ImportJobTest` (state, cancel, resume once, hand-over), `StageMarksTest`, `KitchenRuleForTest`, `FixtureSetTest`; instrumented: `ImportPersistenceTest`, `PipelineRegexAndroidTest` (fixtures through trimming and the link markup on the device's regex engine).
 - Not covered by a test: the real foreground service and notifications (`ImportService`, `ImportNotifications`), the real process kill (the resume decision is the JVM-tested `ImportJob.restore`), and everything that depends on the quality of the real model.
+
+### Slide transitions (#74)
+
+Needs a device or emulator with gesture navigation (Android 13+; predictive back animations on in Developer options on 13 to 15).
+- Recipes tab, open a recipe, Start cooking, then back with the gesture and the back button: each screen slides out to the right, the one underneath slides in from slightly left. No shrink to the middle. Same for Add recipe, Edit recipe, Settings > Your Kitchen.
+- Opening any of them slides in from the right.
+- Drag the back gesture part way and release back toward the edge: the screen returns cleanly, no flicker.
+- Switching between Recipes, Shopping list and Settings tabs still fades.
+- Settings > Developer options > Remove animations (or animator duration scale off): stack transitions crossfade instead of sliding.
+
+### Recipes tab after View list (#72)
+
+- Recipes tab, open a recipe, Add to list, View list (Shopping list opens with the Back banner), then tap the Recipes tab: the recipe list shows, no Back banner. Tap Settings, then Recipes: the list shows again, not Settings or the flow.
+- Shopping list and Settings still restore their state: scroll Settings down, switch to Shopping list and back to Settings; it is still scrolled. Same for ticks and scroll on Shopping list.
+
+### Your Kitchen ticked Appliance (#73)
+
+- Settings > Your Kitchen: a ticked Appliance keeps its name plain (primary colour, no strike-through) and shows the orange filled box with the check icon. Unticked shows the empty outlined box. Check in light and OLED dark.
+- Shopping list and Steps still strike a ticked row through.
