@@ -131,11 +131,16 @@ class TabNavigationTest {
 
     @Test
     fun shoppingAndSettingsTabsStillRestoreTheirState() {
+        // The entry's saved state handle stands in for a tab's screen state (scroll, search text).
         act { navigateToTab(SettingsTab) }
+        act { getBackStackEntry<SettingsTab>().savedStateHandle["probe"] = "kept" }
         act { navigateToTab(ShoppingListTab) }
         act { navigateToTab(RecipesTab) }
         act { navigateToTab(SettingsTab) }
         assertEquals(listOf("RecipesTab", "SettingsTab"), stack())
+        var restored: String? = null
+        act { restored = getBackStackEntry<SettingsTab>().savedStateHandle["probe"] }
+        assertEquals("kept", restored)
     }
 
     @Test

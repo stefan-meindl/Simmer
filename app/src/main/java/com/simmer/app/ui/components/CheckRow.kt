@@ -74,11 +74,12 @@ fun CheckRow(
     strikeThroughWhenChecked: Boolean = true,
 ) {
     val colors = LocalSimmerColors.current
+    val struck = checked && strikeThroughWhenChecked
     val spec = if (animate) tween<Color>(CHECK_ANIM_MS) else snap()
     val fill by animateColorAsState(if (checked) colors.accent else Color.Transparent, spec, label = "fill")
     val outline by animateColorAsState(if (checked) colors.accent else colors.borderStrong, spec, label = "outline")
     val checkAlpha by animateFloatAsState(if (checked) 1f else 0f, if (animate) tween(CHECK_ANIM_MS) else snap(), label = "check")
-    val labelColor by animateColorAsState(if (checked && strikeThroughWhenChecked) colors.textTertiary else colors.textPrimary, spec, label = "label")
+    val labelColor by animateColorAsState(if (struck) colors.textTertiary else colors.textPrimary, spec, label = "label")
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -114,7 +115,7 @@ fun CheckRow(
                 text = label,
                 style = SimmerTextStyle_BodyMd,
                 color = labelColor,
-                textDecoration = if (checked && strikeThroughWhenChecked) TextDecoration.LineThrough else null,
+                textDecoration = if (struck) TextDecoration.LineThrough else null,
             )
             if (subtitle != null) {
                 Text(

@@ -22,13 +22,14 @@ private fun NavHostController.hasAddRecipeOnStack(): Boolean =
  */
 fun NavHostController.navigateToTab(route: Any) {
     if (isTab(route)) return
-    if (backOrigin() != null) popBackStack(graph.startDestinationId, inclusive = false)
     if (route == RecipesTab) {
         // The Recipes tab is the start destination: whatever sits above it was saved under its id, so a
-        // restore would put Shopping or Settings on top of it. Recipes always shows the list: pop back to it.
+        // restore would put Shopping or Settings on top of it. Recipes always shows the list: pop back to it
+        // (this also abandons any Back origin).
         popBackStack(graph.startDestinationId, inclusive = false)
         return
     }
+    if (backOrigin() != null) popBackStack(graph.startDestinationId, inclusive = false)
     navigate(route) {
         // Pop up to the start destination of the graph to
         // avoid building up a large back stack.

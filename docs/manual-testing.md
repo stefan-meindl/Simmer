@@ -447,3 +447,13 @@ Needs a device or emulator with gesture navigation (Android 13+; predictive back
 - Drag the back gesture part way and release back toward the edge: the screen returns cleanly, no flicker.
 - Switching between Recipes, Shopping list and Settings tabs still fades.
 - Settings > Developer options > Remove animations (or animator duration scale off): stack transitions crossfade instead of sliding.
+
+### Recipes tab after View list (#72)
+
+- Recipes tab, open a recipe, Add to list, View list (Shopping list opens with the Back banner), then tap the Recipes tab: the recipe list shows, no Back banner. Tap Settings, then Recipes: the list shows again, not Settings or the flow.
+- Shopping list and Settings still restore their state: scroll Settings down, switch to Shopping list and back to Settings; it is still scrolled. Same for ticks and scroll on Shopping list.
+
+### Your Kitchen ticked Appliance (#73)
+
+- Settings > Your Kitchen: a ticked Appliance keeps its name plain (primary colour, no strike-through) and shows the orange filled box with the check icon. Unticked shows the empty outlined box. Check in light and OLED dark.
+- Shopping list and Steps still strike a ticked row through.
