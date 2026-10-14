@@ -114,8 +114,11 @@
     <string name="recipes_search_placeholder">Recipes or ingredients</string>
     <string name="recipes_all">All</string>
     <string name="recipes_planned">Planned</string>
-    <string name="recipes_planned_menu">More options for %1$s</string>
     <string name="recipes_remove_from_list">Unplan</string>
+    <string name="recipes_stop_cooking">Stop cooking</string>
+    <string name="recipes_unplanned">Unplanned %1$s</string>
+    <string name="recipes_cooking_stopped">Stopped cooking %1$s</string>
+    <string name="recipes_removal_undo">Undo</string>
     <string name="recipes_cooking_now">Cooking now</string>
     <string name="recipes_continue">Continue</string>
     <string name="recipes_continue_description">Continue %1$s</string>

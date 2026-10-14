@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import android.os.SystemClock
 import com.simmer.app.data.ShoppingRepository
 import com.simmer.app.data.ShoppingSnapshot
+import com.simmer.app.data.UNDO_WINDOW_MS
 import com.simmer.app.domain.GracePeriod
 import com.simmer.app.domain.GracePhase
 import com.simmer.app.domain.ShoppingListView
@@ -27,7 +28,6 @@ private const val KEY_DRAFT = "draft"
 private const val KEY_BASKET_OPEN = "basketOpen"
 
 /** How long "Cleared N items · Undo" stays offered. */
-private const val CLEARED_UNDO_MS = 5_000L
 
 /** The typed-but-unsent item and the basket's open state live in [SavedStateHandle]; the list itself is in Room. */
 @HiltViewModel
@@ -64,7 +64,7 @@ class ShoppingListViewModel @Inject constructor(
     private val _cleared = MutableStateFlow<ShoppingSnapshot?>(null)
     private var clearedJob: Job? = null
 
-    /** What the last clear removed, for the snackbar. Null after Undo, after [CLEARED_UNDO_MS], or once the tab is left. */
+    /** What the last clear removed, for the snackbar. Null after Undo, after [UNDO_WINDOW_MS], or once the tab is left. */
     val cleared: StateFlow<ShoppingSnapshot?> = _cleared
 
     fun clearTicked() {
@@ -84,7 +84,7 @@ class ShoppingListViewModel @Inject constructor(
         }
         _cleared.value = snapshot
         clearedJob = viewModelScope.launch {
-            delay(CLEARED_UNDO_MS)
+            delay(UNDO_WINDOW_MS)
             _cleared.value = null
         }
     }

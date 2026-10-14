@@ -19,8 +19,12 @@ A recipe created by importing text through the AI pipeline. Marked `mine = true`
 _Avoid_: Custom recipe, imported recipe, my recipe
 
 **Planned Recipe**:
-A recipe the user has added to the Shopping List. Stored with its chosen servings and selection so the user can return to the cooking flow. Leaves the Planned state when the user taps "Unplan" (flow button or the Planned card's three-dot menu, both `removeRecipe`: its Shopping Items go too, ticked ones included), or when a clear action empties the recipe's items ("Clear ticked off" keeps Planned for recipes that still have items; "Clear all" drops all). Cooking progress is separate and never touched.
+A recipe the user has added to the Shopping List. Stored with its chosen servings and selection so the user can return to the cooking flow. Leaves the Planned state when the user taps "Unplan" on the flow button or swipes the Planned card away (TalkBack action "Unplan"); both are `removeRecipe`, and its Shopping Items go too, ticked ones included. It also leaves the Planned state when a clear action empties the recipe's items ("Clear ticked off" keeps Planned for recipes that still have items; "Clear all" drops all). Cooking progress is separate and never touched.
 _Avoid_: Saved recipe, queued recipe
+
+**Swipe removal**:
+Swiping a Planned card (Unplan) or a Cooking now card (Stop cooking) away on the Recipes tab. `RecipeRemovals` performs it and keeps a `Removal` (`Unplanned` with its `ShoppingSnapshot`, or `Stopped` with its `StoppedCooking`) for a 5 s Undo window, shown as a snackbar with "Undo". Undo restores the Shopping Items in their original order, ticked state and Planned Choice, or the done Steps. A newer removal replaces the older one; the window ends on Undo, dismissal or timeout. Shares the 5 s with the Shopping List's clear Undo (`UNDO_WINDOW_MS`).
+_Avoid_: Delete, dismiss
 
 **Planned Choice**:
 The servings and Selection saved with a Planned Recipe when the user taps "Add to list" (`PlannedChoice`). The flow button reads "Unplan · N servings" (otherwise "Add to list · N servings") only while the current servings and Selection equal it; an add-in toggled off counts as never toggled.
@@ -131,11 +135,11 @@ A recipe whose last Step gets marked done is finished and leaves progress even i
 _Avoid_: Active recipe, running recipe
 
 **Cooking now card**:
-The Recipes tab card for an In-progress recipe: "Cooking now" heading, Planned-card look (title, servings and picks, Continue). Continue opens Flow Phase 3 directly. Disappears when the recipe is finished or Stop cooking is chosen.
+The Recipes tab card for an In-progress recipe: "Cooking now" heading, Planned-card look (title, servings and picks, Continue). Continue opens Flow Phase 3 directly. Disappears when the recipe is finished or Stop cooking is chosen. Swiping it sideways past about 40% of its width (or the TalkBack action "Stop cooking") is Stop cooking, with a 5 s "Undo" snackbar.
 _Avoid_: Resume card
 
 **Stop cooking**:
-The destructive answer of the leave-cooking dialog: cancels all of the recipe's StepTimers, whether running, paused or paused-from-notification (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps).
+The destructive answer of the leave-cooking dialog, also a swipe on the Cooking now card: cancels all of the recipe's StepTimers, whether running, paused or paused-from-notification (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps). After a swipe, Undo restores the done Steps (`StoppedCooking`) but not the cancelled StepTimers.
 _Avoid_: Reset, abandon
 
 **Active Step**:

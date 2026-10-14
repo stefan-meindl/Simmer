@@ -8,6 +8,9 @@ import kotlinx.coroutines.flow.map
 /** A recipe in progress and the servings and Selection it is being cooked with. */
 data class InProgressEntry(val recipe: Recipe, val choice: PlannedChoice)
 
+/** What Stop cooking cleared that Undo can bring back: the done Steps. Cancelled StepTimers are not kept. */
+data class StoppedCooking(val recipeId: String, val doneSteps: Set<String>)
+
 /**
  * Which recipes are in progress: at least one StepTimer running or paused, or at least one Step
  * marked done, and not every Step done (that is a finished recipe). Built over the two stores that
@@ -36,11 +39,16 @@ class CookingSessions(
         return choice.takeIf { isInProgress(recipe, it) }
     }
 
-    /** Stop cooking: cancels this recipe's timers and clears its Cooking Progress. Servings and Selection are kept. */
-    fun stop(recipeId: String) {
+    /** Stop cooking: cancels this recipe's timers and clears its Cooking Progress. Servings and Selection are kept. Returns the cleared done Steps for [restore]. */
+    fun stop(recipeId: String): StoppedCooking {
+        val stopped = StoppedCooking(recipeId, progress.doneSteps(recipeId))
         timers.cancelRecipe(recipeId)
         progress.reset(recipeId)
+        return stopped
     }
+
+    /** Undo of [stop]: the done Steps come back; the cancelled StepTimers do not. */
+    fun restore(stopped: StoppedCooking) = progress.restore(stopped.recipeId, stopped.doneSteps)
 
     private fun choiceOf(recipe: Recipe, snapshot: CookingSnapshot): PlannedChoice =
         snapshot.choices[recipe.id] ?: Phase1State.initial(recipe, planned = null).toChoice()

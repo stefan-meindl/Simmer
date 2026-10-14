@@ -112,8 +112,8 @@ class ShoppingRepository @Inject constructor(
         )
     }
 
-    /** Drops a deleted recipe's Shopping list items and its Planned state; manual items stay. */
-    suspend fun removeRecipe(recipeId: String) = dao.removeRecipe(recipeId)
+    /** Drops a deleted recipe's Shopping list items and its Planned state; manual items stay. Returns what went, so Undo can [restore] it. */
+    suspend fun removeRecipe(recipeId: String): ShoppingSnapshot = dao.removeRecipe(recipeId)
 
     /** Removes every ticked item, recipe or manual. Planned goes only for recipes left with no items. Returns what went. */
     suspend fun clearTicked(): ShoppingSnapshot = dao.clearTicked()
