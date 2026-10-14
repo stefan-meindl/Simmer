@@ -10,6 +10,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavHostController
@@ -56,9 +57,15 @@ fun SimmerNavHost(
             content = content,
         )
     }
+    val context = LocalContext.current
+    val transitions = remember(context) { NavTransitions { context.animationsRemoved() } }
     NavHost(
         navController = navController,
         startDestination = RecipesTab,
+        enterTransition = transitions.enter,
+        exitTransition = transitions.exit,
+        popEnterTransition = transitions.popEnter,
+        popExitTransition = transitions.popExit,
         // Screens pad for the status and navigation bars themselves; only the sides are padded here.
         modifier = modifier.windowInsetsPadding(WindowInsets.systemBars.only(WindowInsetsSides.Horizontal)),
     ) {
