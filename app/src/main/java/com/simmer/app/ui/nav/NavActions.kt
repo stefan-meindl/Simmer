@@ -17,11 +17,18 @@ private fun NavHostController.hasAddRecipeOnStack(): Boolean =
  * `popUpTo { saveState }` would store it with the tab's state, and `restoreState` would bring it back
  * the next time that tab is tapped (the Recipes tab then showed Settings on top of Add recipe again).
  * The same holds for the recipe flow under the Shopping list tab ("View list").
+ * The Recipes tab is the root: tapping it pops to the list and restores nothing.
  * Tapping the tab that is already shown does nothing, so Add recipe and the flow keep their state.
  */
 fun NavHostController.navigateToTab(route: Any) {
     if (isTab(route)) return
     if (backOrigin() != null) popBackStack(graph.startDestinationId, inclusive = false)
+    if (route == RecipesTab) {
+        // The Recipes tab is the start destination: whatever sits above it was saved under its id, so a
+        // restore would put Shopping or Settings on top of it. Recipes always shows the list: pop back to it.
+        popBackStack(graph.startDestinationId, inclusive = false)
+        return
+    }
     navigate(route) {
         // Pop up to the start destination of the graph to
         // avoid building up a large back stack.
