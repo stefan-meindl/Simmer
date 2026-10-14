@@ -32,10 +32,11 @@ val Neutral100 = Color(0xFFFFFFFF)
 val NeutralFA = Color(0xFFFAFAFA)
 val NeutralE3 = Color(0xFFE3E3E3)
 
-// Orange accent
+// Destructive (the one exception to "orange is the only accent", see CODING_STANDARDS.md)
 /** Background revealed while swiping a card away to delete it; white icon on top, readable in light and dark. */
 val SwipeDeleteRed = Color(0xFFC62828)
 
+// Orange accent
 val Orange400 = Color(0xFFFF6B1A)
 val Orange500 = Color(0xFFE8590C)
 val OrangeDark = Color(0xFFC2410C)
