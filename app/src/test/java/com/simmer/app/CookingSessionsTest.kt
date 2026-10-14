@@ -118,6 +118,23 @@ class CookingSessionsTest {
     }
 
     @Test
+    fun stoppingReturnsTheDoneStepsAndUndoPutsThemBackWithoutTheTimers() {
+        progress.setChoice("chilli", choice)
+        chilliSteps.take(2).forEach { progress.markDone("chilli", it) }
+        timers.toggle("chilli/s", "Chop", 60)
+
+        val stopped = sessions.stop("chilli")
+        assertFalse(sessions.isInProgress(chilli, choice))
+
+        sessions.restore(stopped)
+
+        assertEquals(chilliSteps.take(2).toSet(), progress.doneSteps("chilli"))
+        assertTrue(sessions.isInProgress(chilli, choice))
+        assertTrue(timers.timers.value.isEmpty())
+        assertEquals(choice, progress.choice("chilli"))
+    }
+
+    @Test
     fun cardsListEveryInProgressRecipeWithItsChoice() = runBlocking {
         val curryChoice = PlannedChoice(2, curry.let { Phase1State.initial(it, null).selection })
         progress.setChoice("curry", curryChoice)

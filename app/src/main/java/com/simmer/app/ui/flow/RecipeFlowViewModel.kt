@@ -232,7 +232,9 @@ class RecipeFlowViewModel @Inject constructor(
     }
 
     /** Stop cooking: cancels this recipe's timers and clears its Cooking Progress; servings and Selection stay. */
-    fun stopCooking() = sessions.stop(recipeId)
+    fun stopCooking() {
+        sessions.stop(recipeId)
+    }
 
     fun dismissToast() {
         toast.value = null
