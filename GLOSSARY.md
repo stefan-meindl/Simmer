@@ -19,8 +19,12 @@ A recipe created by importing text through the AI pipeline. Marked `mine = true`
 _Avoid_: Custom recipe, imported recipe, my recipe
 
 **Planned Recipe**:
-A recipe the user has added to the Shopping List. Stored with its chosen servings and selection so the user can return to the cooking flow. Leaves the Planned state when the user taps "Unplan" on the flow button or swipes the Planned card away (TalkBack action "Unplan"); both are `removeRecipe`, and its Shopping Items go too, ticked ones included. The swipe offers a 5 s "Undo" snackbar that restores the items and the Planned Choice (`ShoppingSnapshot`), or when a clear action empties the recipe's items ("Clear ticked off" keeps Planned for recipes that still have items; "Clear all" drops all). Cooking progress is separate and never touched.
+A recipe the user has added to the Shopping List. Stored with its chosen servings and selection so the user can return to the cooking flow. Leaves the Planned state when the user taps "Unplan" on the flow button or swipes the Planned card away (TalkBack action "Unplan"); both are `removeRecipe`, and its Shopping Items go too, ticked ones included. It also leaves the Planned state when a clear action empties the recipe's items ("Clear ticked off" keeps Planned for recipes that still have items; "Clear all" drops all). Cooking progress is separate and never touched.
 _Avoid_: Saved recipe, queued recipe
+
+**Swipe removal**:
+Swiping a Planned card (Unplan) or a Cooking now card (Stop cooking) away on the Recipes tab. `RecipeRemovals` performs it and keeps a `Removal` (`Unplanned` with its `ShoppingSnapshot`, or `Stopped` with its `StoppedCooking`) for a 5 s Undo window, shown as a snackbar with "Undo". Undo restores the Shopping Items in their original order, ticked state and Planned Choice, or the done Steps. A newer removal replaces the older one; the window ends on Undo, dismissal or timeout. Shares the 5 s with the Shopping List's clear Undo (`UNDO_WINDOW_MS`).
+_Avoid_: Delete, dismiss
 
 **Planned Choice**:
 The servings and Selection saved with a Planned Recipe when the user taps "Add to list" (`PlannedChoice`). The flow button reads "Unplan · N servings" (otherwise "Add to list · N servings") only while the current servings and Selection equal it; an add-in toggled off counts as never toggled.
