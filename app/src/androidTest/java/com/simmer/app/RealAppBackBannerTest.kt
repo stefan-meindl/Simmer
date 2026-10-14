@@ -52,7 +52,7 @@ class RealAppBackBannerTest {
     fun recipesTabShowsTheListAfterViewListAndFromSettings() {
         compose.onNodeWithText("Chilli con carne").performScrollTo().performClick()
         compose.onNode(hasText(string(R.string.flow_add_to_list).substringBefore("%"), substring = true))
-            .performScrollTo().performClick()
+            .performClick()
         compose.onNodeWithText(string(R.string.flow_view_list)).performClick()
         compose.onNodeWithText(string(R.string.back_to_recipe)).assertIsDisplayed()
 
