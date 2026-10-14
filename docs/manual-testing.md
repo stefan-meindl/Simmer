@@ -14,7 +14,7 @@ Unit tests run on the JVM. Android-only behaviour (the ICU regex engine, Room on
 only proven by `connectedDebugAndroidTest`. CI runs both (`.github/workflows/ci.yml`).
 
 Worktrees contain only tracked files. `Design/` and `local.properties` live in the main checkout
-(`/home/stefan/projects/recipe-app-v2`); copy `local.properties` or set `ANDROID_HOME`, and read `Design/` from there.
+(`/home/stefan/projects/Simmer`); copy `local.properties` or set `ANDROID_HOME`, and read `Design/` from there.
 
 ## 2. Emulator
 
