@@ -10,8 +10,12 @@ enum class TimerStatus { Idle, Running, Paused, Done }
  * passed in by the caller, so a running timer keeps counting while the process is gone.
  *
  * @param title Step title, shown on the ongoing notification.
+ * @param recipeTitle Recipe title, shown beside the step title on the notification.
  * @param remainingMs Time left while Idle or Paused; stale while Running (see [remainingMsAt]).
  * @param endAtMs When a Running timer finishes.
+ * @param pausedFromNotification A Paused timer was paused with the notification's Pause action, so
+ *   its notification stays (with Resume and Reset) and the service stays alive. A pause in the app
+ *   clears the notification instead.
  */
 data class TimerState(
     val durationSecs: Int,
@@ -19,6 +23,8 @@ data class TimerState(
     val remainingMs: Long = durationSecs * 1000L,
     val endAtMs: Long = 0,
     val title: String = "",
+    val pausedFromNotification: Boolean = false,
+    val recipeTitle: String = "",
 ) {
     private val durationMs get() = durationSecs * 1000L
 
@@ -34,19 +40,26 @@ data class TimerState(
 
     /** The timer button was tapped: start, pause, resume, or (when Done) back to Idle. */
     fun toggle(now: Long): TimerState = when (status) {
-        TimerStatus.Idle, TimerStatus.Paused -> copy(status = TimerStatus.Running, endAtMs = now + remainingMs)
+        TimerStatus.Idle, TimerStatus.Paused ->
+            copy(status = TimerStatus.Running, endAtMs = now + remainingMs, pausedFromNotification = false)
         TimerStatus.Running -> copy(status = TimerStatus.Paused, remainingMs = remainingMsAt(now))
         TimerStatus.Done -> reset()
     }
 
-    fun reset(): TimerState = copy(status = TimerStatus.Idle, remainingMs = durationMs, endAtMs = 0)
+    /** The notification's Pause action: like pausing in the app, but the notification stays. */
+    fun pauseFromNotification(now: Long): TimerState =
+        if (status == TimerStatus.Running) toggle(now).copy(pausedFromNotification = true) else this
+
+    fun reset(): TimerState =
+        copy(status = TimerStatus.Idle, remainingMs = durationMs, endAtMs = 0, pausedFromNotification = false)
 
     /** Moves a Running timer whose time is up to Done. */
     fun tick(now: Long): TimerState =
         if (status == TimerStatus.Running && now >= endAtMs) copy(status = TimerStatus.Done, remainingMs = 0) else this
 
     companion object {
-        fun idle(durationSecs: Int, title: String = "") = TimerState(durationSecs, title = title)
+        fun idle(durationSecs: Int, title: String = "", recipeTitle: String = "") =
+            TimerState(durationSecs, title = title, recipeTitle = recipeTitle)
     }
 }
 

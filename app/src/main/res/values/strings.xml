@@ -97,6 +97,11 @@
     <string name="timer_channel_done">Finished timers</string>
     <string name="timer_channel_done_description">Sound and vibration when a step timer ends.</string>
     <string name="timer_notification_running">Timer running</string>
+    <string name="timer_notification_paused">Timer paused</string>
+    <string name="timer_notification_with_recipe">%1$s · %2$s</string>
+    <string name="timer_action_pause">Pause</string>
+    <string name="timer_action_resume">Resume</string>
+    <string name="timer_action_reset">Reset</string>
     <string name="timer_notification_done">Timer done</string>
     <string name="timer_notification_fallback_title">Step timer</string>
 

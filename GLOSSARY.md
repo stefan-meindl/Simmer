@@ -110,6 +110,7 @@ _Avoid_: Instruction, task
 
 **StepTimer**:
 The countdown button on a Step that has a timer duration; a Step without one shows no StepTimer. Cycles idle, running, paused, done. Keyed by recipe and step, so several run at once; a running StepTimer lives in the TimerService foreground service and is restored after process death from its end time.
+While running it has an ongoing notification (progress bar, countdown, public on the lockscreen; a Live Update on API 36+) with a **Pause** action. Pause from the notification gives the *paused-from-notification* state: still Paused, but the notification stays with **Resume** (continues from the remaining time) and **Reset** (back to idle at full duration, notification dismissed), and the service stays alive. Pausing in the app clears the notification instead, and Resume and Reset never show for it. Notification actions that no longer match the state (stale taps) are ignored.
 _Avoid_: Countdown, alarm
 
 **Phase**:
@@ -134,7 +135,7 @@ The Recipes tab card for an In-progress recipe: "Cooking now" heading, Planned-c
 _Avoid_: Resume card
 
 **Stop cooking**:
-The destructive answer of the leave-cooking dialog: cancels all of the recipe's StepTimers (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps).
+The destructive answer of the leave-cooking dialog: cancels all of the recipe's StepTimers, whether running, paused or paused-from-notification (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps).
 _Avoid_: Reset, abandon
 
 **Active Step**:
