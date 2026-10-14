@@ -59,6 +59,7 @@ private val RowCardShape = RoundedCornerShape(12.dp)
  * @param onCheckedChange Callback when the user toggles the row.
  * @param subtitle Optional note below the label.
  * @param animate Animate the box fill and label colour over `duration-fast` when [checked] changes.
+ * @param strikeThroughWhenChecked False keeps a checked label plain (primary colour, no strike-through); the box still fills.
  * @param trailing Optional short text (e.g. an amount) at the end of the row.
  */
 @Composable
@@ -70,13 +71,14 @@ fun CheckRow(
     subtitle: String? = null,
     trailing: String? = null,
     animate: Boolean = false,
+    strikeThroughWhenChecked: Boolean = true,
 ) {
     val colors = LocalSimmerColors.current
     val spec = if (animate) tween<Color>(CHECK_ANIM_MS) else snap()
     val fill by animateColorAsState(if (checked) colors.accent else Color.Transparent, spec, label = "fill")
     val outline by animateColorAsState(if (checked) colors.accent else colors.borderStrong, spec, label = "outline")
     val checkAlpha by animateFloatAsState(if (checked) 1f else 0f, if (animate) tween(CHECK_ANIM_MS) else snap(), label = "check")
-    val labelColor by animateColorAsState(if (checked) colors.textTertiary else colors.textPrimary, spec, label = "label")
+    val labelColor by animateColorAsState(if (checked && strikeThroughWhenChecked) colors.textTertiary else colors.textPrimary, spec, label = "label")
 
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -112,7 +114,7 @@ fun CheckRow(
                 text = label,
                 style = SimmerTextStyle_BodyMd,
                 color = labelColor,
-                textDecoration = if (checked) TextDecoration.LineThrough else null,
+                textDecoration = if (checked && strikeThroughWhenChecked) TextDecoration.LineThrough else null,
             )
             if (subtitle != null) {
                 Text(
