@@ -10,11 +10,13 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.simmer.app.ui.nav.AddRecipe
 import com.simmer.app.ui.nav.EditRecipe
 import com.simmer.app.ui.nav.RECIPE_SAVED_KEY
+import com.simmer.app.ui.nav.RecipeFlow
 import com.simmer.app.ui.nav.RecipesTab
 import com.simmer.app.ui.nav.SettingsTab
 import com.simmer.app.ui.nav.ShoppingListTab
 import com.simmer.app.ui.nav.finishAddRecipe
 import com.simmer.app.ui.nav.navigateToTab
+import com.simmer.app.ui.nav.openShoppingFromFlow
 import com.simmer.app.ui.nav.openSettingsOnTop
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -44,6 +46,7 @@ class TabNavigationTest {
                 composable<SettingsTab> { Text("settings") }
                 composable<AddRecipe> { Text("add") }
                 composable<EditRecipe> { Text("edit") }
+                composable<RecipeFlow> { Text("flow") }
             }
         }
         compose.waitForIdle()
@@ -113,6 +116,26 @@ class TabNavigationTest {
         assertEquals(listOf("RecipesTab", "SettingsTab"), stack())
         act { navigateToTab(RecipesTab) }
         assertEquals(listOf("RecipesTab"), stack())
+    }
+
+    @Test
+    fun recipesTabShowsTheListAfterViewList() {
+        act { navigate(RecipeFlow("chilli")) }
+        act { openShoppingFromFlow() }
+        act { navigateToTab(RecipesTab) }
+        assertEquals(listOf("RecipesTab"), stack())
+        act { navigateToTab(SettingsTab) }
+        act { navigateToTab(RecipesTab) }
+        assertEquals(listOf("RecipesTab"), stack())
+    }
+
+    @Test
+    fun shoppingAndSettingsTabsStillRestoreTheirState() {
+        act { navigateToTab(SettingsTab) }
+        act { navigateToTab(ShoppingListTab) }
+        act { navigateToTab(RecipesTab) }
+        act { navigateToTab(SettingsTab) }
+        assertEquals(listOf("RecipesTab", "SettingsTab"), stack())
     }
 
     @Test
