@@ -457,3 +457,9 @@ Needs a device or emulator with gesture navigation (Android 13+; predictive back
 
 - Settings > Your Kitchen: a ticked Appliance keeps its name plain (primary colour, no strike-through) and shows the orange filled box with the check icon. Unticked shows the empty outlined box. Check in light and OLED dark.
 - Shopping list and Steps still strike a ticked row through.
+
+### Release APK launch smoke check (#65)
+
+The release build is minified with R8 (`app/proguard-rules.pro`); unit tests and debug builds do not exercise it. Install the signed release APK (from a release or `./gradlew assembleRelease`) on a device.
+- The app starts without crashing and the main flows work: Recipes list, open a recipe, Start cooking, Shopping list, Settings.
+- `adb logcat` shows no `IllegalAccessError`, `ClassNotFoundException` or `NoSuchMethodError` from the app process. If one appears, a keep rule is missing in `app/proguard-rules.pro`.
