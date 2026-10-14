@@ -1,5 +1,7 @@
 package com.simmer.app.ui.recipes
 
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -17,43 +19,43 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
-import androidx.compose.material3.rememberSwipeToDismissBoxState
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.semantics.CustomAccessibilityAction
-import androidx.compose.ui.semantics.customActions
-import com.simmer.app.data.Removal
-import com.simmer.app.ui.theme.SwipeDeleteRed
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.liveRegion
 import androidx.compose.ui.semantics.semantics
@@ -62,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.simmer.app.R
+import com.simmer.app.data.Removal
 import com.simmer.app.domain.FILTER_TAGS
 import com.simmer.app.domain.PlannedEntry
 import com.simmer.app.domain.RecipesOverview
@@ -84,6 +87,8 @@ import com.simmer.app.ui.theme.SimmerTextStyle_BodySm
 import com.simmer.app.ui.theme.SimmerTextStyle_BodySmMedium
 import com.simmer.app.ui.theme.SimmerTextStyle_Caption
 import com.simmer.app.ui.theme.SimmerTextStyle_ScreenTitle
+import com.simmer.app.ui.theme.SwipeDeleteRed
+import kotlinx.coroutines.launch
 
 /** The Recipes tab: browse, search and filter recipes, resume Planned ones, open the cooking flow. */
 @Composable
@@ -160,6 +165,7 @@ fun RecipesScreen(
                     items(content.cooking, key = { "cooking-" + it.recipe.id }) { entry ->
                         // Same look as a Planned card; the choice is the one the Steps were marked under.
                         SwipeAwayCard(
+                            modifier = Modifier.animateItem(),
                             actionLabel = stringResource(R.string.recipes_stop_cooking),
                             onRemove = { viewModel.stopCooking(entry.recipe) },
                         ) {
@@ -171,6 +177,7 @@ fun RecipesScreen(
                     item(key = "planned-title") { SectionTitle(stringResource(R.string.recipes_planned)) }
                     items(overview.planned, key = { "planned-" + it.recipe.id }) { entry ->
                         SwipeAwayCard(
+                            modifier = Modifier.animateItem(),
                             actionLabel = stringResource(R.string.recipes_remove_from_list),
                             onRemove = { viewModel.unplan(entry.recipe) },
                         ) {
@@ -284,25 +291,31 @@ private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit) {
 /** Releasing a swipe this far across the card (of its width) deletes it; less springs it back. */
 internal const val SWIPE_DELETE_THRESHOLD = 0.4f
 
+/** The swiped-away card fades out over this long before it is removed. */
+private const val REMOVE_FADE_MS = 200
+
 /**
  * Swipe [content] sideways, either way, past [SWIPE_DELETE_THRESHOLD] to run [onRemove]; a red
  * background with a trash icon shows on the revealed side. [actionLabel] is the TalkBack custom
  * action that runs the same [onRemove], since there is no menu.
  */
 @Composable
-private fun SwipeAwayCard(actionLabel: String, onRemove: () -> Unit, content: @Composable () -> Unit) {
+private fun SwipeAwayCard(modifier: Modifier = Modifier, actionLabel: String, onRemove: () -> Unit, content: @Composable () -> Unit) {
     val currentOnRemove by rememberUpdatedState(onRemove)
     val state = rememberSwipeToDismissBoxState(
-        confirmValueChange = { target ->
-            if (target == SwipeToDismissBoxValue.Settled) {
-                false
-            } else {
-                currentOnRemove()
-                true
-            }
-        },
+        // No side effect here: Material calls this while the finger is still down once the drag
+        // crosses the threshold. The delete runs below, after the card has settled off-screen.
+        confirmValueChange = { target -> target != SwipeToDismissBoxValue.Settled },
         positionalThreshold = { distance -> distance * SWIPE_DELETE_THRESHOLD },
     )
+    val alpha = remember { Animatable(1f) }
+    LaunchedEffect(state.currentValue) {
+        if (state.currentValue != SwipeToDismissBoxValue.Settled) {
+            alpha.animateTo(0f, tween(durationMillis = REMOVE_FADE_MS))
+            currentOnRemove()
+        }
+    }
+    val scope = rememberCoroutineScope()
     val shape = RoundedCornerShape(12.dp)
     SwipeToDismissBox(
         state = state,
@@ -326,8 +339,11 @@ private fun SwipeAwayCard(actionLabel: String, onRemove: () -> Unit, content: @C
                 }
             }
         },
-        modifier = Modifier.semantics {
-            customActions = listOf(CustomAccessibilityAction(actionLabel) { currentOnRemove(); true })
+        modifier = modifier.graphicsLayer { this.alpha = alpha.value }.semantics {
+            customActions = listOf(CustomAccessibilityAction(actionLabel) {
+                scope.launch { state.dismiss(SwipeToDismissBoxValue.EndToStart) }
+                true
+            })
         },
     ) {
         content()
