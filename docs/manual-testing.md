@@ -131,7 +131,7 @@ The Recipes tab is the start screen. "Added by you" and "Edited" tags need a Use
 - Count below filters: "5 recipes", "1 recipe" (singular), updates as you filter; TalkBack announces changes. "Clear filters" link appears only while a filter is active and resets search, category and tags.
 - Empty state: dashed box, "No recipes match these filters." and a Clear filters button.
 - Card: gradient icon tile (flame, chef hat, utensils, egg, carrot), title, category badge, "35 min · Easy" (de: "35 Min. · Einfach"), accent "3 variations" only when the recipe has variations, tags joined with " · ". Tapping opens Flow Phase 1 for that recipe.
-- Planned section: absent on a fresh install. Open `chilli`, switch Mince to Plant-based, toggle Dark beer, tap Add to list, go back: a cream "Planned" card reads "4 servings · Plant-based · Dark beer". Continue reopens Phase 1 with those servings and picks, button shows "Unplan · 4 servings". Planned cards ignore search and filters. Each Planned card has a three-dot menu (TalkBack "More options for Chilli con carne") with one item, "Unplan" (de: "Planung aufheben"): tap it and the card and the recipe's Shopping items go at once, no confirm, no undo. Cooking now cards have no menu.
+- Planned section: absent on a fresh install. Open `chilli`, switch Mince to Plant-based, toggle Dark beer, tap Add to list, go back: a cream "Planned" card reads "4 servings · Plant-based · Dark beer". Continue reopens Phase 1 with those servings and picks, button shows "Unplan · 4 servings". Planned cards ignore search and filters. Planned cards have no three-dot menu; see "Swipe to remove (#70)" below.
 - Filters survive rotation and `adb shell am kill com.simmer.app`.
 - Bottom tab bar does not cover the last card.
 
@@ -183,6 +183,18 @@ Shopping list tab. Needs no throwaway branch: items come from Phase 1 "Add to li
 - German: switch in Settings, all strings above translate (built-in recipe ingredient names and aisles stay English).
 - TalkBack: rows read as checkboxes with state, basket row says "Show items in your basket", badge reads "n items to buy".
 - `connectedDebugAndroidTest` includes `ShoppingPersistenceTest` (Room reopen, re-add replaces).
+
+### Swipe to remove (#70)
+
+Recipes tab with `chilli` Planned (Add to list) and `curry` in progress (mark a step done, Go to recipes). Planned and Cooking now cards only.
+- Drag a card sideways, either direction, slowly: a red background with a white trash icon shows on the revealed side only (icon on the left when dragging right, on the right when dragging left). Light and dark theme.
+- Release before about 40% of the card width: it springs back, nothing changes, no snackbar. Release past it: the card goes.
+- Planned card: its Shopping items and Planned state are gone (Shopping tab, badge). Snackbar "Unplanned Chilli con carne" with Undo (de: "Chilli con carne nicht mehr geplant", "Rückgängig"); it leaves after about 5s. Undo: Planned card is back with its servings and picks, items back in their original order, ticked ones still ticked.
+- Cooking now card: timers cancelled (notification gone), marked Steps cleared, card gone; the recipe stays Planned if it was and its servings and picks stay. Snackbar "Stopped cooking Curry" (de: "Kochen von Curry beendet") with Undo: card is back with the same Steps marked, no timer running again.
+- Swipe a second card within 5s: the snackbar switches to the new one; Undo only restores the latest.
+- Rotate with the snackbar showing: it stays and does not restart the 5s.
+- No three-dot menu on Planned cards. Continue still works.
+- TalkBack: a Planned card offers the custom action "Unplan" (de: "Planung aufheben"), a Cooking now card "Stop cooking" (de: "Kochen beenden") in the actions menu; running it shows the same snackbar and Undo.
 
 ### Open in Gemini (#62)
 

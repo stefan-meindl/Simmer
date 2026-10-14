@@ -107,8 +107,11 @@
     <string name="recipes_search_placeholder">Rezepte oder Zutaten</string>
     <string name="recipes_all">Alle</string>
     <string name="recipes_planned">Geplant</string>
-    <string name="recipes_planned_menu">Weitere Optionen für %1$s</string>
     <string name="recipes_remove_from_list">Planung aufheben</string>
+    <string name="recipes_stop_cooking">Kochen beenden</string>
+    <string name="recipes_unplanned">%1$s nicht mehr geplant</string>
+    <string name="recipes_cooking_stopped">Kochen von %1$s beendet</string>
+    <string name="recipes_removal_undo">Rückgängig</string>
     <string name="recipes_cooking_now">Gerade am Kochen</string>
     <string name="recipes_continue">Weiter</string>
     <string name="recipes_continue_description">%1$s fortsetzen</string>

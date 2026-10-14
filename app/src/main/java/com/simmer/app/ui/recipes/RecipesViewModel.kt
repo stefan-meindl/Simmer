@@ -3,12 +3,15 @@ package com.simmer.app.ui.recipes
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.simmer.app.data.RecipeRemovals
 import com.simmer.app.data.RecipeRepository
+import com.simmer.app.data.Removal
 import com.simmer.app.data.ShoppingRepository
 import com.simmer.app.domain.CookingSessions
 import com.simmer.app.domain.InProgressEntry
 import com.simmer.app.domain.RecipeFilters
 import com.simmer.app.domain.RecipesOverview
+import com.simmer.app.domain.model.Recipe
 import com.simmer.app.domain.recipesOverview
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -17,7 +20,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 private const val KEY_QUERY = "query"
@@ -42,6 +44,11 @@ class RecipesViewModel @Inject constructor(
     sessions: CookingSessions,
 ) : ViewModel() {
 
+    private val removals = RecipeRemovals(shopping, sessions, viewModelScope)
+
+    /** The last swiped-away card, for the Undo snackbar. Null after Undo, after 5 s, or once dismissed. */
+    val removed: StateFlow<Removal?> = removals.last
+
     /** Straight from saved state so typing never lags behind the filtered list. */
     val query: StateFlow<String> = savedState.getStateFlow(KEY_QUERY, "")
 
@@ -62,9 +69,14 @@ class RecipesViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RecipesUi.Loading)
 
     /** Unplans a recipe: its Shopping list items and Planned state go. Cooking progress is separate and stays. */
-    fun removeFromList(recipeId: String) {
-        viewModelScope.launch { shopping.removeRecipe(recipeId) }
-    }
+    fun unplan(recipe: Recipe) = removals.unplan(recipe.id, recipe.title)
+
+    /** Stops cooking a recipe: timers cancelled, Cooking Progress cleared. Servings, Selection and Planned stay. */
+    fun stopCooking(recipe: Recipe) = removals.stopCooking(recipe.id, recipe.title)
+
+    fun undoRemoval() = removals.undo()
+
+    fun dismissRemoval() = removals.dismiss()
 
     fun setQuery(query: String) {
         savedState[KEY_QUERY] = query

@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -24,6 +23,20 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.SwipeToDismissBox
+import androidx.compose.material3.SwipeToDismissBoxValue
+import androidx.compose.material3.rememberSwipeToDismissBoxState
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import com.simmer.app.data.Removal
+import com.simmer.app.ui.theme.SwipeDeleteRed
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -59,8 +72,6 @@ import com.simmer.app.ui.components.BadgeVariant
 import com.simmer.app.ui.components.FilterChip
 import com.simmer.app.ui.components.GradientHeroCard
 import com.simmer.app.ui.components.OptionCard
-import com.simmer.app.ui.components.MenuAction
-import com.simmer.app.ui.components.OverflowMenu
 import com.simmer.app.ui.components.PrimaryButton
 import com.simmer.app.ui.components.SecondaryButton
 import com.simmer.app.ui.components.SimmerTextField
@@ -92,6 +103,9 @@ fun RecipesScreen(
     val query by viewModel.query.collectAsStateWithLifecycle()
     val content = ui as? RecipesUi.Content
     val listState = rememberLazyListState()
+    val removed by viewModel.removed.collectAsStateWithLifecycle()
+    val snackbar = remember { SnackbarHostState() }
+    RemovalSnackbar(removed, snackbar, onUndo = viewModel::undoRemoval, onDismiss = viewModel::dismissRemoval)
 
     // A recipe was just saved: it is listed first, so drop the filters that could hide it and show the top.
     LaunchedEffect(recipeSaved) {
@@ -145,17 +159,23 @@ fun RecipesScreen(
                     item(key = "cooking-title") { SectionTitle(stringResource(R.string.recipes_cooking_now)) }
                     items(content.cooking, key = { "cooking-" + it.recipe.id }) { entry ->
                         // Same look as a Planned card; the choice is the one the Steps were marked under.
-                        PlannedCard(PlannedEntry(entry.recipe, entry.choice), onContinue = { onContinueCooking(entry.recipe) }, onRemove = null)
+                        SwipeAwayCard(
+                            actionLabel = stringResource(R.string.recipes_stop_cooking),
+                            onRemove = { viewModel.stopCooking(entry.recipe) },
+                        ) {
+                            PlannedCard(PlannedEntry(entry.recipe, entry.choice), onContinue = { onContinueCooking(entry.recipe) })
+                        }
                     }
                 }
                 if (overview.planned.isNotEmpty()) {
                     item(key = "planned-title") { SectionTitle(stringResource(R.string.recipes_planned)) }
                     items(overview.planned, key = { "planned-" + it.recipe.id }) { entry ->
-                        PlannedCard(
-                            entry,
-                            onContinue = { onOpenRecipe(entry.recipe.id) },
-                            onRemove = { viewModel.removeFromList(entry.recipe.id) },
-                        )
+                        SwipeAwayCard(
+                            actionLabel = stringResource(R.string.recipes_remove_from_list),
+                            onRemove = { viewModel.unplan(entry.recipe) },
+                        ) {
+                            PlannedCard(entry, onContinue = { onOpenRecipe(entry.recipe.id) })
+                        }
                     }
                 }
                 item(key = "count") {
@@ -170,6 +190,7 @@ fun RecipesScreen(
                 }
             }
         }
+        SnackbarHost(snackbar, modifier = Modifier.align(Alignment.BottomCenter).padding(16.dp))
     }
 }
 
@@ -231,9 +252,9 @@ private fun SectionTitle(text: String) {
     )
 }
 
-/** [onRemove] adds a three-dot menu with "Unplan"; null for Cooking-now cards. */
+/** Planned and Cooking-now cards share this look; removing them is [SwipeAwayCard]'s job. */
 @Composable
-private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit, onRemove: (() -> Unit)?) {
+private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit) {
     val colors = LocalSimmerColors.current
     val servings = pluralStringResource(R.plurals.flow_servings_count, entry.choice.servings, entry.choice.servings)
     val summary = selectionSummary(entry.recipe, entry.choice.selection, servings)
@@ -257,13 +278,79 @@ private fun PlannedCard(entry: PlannedEntry, onContinue: () -> Unit, onRemove: (
             onClick = onContinue,
             modifier = Modifier.semantics { contentDescription = continueLabel },
         )
-        if (onRemove != null) {
-            OverflowMenu(
-                contentDescription = stringResource(R.string.recipes_planned_menu, entry.recipe.title),
-                actions = listOf(MenuAction(stringResource(R.string.recipes_remove_from_list), onRemove)),
-                modifier = Modifier.offset(x = 8.dp),
-            )
+    }
+}
+
+/** Releasing a swipe this far across the card (of its width) deletes it; less springs it back. */
+internal const val SWIPE_DELETE_THRESHOLD = 0.4f
+
+/**
+ * Swipe [content] sideways, either way, past [SWIPE_DELETE_THRESHOLD] to run [onRemove]; a red
+ * background with a trash icon shows on the revealed side. [actionLabel] is the TalkBack custom
+ * action that runs the same [onRemove], since there is no menu.
+ */
+@Composable
+private fun SwipeAwayCard(actionLabel: String, onRemove: () -> Unit, content: @Composable () -> Unit) {
+    val currentOnRemove by rememberUpdatedState(onRemove)
+    val state = rememberSwipeToDismissBoxState(
+        confirmValueChange = { target ->
+            if (target == SwipeToDismissBoxValue.Settled) {
+                false
+            } else {
+                currentOnRemove()
+                true
+            }
+        },
+        positionalThreshold = { distance -> distance * SWIPE_DELETE_THRESHOLD },
+    )
+    val shape = RoundedCornerShape(12.dp)
+    SwipeToDismissBox(
+        state = state,
+        backgroundContent = {
+            val direction = state.dismissDirection
+            if (direction != SwipeToDismissBoxValue.Settled) {
+                Box(
+                    contentAlignment = if (direction == SwipeToDismissBoxValue.StartToEnd) Alignment.CenterStart else Alignment.CenterEnd,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(shape)
+                        .background(SwipeDeleteRed)
+                        .padding(horizontal = 24.dp),
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_trash),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp),
+                    )
+                }
+            }
+        },
+        modifier = Modifier.semantics {
+            customActions = listOf(CustomAccessibilityAction(actionLabel) { currentOnRemove(); true })
+        },
+    ) {
+        content()
+    }
+}
+
+/** "Unplanned X · Undo" / "Stopped cooking X · Undo" for a few seconds after a card is swiped away. */
+@Composable
+private fun RemovalSnackbar(removal: Removal?, snackbar: SnackbarHostState, onUndo: () -> Unit, onDismiss: () -> Unit) {
+    val message = when (removal) {
+        is Removal.Unplanned -> stringResource(R.string.recipes_unplanned, removal.title)
+        is Removal.Stopped -> stringResource(R.string.recipes_cooking_stopped, removal.title)
+        null -> ""
+    }
+    val undoLabel = stringResource(R.string.recipes_removal_undo)
+    // The view model owns the 5 s timer and clears the state, so rotation neither restarts nor cuts it short.
+    LaunchedEffect(removal) {
+        if (removal == null) {
+            snackbar.currentSnackbarData?.dismiss()
+            return@LaunchedEffect
         }
+        val result = snackbar.showSnackbar(message = message, actionLabel = undoLabel, duration = SnackbarDuration.Indefinite)
+        if (result == SnackbarResult.ActionPerformed) onUndo() else onDismiss()
     }
 }
 

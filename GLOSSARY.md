@@ -19,7 +19,7 @@ A recipe created by importing text through the AI pipeline. Marked `mine = true`
 _Avoid_: Custom recipe, imported recipe, my recipe
 
 **Planned Recipe**:
-A recipe the user has added to the Shopping List. Stored with its chosen servings and selection so the user can return to the cooking flow. Leaves the Planned state when the user taps "Unplan" (flow button or the Planned card's three-dot menu, both `removeRecipe`: its Shopping Items go too, ticked ones included), or when a clear action empties the recipe's items ("Clear ticked off" keeps Planned for recipes that still have items; "Clear all" drops all). Cooking progress is separate and never touched.
+A recipe the user has added to the Shopping List. Stored with its chosen servings and selection so the user can return to the cooking flow. Leaves the Planned state when the user taps "Unplan" on the flow button or swipes the Planned card away (TalkBack action "Unplan"); both are `removeRecipe`, and its Shopping Items go too, ticked ones included. The swipe offers a 5 s "Undo" snackbar that restores the items and the Planned Choice (`ShoppingSnapshot`), or when a clear action empties the recipe's items ("Clear ticked off" keeps Planned for recipes that still have items; "Clear all" drops all). Cooking progress is separate and never touched.
 _Avoid_: Saved recipe, queued recipe
 
 **Planned Choice**:
@@ -130,11 +130,11 @@ A recipe whose last Step gets marked done is finished and leaves progress even i
 _Avoid_: Active recipe, running recipe
 
 **Cooking now card**:
-The Recipes tab card for an In-progress recipe: "Cooking now" heading, Planned-card look (title, servings and picks, Continue). Continue opens Flow Phase 3 directly. Disappears when the recipe is finished or Stop cooking is chosen.
+The Recipes tab card for an In-progress recipe: "Cooking now" heading, Planned-card look (title, servings and picks, Continue). Continue opens Flow Phase 3 directly. Disappears when the recipe is finished or Stop cooking is chosen. Swiping it sideways past about 40% of its width (or the TalkBack action "Stop cooking") is Stop cooking, with a 5 s "Undo" snackbar.
 _Avoid_: Resume card
 
 **Stop cooking**:
-The destructive answer of the leave-cooking dialog: cancels all of the recipe's StepTimers (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps).
+The destructive answer of the leave-cooking dialog, also a swipe on the Cooking now card: cancels all of the recipe's StepTimers (notifications removed, TimerService stops when none remain) and clears its Cooking Progress; servings and Selection are kept. The other answers are Keep cooking (default, also the dismiss action) and Go to recipes (keeps timers and marked Steps). After a swipe, Undo restores the done Steps (`StoppedCooking`) but not the cancelled StepTimers.
 _Avoid_: Reset, abandon
 
 **Active Step**:
