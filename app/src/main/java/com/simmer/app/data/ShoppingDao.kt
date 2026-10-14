@@ -28,11 +28,15 @@ abstract class ShoppingDao {
     @Query("DELETE FROM planned_recipes WHERE recipeId = :recipeId")
     abstract suspend fun deletePlanned(recipeId: String)
 
-    /** Removes a recipe's items and its Planned state, atomically. */
+    /** Removes a recipe's items and its Planned state, atomically. Returns what went, for Undo. */
     @Transaction
-    open suspend fun removeRecipe(recipeId: String) {
+    open suspend fun removeRecipe(recipeId: String): ShoppingSnapshot {
+        val all = getAllItems()
+        val planned = listOfNotNull(getPlanned(recipeId))
+        val items = all.filter { it.recipeId == recipeId }
         deleteForRecipe(recipeId)
         deletePlanned(recipeId)
+        return ShoppingSnapshot(items, planned, all.map { it.id })
     }
 
     @Query("SELECT * FROM shopping_items ORDER BY rowid")
