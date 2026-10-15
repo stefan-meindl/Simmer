@@ -469,7 +469,8 @@ The release build is minified with R8 (`app/proguard-rules.pro`); unit tests and
 ### Sharing an Instagram Reel to Simmer (#85)
 
 Needs a device with the Instagram app and internet. The caption comes from Instagram's undocumented oEmbed and embed endpoints, so test on mobile data as well as Wi-Fi (the research was done from one desktop connection only).
-- Instagram, open a public recipe Reel, Share > Simmer (it is in the share sheet for text). Simmer opens on Add recipe, paste stage, with the Instagram Reel card above the text field: shortened link, a spinner with "Fetching the caption...", then "Caption added below · N lines" and the text field holds a "Caption" line followed by the caption. A Reel with no caption text or a deleted one shows "No caption found. You can paste the text below." and nothing else breaks.
+- Instagram, open a public recipe Reel, Share > Simmer (it is in the share sheet for text). Simmer opens on Add recipe with the chatbot path (Settings > Instagram import: "On this phone" opens the paste stage instead); the paste stage has the Instagram Reel card above the text field: shortened link, a spinner with "Fetching the caption...", then "Caption added below · N lines" and the text field holds a "Caption" line followed by the caption. A Reel with no caption text or a deleted one shows "No caption found. You can paste the text below." and nothing else breaks.
+- Settings > Instagram import defaults to "With a chatbot". Switch to "On this phone", share a Reel: paste stage with the card and a "Use a chatbot instead" button. Switch back: the chatbot prompt box holds the caption once it has loaded.
 - Airplane mode, share a Reel: the card ends on "No caption found", no crash.
 - Follow-up (not done): collapsing the Reel card and keyboard behaviour with the card above the field.
 - The "Listen to the Reel" button is greyed out ("Coming soon").

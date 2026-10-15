@@ -162,6 +162,7 @@ class AddRecipeViewModel @Inject constructor(
     /** The Reel import: the card's state and the shared link; a found caption goes into the text field. */
     private val reelImport = ReelImport(savedState, fetcher, viewModelScope) { caption ->
         setText(withCaption(text.value, caption, captionLabel(prefs.lang.first())))
+        fillChatbotPrompt()
     }
 
     /** The caption's label line in the Settings language, which may differ from the device's. */
@@ -246,6 +247,13 @@ class AddRecipeViewModel @Inject constructor(
     /** True once something was shared to Simmer; the paste stage then offers the chatbot path directly. */
     val shared = savedState.getStateFlow(KEY_SHARED, false)
 
+    /** While the chatbot path is open after a share, its prompt text follows the field (the caption arrives later). */
+    private fun fillChatbotPrompt() {
+        if (addStepFromKey(savedState.get<String>(KEY_STEP)) == AddStep.Chatbot && savedState.get<Boolean>(KEY_SHARED) == true) {
+            setPromptText(text.value)
+        }
+    }
+
     fun choose(step: AddStep) {
         savedState[KEY_STEP] = step.key
         // After a share the chatbot path starts with the field's text, ready to copy into the prompt.
@@ -256,13 +264,15 @@ class AddRecipeViewModel @Inject constructor(
 
     /**
      * Text shared to Simmer: an Instagram link shows the Reel card and fetches its caption into the field;
-     * any other text goes into the field as if pasted. Either way Add recipe returns to the paste stage.
+     * any other text goes into the field as if pasted. Either way Add recipe opens the stage the Instagram import setting picks (chatbot by default).
      */
-    fun receiveShared(shared: String) {
+    suspend fun receiveShared(shared: String) {
         val content = readSharedText(shared) ?: return
         job.dismissError()
         savedState[KEY_SHARED] = true
-        savedState[KEY_STEP] = AddStep.Phone.key
+        val engine = if (prefs.shareEngine.first() == "phone") AddStep.Phone else AddStep.Chatbot
+        savedState[KEY_STEP] = engine.key
+        setPromptText("")
         when (content) {
             is SharedContent.Reel -> {
                 // Like plain shared text, a Reel replaces what was in the field.
@@ -272,6 +282,7 @@ class AddRecipeViewModel @Inject constructor(
             is SharedContent.Text -> {
                 reelImport.clear()
                 setText(content.text)
+                fillChatbotPrompt()
             }
         }
     }

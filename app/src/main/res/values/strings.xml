@@ -168,6 +168,12 @@
     <string name="settings_spices_spoons_desc">tsp and tbsp</string>
     <string name="settings_spices_grams">Grams</string>
     <string name="settings_spices_grams_desc">Easier to weigh in bulk</string>
+    <string name="settings_share_engine">Instagram import</string>
+    <string name="settings_share_engine_hint">Where a Reel shared from Instagram opens in Add recipe.</string>
+    <string name="settings_share_engine_chatbot">With a chatbot</string>
+    <string name="settings_share_engine_chatbot_desc">Copy the text into a chatbot prompt</string>
+    <string name="settings_share_engine_phone">On this phone</string>
+    <string name="settings_share_engine_phone_desc">Use the built-in recipe reader</string>
     <string name="settings_kitchen">Your kitchen</string>
     <string name="settings_kitchen_hint">Recipes you add only use these. If a recipe needs something else, it is adapted to what you have.</string>
     <string name="settings_kitchen_empty">No appliances selected yet.</string>

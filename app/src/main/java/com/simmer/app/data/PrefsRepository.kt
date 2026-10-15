@@ -35,6 +35,7 @@ class PrefsRepository @Inject constructor(
         val KEY_CUSTOM_APPS = stringSetPreferencesKey("custom_apps")
         val KEY_KITCHEN_MODE = stringPreferencesKey("kitchen_mode")
         val KEY_THEME = stringPreferencesKey("theme")
+        val KEY_SHARE_ENGINE = stringPreferencesKey("share_engine")
         val KEY_READER_WIFI_ONLY = booleanPreferencesKey("reader_wifi_only")
     }
 
@@ -65,6 +66,9 @@ class PrefsRepository @Inject constructor(
     /** Theme: "system" | "light" | "dark". Defaults to "system". */
     val theme: Flow<String> = store.data.map { it[KEY_THEME] ?: "system" }
 
+    /** How a link shared from Instagram is turned into a recipe: "chatbot" | "phone". Defaults to "chatbot". */
+    val shareEngine: Flow<String> = store.data.map { it[KEY_SHARE_ENGINE] ?: "chatbot" }
+
     /** Whether to download the AI model on Wi-Fi only. Defaults to true. */
     val readerWifiOnly: Flow<Boolean> = store.data.map { it[KEY_READER_WIFI_ONLY] ?: true }
 
@@ -87,5 +91,6 @@ class PrefsRepository @Inject constructor(
 
     suspend fun setKitchenMode(value: String) = store.edit { it[KEY_KITCHEN_MODE] = value }
     suspend fun setTheme(value: String) = store.edit { it[KEY_THEME] = value }
+    suspend fun setShareEngine(value: String) = store.edit { it[KEY_SHARE_ENGINE] = value }
     suspend fun setReaderWifiOnly(value: Boolean) = store.edit { it[KEY_READER_WIFI_ONLY] = value }
 }

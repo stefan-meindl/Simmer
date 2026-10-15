@@ -38,6 +38,8 @@ data class SettingsUi(
     val reader: ReaderStatus,
     val readerEngine: ReaderEngine,
     val readerWifiOnly: Boolean,
+    /** "chatbot" | "phone": where a shared Instagram link goes in Add recipe. */
+    val shareEngine: String,
 )
 
 /** Every Settings choice is written to DataStore; the language is also applied to the running app. */
@@ -56,9 +58,9 @@ class SettingsViewModel @Inject constructor(
     }
     private val kitchen = combine(prefs.appliances, prefs.kitchenMode) { appliances, mode -> appliances to mode }
 
-    private val readerUi = combine(readerState.state, prefs.readerWifiOnly) { state, wifiOnly -> state to wifiOnly }
+    private val readerUi = combine(readerState.state, prefs.readerWifiOnly, prefs.shareEngine) { state, wifiOnly, shareEngine -> Triple(state, wifiOnly, shareEngine) }
 
-    val ui: StateFlow<SettingsUi?> = combine(display, kitchen, previewRecipe, readerUi) { (lang, units, spices), (appliances, mode), recipe, (readerUiState, wifiOnly) ->
+    val ui: StateFlow<SettingsUi?> = combine(display, kitchen, previewRecipe, readerUi) { (lang, units, spices), (appliances, mode), recipe, (readerUiState, wifiOnly, shareEngine) ->
         SettingsUi(
             lang = lang,
             units = units,
@@ -69,6 +71,7 @@ class SettingsViewModel @Inject constructor(
             reader = readerUiState.status,
             readerEngine = readerUiState.engine,
             readerWifiOnly = wifiOnly,
+            shareEngine = shareEngine,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
@@ -86,6 +89,10 @@ class SettingsViewModel @Inject constructor(
 
     fun setSpices(spices: String) {
         viewModelScope.launch { prefs.setSpices(spices) }
+    }
+
+    fun setShareEngine(engine: String) {
+        viewModelScope.launch { prefs.setShareEngine(engine) }
     }
 
     fun setKitchenMode(mode: KitchenMode) {

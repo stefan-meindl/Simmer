@@ -166,6 +166,12 @@
     <string name="settings_spices_spoons_desc">TL und EL</string>
     <string name="settings_spices_grams">Gramm</string>
     <string name="settings_spices_grams_desc">Einfacher für größere Mengen</string>
+    <string name="settings_share_engine">Instagram-Import</string>
+    <string name="settings_share_engine_hint">Wohin ein aus Instagram geteiltes Reel in „Rezept hinzufügen“ führt.</string>
+    <string name="settings_share_engine_chatbot">Mit einem Chatbot</string>
+    <string name="settings_share_engine_chatbot_desc">Text in einen Chatbot-Prompt übernehmen</string>
+    <string name="settings_share_engine_phone">Auf diesem Handy</string>
+    <string name="settings_share_engine_phone_desc">Den eingebauten Rezeptleser nutzen</string>
     <string name="settings_kitchen">Deine Küche</string>
     <string name="settings_kitchen_hint">Neue Rezepte nutzen nur diese Geräte. Braucht ein Rezept etwas anderes, wird es angepasst.</string>
     <string name="settings_kitchen_empty">Noch keine Geräte ausgewählt.</string>
