@@ -14,6 +14,16 @@ private val INSTAGRAM_LINK = Regex(
     RegexOption.IGNORE_CASE,
 )
 
+/** The label line a Reel's caption sits under in the Add recipe text field. */
+const val CAPTION_LABEL = "Caption"
+
+/** [text] with the Reel's [caption] added under the [CAPTION_LABEL] line, after anything already there. */
+fun withCaption(text: String, caption: String): String {
+    val block = "$CAPTION_LABEL\n$caption"
+    val before = text.trimEnd()
+    return if (before.isEmpty()) block else "$before\n\n$block"
+}
+
 /** The shared [text] as a Reel link or plain text; null when nothing usable was shared. */
 fun readSharedText(text: String?): SharedContent? {
     val trimmed = text?.trim().orEmpty()
