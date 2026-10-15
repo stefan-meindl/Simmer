@@ -35,8 +35,15 @@ class SharedTextTest {
         )
     }
 
-    @Test fun `a link inside a sentence is found`() {
-        assertEquals(reel, readSharedText("Look at this! https://www.instagram.com/reel/CHOJBJ6pcSx/?igsh=x\nso good"))
+    @Test fun `a short leading phrase before the link is tolerated`() {
+        assertEquals(reel, readSharedText("Look at this! https://www.instagram.com/reel/CHOJBJ6pcSx/?igsh=x"))
+    }
+
+    @Test fun `recipe notes that contain a link are shared text`() {
+        val notes = "Pancakes: 2 eggs, 200 g flour, 300 ml milk. Whisk, rest 10 minutes, fry.\nhttps://www.instagram.com/reel/CHOJBJ6pcSx/"
+        assertEquals(SharedContent.Text(notes), readSharedText(notes))
+        val trailing = "https://www.instagram.com/reel/CHOJBJ6pcSx/\nso good, I add a pinch of salt"
+        assertEquals(SharedContent.Text(trailing), readSharedText(trailing))
     }
 
     @Test fun `other text is shared text`() {
