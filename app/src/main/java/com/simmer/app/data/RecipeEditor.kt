@@ -62,10 +62,13 @@ class AddRecipeSession @Inject constructor(
     /** Drops the draft; the pasted text is not kept here. */
     fun discard() = drafts.set(null)
 
-    /** Stores the draft (with any edits) as a User Recipe and clears it; null when there is no draft. */
-    suspend fun save(): Recipe? {
+    /**
+     * Stores the draft (with any edits) as a User Recipe and clears it; null when there is no draft.
+     * A [sourceUrl] (the shared Reel's link) becomes the recipe's Source URL.
+     */
+    suspend fun save(sourceUrl: String? = null): Recipe? {
         val draft = drafts.current.value ?: return null
-        val recipe = draft.copy(mine = true, edited = false)
+        val recipe = draft.copy(mine = true, edited = false, sourceUrl = sourceUrl ?: draft.sourceUrl)
         recipes.save(recipe)
         drafts.set(null)
         return recipe
