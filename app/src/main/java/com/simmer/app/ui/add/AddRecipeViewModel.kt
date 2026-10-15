@@ -243,6 +243,9 @@ class AddRecipeViewModel @Inject constructor(
         }
     }
 
+    /** True once something was shared to Simmer; the paste stage then offers the chatbot path directly. */
+    val shared = savedState.getStateFlow(KEY_SHARED, false)
+
     fun choose(step: AddStep) {
         savedState[KEY_STEP] = step.key
         // After a share the chatbot path starts with the field's text, ready to copy into the prompt.

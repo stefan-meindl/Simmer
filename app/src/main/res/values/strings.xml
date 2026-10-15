@@ -399,6 +399,7 @@
     <string name="back_to_recipe">Back to recipe</string>
     <string name="settings_creator">Recipe creator</string>
     <string name="settings_creator_hint">What the recipe creator uses when you add a recipe: your kitchen and the recipe reader.</string>
+    <string name="add_use_chatbot_instead">Use a chatbot instead</string>
     <string name="add_convert">Convert recipe</string>
     <string name="add_download">Download recipe reader (%1$s)</string>
     <string name="add_reader_note">Runs on your phone. Downloads once over Wi-Fi.</string>

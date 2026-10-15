@@ -21,6 +21,8 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -523,6 +525,7 @@ private fun ColumnScope.PasteStage(
     val textLabel = stringResource(R.string.add_recipe_text)
     val askNotificationPermission = rememberNotificationPermissionRequest()
     val reel by viewModel.reel.collectAsStateWithLifecycle()
+    val shared by viewModel.shared.collectAsStateWithLifecycle()
 
     TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
@@ -626,6 +629,14 @@ private fun ColumnScope.PasteStage(
     }
 
     BottomBar {
+        if (shared) {
+            SecondaryButton(
+                text = stringResource(R.string.add_use_chatbot_instead),
+                onClick = { viewModel.choose(AddStep.Chatbot) },
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(10.dp))
+        }
         when (ui.action) {
             ReaderAction.Convert -> PrimaryButton(
                 text = stringResource(R.string.add_convert),
