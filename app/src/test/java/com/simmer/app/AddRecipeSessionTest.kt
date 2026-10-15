@@ -104,6 +104,22 @@ class AddRecipeSessionTest {
         assertEquals("Sunday chicken", recipes.saved.single().title)
     }
 
+    @Test fun `Save from a shared Reel keeps its link as the source url`() = runBlocking {
+        session.convert(EXAMPLE_TEXT, "u-new")
+
+        val saved = session.save(sourceUrl = "https://www.instagram.com/reel/CHOJBJ6pcSx/")!!
+
+        assertEquals("https://www.instagram.com/reel/CHOJBJ6pcSx/", saved.sourceUrl)
+        assertEquals(saved, recipes.saved.single())
+    }
+
+    @Test fun `Save without a Reel leaves the draft's own source url`() = runBlocking {
+        session.convert(EXAMPLE_TEXT, "u-new")
+        drafts.set(drafts.current.value!!.copy(sourceUrl = "https://example.com/r"))
+
+        assertEquals("https://example.com/r", session.save()!!.sourceUrl)
+    }
+
     @Test fun `Save with no draft stores nothing`() = runBlocking {
         assertNull(session.save())
         assertTrue(recipes.saved.isEmpty())

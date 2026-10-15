@@ -166,6 +166,12 @@
     <string name="settings_spices_spoons_desc">TL und EL</string>
     <string name="settings_spices_grams">Gramm</string>
     <string name="settings_spices_grams_desc">Einfacher für größere Mengen</string>
+    <string name="settings_share_engine">Instagram-Import</string>
+    <string name="settings_share_engine_hint">Wohin ein aus Instagram geteiltes Reel in „Rezept hinzufügen“ führt.</string>
+    <string name="settings_share_engine_chatbot">Mit einem Chatbot</string>
+    <string name="settings_share_engine_chatbot_desc">Text in einen Chatbot-Prompt übernehmen</string>
+    <string name="settings_share_engine_phone">Auf diesem Handy</string>
+    <string name="settings_share_engine_phone_desc">Den eingebauten Rezeptleser nutzen</string>
     <string name="settings_kitchen">Deine Küche</string>
     <string name="settings_kitchen_hint">Neue Rezepte nutzen nur diese Geräte. Braucht ein Rezept etwas anderes, wird es angepasst.</string>
     <string name="settings_kitchen_empty">Noch keine Geräte ausgewählt.</string>
@@ -396,6 +402,7 @@
     <string name="back_to_recipe">Zurück zum Rezept</string>
     <string name="settings_creator">Rezept-Assistent</string>
     <string name="settings_creator_hint">Was der Rezept-Assistent beim Hinzufügen eines Rezepts nutzt: deine Küche und der Rezept-Leser.</string>
+    <string name="add_use_chatbot_instead">Stattdessen einen Chatbot nutzen</string>
     <string name="add_convert">Rezept umwandeln</string>
     <string name="add_download">Rezept-Leser laden (%1$s)</string>
     <string name="add_reader_note">Läuft auf deinem Handy. Wird einmal über WLAN geladen.</string>
@@ -439,4 +446,17 @@
     <string name="import_channel_progress">Rezept lesen</string>
     <string name="import_channel_done">Rezept fertig</string>
     <string name="import_truncated_note">Dieses Rezept ist lang. Nur der erste Teil wurde gelesen.</string>
+
+    <!-- Reel import card on Add recipe -->
+    <string name="reel_caption_label">Beschreibung</string>
+    <string name="reel_title">Instagram-Reel</string>
+    <string name="reel_fetching">Beschreibung wird geladen…</string>
+    <plurals name="reel_caption_found">
+        <item quantity="one">Beschreibung unten eingefügt · %1$d Zeile</item>
+        <item quantity="other">Beschreibung unten eingefügt · %1$d Zeilen</item>
+    </plurals>
+    <string name="reel_not_found">Keine Beschreibung gefunden. Du kannst den Text unten einfügen.</string>
+    <string name="reel_listen">Reel anhören</string>
+    <string name="reel_listen_soon">Bald verfügbar</string>
+
 </resources>

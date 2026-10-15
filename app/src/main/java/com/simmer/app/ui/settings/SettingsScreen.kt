@@ -173,6 +173,16 @@ fun SettingsScreen(
                 onCancel = viewModel::cancelReaderDownload,
                 onRemove = viewModel::removeReader,
             )
+            OptionGroup(
+                title = R.string.settings_share_engine,
+                hint = R.string.settings_share_engine_hint,
+                options = listOf(
+                    Choice("chatbot", R.string.settings_share_engine_chatbot, R.string.settings_share_engine_chatbot_desc),
+                    Choice("phone", R.string.settings_share_engine_phone, R.string.settings_share_engine_phone_desc),
+                ),
+                selected = state.shareEngine,
+                onSelect = viewModel::setShareEngine,
+            )
             state.preview?.let { PreviewPanel(it) }
         }
     }

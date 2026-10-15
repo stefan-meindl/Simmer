@@ -2,10 +2,20 @@ package com.simmer.app.ui.add
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import android.content.Context
+import android.content.res.Configuration
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.AddRecipeSession
+import com.simmer.app.data.CaptionFetcher
+import com.simmer.app.data.ReelCard
+import com.simmer.app.data.ReelImport
+import com.simmer.app.data.ShareInbox
+import com.simmer.app.domain.SharedContent
+import com.simmer.app.domain.readSharedText
+import com.simmer.app.domain.withCaption
+import kotlinx.coroutines.flow.filterNotNull
 import com.simmer.app.data.ImportJob
 import com.simmer.app.reader.ReaderState
 import com.simmer.app.reader.ReaderStateSource
@@ -34,7 +44,9 @@ import com.simmer.app.domain.orderAppliances
 import com.simmer.app.domain.newRecipeId
 import com.simmer.app.domain.readerAction
 import com.simmer.app.domain.usesExampleShortcut
+import com.simmer.app.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -44,6 +56,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 private const val KEY_TEXT = "text"
@@ -54,6 +67,7 @@ private const val KEY_PROMPT_TEXT = "prompt_text"
 private const val KEY_STEP = "step"
 private const val KEY_TAB = "tab"
 private const val KEY_DRAFT = "draft"
+private const val KEY_SHARED = "shared"
 
 /** The cook's Appliance keys in catalogue order (custom ones after) and Kitchen mode, as the Reader prompt needs them. */
 data class PromptKitchen(val appliances: List<String>, val mode: KitchenMode)
@@ -118,6 +132,9 @@ class AddRecipeViewModel @Inject constructor(
     private val job: ImportJob,
     private val prefs: PrefsRepository,
     readerState: ReaderStateSource,
+    fetcher: CaptionFetcher,
+    private val inbox: ShareInbox,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     /** Straight from saved state so typing never lags behind the screen state. */
@@ -141,6 +158,21 @@ class AddRecipeViewModel @Inject constructor(
 
     /** Straight from saved state, like [text]: the optional recipe text for the Reader prompt. */
     val promptText: StateFlow<String> = savedState.getStateFlow(KEY_PROMPT_TEXT, "")
+
+    /** The Reel import: the card's state and the shared link; a found caption goes into the text field. */
+    private val reelImport = ReelImport(savedState, fetcher, viewModelScope) { caption ->
+        setText(withCaption(text.value, caption, captionLabel(prefs.lang.first())))
+        fillChatbotPrompt()
+    }
+
+    /** The caption's label line in the Settings language, which may differ from the device's. */
+    private fun captionLabel(lang: String): String {
+        val config = Configuration(context.resources.configuration).apply { setLocale(Locale(lang)) }
+        return context.createConfigurationContext(config).getString(R.string.reel_caption_label)
+    }
+
+    /** The Reel card on the paste stage; null unless the user arrived by sharing an Instagram link. */
+    val reel: StateFlow<ReelCard?> = reelImport.card.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val tab = savedState.getStateFlow(KEY_TAB, ReviewTab.Ingredients.name)
 
@@ -183,6 +215,9 @@ class AddRecipeViewModel @Inject constructor(
     }.onEach { if (it is AddRecipeUi.Review) reviewShown = true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddRecipeUi.Loading)
 
+    /** A conversion is running or a recipe is open in the review: leaving them for a share would lose work. */
+    private val busy = combine(drafts.current, job.state) { draft, state -> draft != null || state is ImportState.Working }
+
     private var saving = false
     private var adding = false
 
@@ -192,6 +227,16 @@ class AddRecipeViewModel @Inject constructor(
     init {
         // A conversion that was running when the process died resumes (or shows the error stage).
         job.restore()
+        reelImport.resume()
+        // A share waits in the inbox while a recipe is being converted or reviewed, so it cannot destroy that work.
+        viewModelScope.launch {
+            combine(inbox.pending.filterNotNull(), busy) { shared, busy -> shared.takeUnless { busy } }
+                .filterNotNull()
+                .collect {
+                    receiveShared(it)
+                    inbox.taken(it)
+                }
+        }
         // Back after process death: put the saved draft in the store, then keep the saved copy current.
         savedState.get<String>(KEY_DRAFT)?.let { if (drafts.current.value == null) drafts.set(draftFromJson(it)) }
         viewModelScope.launch {
@@ -199,8 +244,47 @@ class AddRecipeViewModel @Inject constructor(
         }
     }
 
+    /** True once something was shared to Simmer; the paste stage then offers the chatbot path directly. */
+    val shared = savedState.getStateFlow(KEY_SHARED, false)
+
+    /** While the chatbot path is open after a share, its prompt text follows the field (the caption arrives later). */
+    private fun fillChatbotPrompt() {
+        if (addStepFromKey(savedState.get<String>(KEY_STEP)) == AddStep.Chatbot && savedState.get<Boolean>(KEY_SHARED) == true) {
+            setPromptText(text.value)
+        }
+    }
+
     fun choose(step: AddStep) {
         savedState[KEY_STEP] = step.key
+        // After a share the chatbot path starts with the field's text, ready to copy into the prompt.
+        if (step == AddStep.Chatbot && savedState.get<Boolean>(KEY_SHARED) == true && promptText.value.isBlank()) {
+            setPromptText(text.value)
+        }
+    }
+
+    /**
+     * Text shared to Simmer: an Instagram link shows the Reel card and fetches its caption into the field;
+     * any other text goes into the field as if pasted. Either way Add recipe opens the stage the Instagram import setting picks (chatbot by default).
+     */
+    suspend fun receiveShared(shared: String) {
+        val content = readSharedText(shared) ?: return
+        job.dismissError()
+        savedState[KEY_SHARED] = true
+        val engine = if (prefs.shareEngine.first() == "phone") AddStep.Phone else AddStep.Chatbot
+        savedState[KEY_STEP] = engine.key
+        setPromptText("")
+        when (content) {
+            is SharedContent.Reel -> {
+                // Like plain shared text, a Reel replaces what was in the field.
+                setText("")
+                reelImport.start(content.url)
+            }
+            is SharedContent.Text -> {
+                reelImport.clear()
+                setText(content.text)
+                fillChatbotPrompt()
+            }
+        }
     }
 
     /** Back on the start, chatbot and paste stages: returns to the start stage, or [onLeave] from the start stage. */
@@ -213,7 +297,11 @@ class AddRecipeViewModel @Inject constructor(
         savedState[KEY_TEXT] = text
     }
 
-    fun clear() = setText("")
+    /** Empties the field; a shared Reel's card goes with it, so its link cannot end up on another recipe. */
+    fun clear() {
+        reelImport.clear()
+        setText("")
+    }
 
     fun setPromptText(text: String) {
         savedState[KEY_PROMPT_TEXT] = text
@@ -264,7 +352,10 @@ class AddRecipeViewModel @Inject constructor(
         }
     }
 
-    fun useExample() = setText(EXAMPLE_TEXT)
+    fun useExample() {
+        reelImport.clear()
+        setText(EXAMPLE_TEXT)
+    }
 
     /** Converts the text when it is long enough: the example directly, other text through the Pipeline. */
     fun convert() {
@@ -308,8 +399,9 @@ class AddRecipeViewModel @Inject constructor(
         saving = true
         viewModelScope.launch {
             try {
-                session.save()?.let {
+                session.save(reelImport.sourceUrl)?.let {
                     job.acknowledge()
+                    reelImport.clear()
                     onSaved(it.id)
                 }
             } finally {
