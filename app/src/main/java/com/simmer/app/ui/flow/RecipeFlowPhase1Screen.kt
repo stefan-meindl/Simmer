@@ -30,14 +30,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.LiveRegionMode
 import androidx.compose.ui.semantics.liveRegion
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -222,7 +225,30 @@ private fun Hero(state: Phase1State) {
                 MetaItem(R.drawable.ic_clock, formatMinutes(r.time))
                 MetaItem(R.drawable.ic_flame, r.difficulty)
             }
+            r.sourceUrl?.let { SourceLink(it) }
         }
+    }
+}
+
+/** The Source URL as a tappable link; opens in the browser or the app that handles it. */
+@Composable
+private fun SourceLink(url: String) {
+    val colors = LocalSimmerColors.current
+    val uriHandler = LocalUriHandler.current
+    val label = stringResource(R.string.source_link)
+    Box(
+        contentAlignment = Alignment.CenterStart,
+        modifier = Modifier
+            .defaultMinSize(minHeight = 48.dp)
+            .clickable(role = Role.Button) { runCatching { uriHandler.openUri(url) } }
+            .semantics { contentDescription = "$label: $url" },
+    ) {
+        Text(
+            text = label,
+            style = SimmerTextStyle_BodyMd,
+            color = colors.textHero,
+            textDecoration = TextDecoration.Underline,
+        )
     }
 }
 

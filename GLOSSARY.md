@@ -10,6 +10,10 @@ The Simmer recipe app. Users browse built-in and imported recipes, configure ser
 A named dish with ingredients, steps, variations, and methods. The central entity the app revolves around. Immutable while cooking; editable outside the flow.
 _Avoid_: Dish, meal
 
+**Source URL**:
+The optional link a Recipe keeps back to where it came from (`Recipe.sourceUrl`, null when none), e.g. the Reel URL of an imported Reel. Shown on the recipe's Hero as a tappable "Open original recipe" link, hidden when null. Kept through editing and saving. A URL only; nothing else about the source is stored.
+_Avoid_: Origin, attribution
+
 **Built-in Recipe**:
 A recipe shipped as a JSON asset with the app. Can be locally overridden via editing (marking it `edited`), but the original is always restorable.
 _Avoid_: System recipe, default recipe
