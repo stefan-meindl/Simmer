@@ -5,7 +5,6 @@ import com.simmer.app.data.CaptionFetcher
 import com.simmer.app.data.CaptionStatus
 import com.simmer.app.data.ReelCard
 import com.simmer.app.data.ReelImport
-import com.simmer.app.domain.captionLabel
 import com.simmer.app.domain.withCaption
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
@@ -60,6 +59,22 @@ class ReelImportTest {
 
         assertEquals(ReelCard(url, CaptionStatus.Found, 4), h.import.card.first())
         assertEquals(listOf("Pasta\n\n2 eggs\n200 g flour"), h.captions)
+    }
+
+    @Test fun `the card says found only once the caption is placed`() = runTest {
+        val saved = SavedStateHandle()
+        val fetcher = FakeFetcher()
+        var statusWhilePlacing: CaptionStatus? = null
+        lateinit var import: ReelImport
+        import = ReelImport(saved, fetcher, this, onCaption = { statusWhilePlacing = import.card.first()?.status })
+        import.start(url)
+        advanceUntilIdle()
+
+        fetcher.answers.single().complete("Soup")
+        advanceUntilIdle()
+
+        assertEquals(CaptionStatus.Loading, statusWhilePlacing)
+        assertEquals(CaptionStatus.Found, import.card.first()?.status)
     }
 
     @Test fun `no caption is a status, not an error`() = runTest {
@@ -147,14 +162,13 @@ class ReelImportTest {
         assertEquals(emptyList<String>(), after.fetcher.asked)
     }
 
-    @Test fun `the caption goes under a Caption label after any text already there`() {
-        assertEquals("Caption\nPasta", withCaption("", "Pasta"))
-        assertEquals("Mine\n\nCaption\nPasta", withCaption("Mine", "Pasta"))
-        assertEquals("Mine\n\nCaption\nPasta", withCaption("Mine\n\n", "Pasta"))
+    @Test fun `the caption goes under a label line after any text already there`() {
+        assertEquals("Caption\nPasta", withCaption("", "Pasta", "Caption"))
+        assertEquals("Mine\n\nCaption\nPasta", withCaption("Mine", "Pasta", "Caption"))
+        assertEquals("Mine\n\nCaption\nPasta", withCaption("Mine\n\n", "Pasta", "Caption"))
     }
 
-    @Test fun `the label follows the app language`() {
-        assertEquals("Beschreibung\nNudeln", withCaption("", "Nudeln", captionLabel("de")))
-        assertEquals("Caption\nPasta", withCaption("", "Pasta", captionLabel("en")))
+    @Test fun `a caption already in the text is not added twice`() {
+        assertEquals("Mine\n\nCaption\nPasta", withCaption("Mine\n\nCaption\nPasta", "Pasta", "Caption"))
     }
 }

@@ -32,10 +32,10 @@ class ReelImport(
 
     val card: Flow<ReelCard?> = combine(
         state.getStateFlow<String?>(KEY_URL, null),
-        state.getStateFlow(KEY_STATUS, CaptionStatus.Loading.name),
+        state.getStateFlow(KEY_STATUS, CaptionStatus.Loading),
         state.getStateFlow(KEY_LINES, 0),
     ) { url, status, lines ->
-        url?.let { ReelCard(it, CaptionStatus.entries.firstOrNull { s -> s.name == status } ?: CaptionStatus.NotFound, lines) }
+        url?.let { ReelCard(it, status, lines) }
     }
 
     /** The Reel link to keep as the new recipe's Source URL; null when the text did not come from a Reel. */
@@ -43,36 +43,39 @@ class ReelImport(
 
     /** A Reel link was shared: show the card loading and fetch its caption. Replaces any earlier Reel. */
     fun start(url: String) {
-        state[KEY_URL] = url
         fetch(url)
     }
 
     /** Plain text was shared: no Reel card. */
     fun clear() {
         fetch?.cancel()
-        state[KEY_URL] = null
-        state[KEY_STATUS] = CaptionStatus.Loading.name
-        state[KEY_LINES] = 0
+        reset(null)
     }
 
     /** After process death: a fetch that was still loading is asked again; a finished card stays as it was. */
     fun resume() {
         val url = state.get<String>(KEY_URL) ?: return
-        if (fetch?.isActive != true && state.get<String>(KEY_STATUS) == CaptionStatus.Loading.name) fetch(url)
+        if (fetch?.isActive != true && state.get<CaptionStatus>(KEY_STATUS) == CaptionStatus.Loading) fetch(url)
+    }
+
+    private fun reset(url: String?) {
+        state[KEY_URL] = url
+        state[KEY_STATUS] = CaptionStatus.Loading
+        state[KEY_LINES] = 0
     }
 
     private fun fetch(url: String) {
         fetch?.cancel()
-        state[KEY_STATUS] = CaptionStatus.Loading.name
-        state[KEY_LINES] = 0
+        reset(url)
         fetch = scope.launch {
             val caption = fetcher.fetch(url)
             if (caption == null) {
-                state[KEY_STATUS] = CaptionStatus.NotFound.name
+                state[KEY_STATUS] = CaptionStatus.NotFound
             } else {
-                state[KEY_LINES] = caption.lines().size
-                state[KEY_STATUS] = CaptionStatus.Found.name
+                // Placed first, so a restored "caption added" always has its caption in the field.
                 onCaption(caption)
+                state[KEY_LINES] = caption.lines().size
+                state[KEY_STATUS] = CaptionStatus.Found
             }
         }
     }
