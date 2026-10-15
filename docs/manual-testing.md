@@ -6,7 +6,7 @@ How to run the app and check a change by hand. Unit tests cover logic; this cove
 
 ```
 export ANDROID_HOME=~/Android/Sdk      # worktrees have no local.properties
-./gradlew testDebugUnitTest lintDebug assembleDebug
+./gradlew testDebugUnitTest lintDebug assembleDebug checkCoroutinesVersion
 ./gradlew connectedDebugAndroidTest    # needs a device or emulator; see section 2
 ```
 
@@ -394,6 +394,7 @@ Settings tab, scroll to "Recipe reader". The download is a real 2.0 GB file from
 ### Recipe reader — GemmaReader engine (#16)
 
 Add recipe calls `generate()` through the Pipeline since #17; to exercise the engine alone use a throwaway branch or a debug test that calls `GemmaReader.generate("You answer in one word.", "Say hello", 32)` and collects the flow. Needs the model Ready (see #15 above). Watch `adb logcat | grep -i litert`.
+- Coroutines guard (#46): litertlm is compiled against a newer kotlinx-coroutines than some transitive deps pull in; a stale one crashes `sendMessageAsync` with `NoSuchMethodError: close$default` on a native thread. `./gradlew checkCoroutinesVersion` (also part of `check` and CI) fails if `debugRuntimeClasspath` resolves any coroutines artifact to something other than the catalog version. Bumping litertlm or any dependency: run it, and check `./gradlew :app:dependencies --configuration debugRuntimeClasspath | grep coroutines`. A real `sendMessageAsync` needs the 2 GB model, so it is only covered by the fixture suite below (#17).
 - Manifest: `aapt dump xmltree app/build/outputs/apk/debug/app-debug.apk AndroidManifest.xml | grep -i native-library` lists `libvndksupport.so` and `libOpenCL.so`, both `required=false`.
 - First call: returns within seconds without freezing the UI (init is off the main thread; check no "Skipped frames" / ANR). Tokens arrive one by one, not all at once; output is stable across runs (temperature 0.2).
 - GPU first: on a phone with OpenCL (Pixel 7 Pro) the log shows the GPU backend; on an emulator or a phone without it generation still works (CPU fallback).
