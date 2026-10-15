@@ -1,3 +1,6 @@
+import org.gradle.api.artifacts.result.ResolvedComponentResult
+import org.gradle.api.artifacts.result.ResolvedDependencyResult
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -90,3 +93,36 @@ dependencies {
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
 }
+
+// A transitive dependency once pulled in an older kotlinx-coroutines than litertlm was compiled
+// against, which crashed at runtime with NoSuchMethodError (#46). Fail if the resolved version
+// drifts from the catalog.
+val checkCoroutinesVersion by tasks.registering {
+    val expected = libs.versions.coroutines.get()
+    val resolved = configurations.named("debugRuntimeClasspath").flatMap { config ->
+        config.incoming.resolutionResult.rootComponent.map { root ->
+            val seen = mutableSetOf<String>()
+            fun walk(c: ResolvedComponentResult) {
+                c.moduleVersion?.let {
+                    if (it.group == "org.jetbrains.kotlinx" && it.name.startsWith("kotlinx-coroutines-")) {
+                        seen += "${it.name}:${it.version}"
+                    }
+                }
+                c.dependencies.filterIsInstance<ResolvedDependencyResult>().forEach { d ->
+                    if (seen.add("#" + d.selected.id.displayName)) walk(d.selected)
+                }
+            }
+            walk(root)
+            seen.filterNot { it.startsWith("#") }
+        }
+    }
+    inputs.property("expected", expected)
+    inputs.property("resolved", resolved)
+    doLast {
+        val stale = resolved.get().filterNot { it.endsWith(":$expected") }
+        check(stale.isEmpty()) {
+            "kotlinx-coroutines must resolve to $expected (litertlm needs it), found: ${stale.joinToString()}"
+        }
+    }
+}
+tasks.named("check") { dependsOn(checkCoroutinesVersion) }
