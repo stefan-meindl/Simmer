@@ -289,6 +289,7 @@
     <string name="edit_not_found">Dieses Rezept ist nicht mehr verfügbar.</string>
     <string name="edit_details">Details</string>
     <string name="edit_title">Titel</string>
+    <string name="source_link">Originalrezept öffnen</string>
     <string name="edit_summary">Kurzbeschreibung</string>
     <string name="edit_servings">Portionen</string>
     <string name="edit_time">Gesamtzeit (Min.)</string>

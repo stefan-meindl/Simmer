@@ -82,6 +82,7 @@ data class RecipeJson(
     val ingredients: List<IngredientJson> = emptyList(),
     val steps: List<StepJson> = emptyList(),
     val notes: List<String> = emptyList(),
+    val sourceUrl: String? = null,
 )
 
 // ---------------------------------------------------------------------------
@@ -128,6 +129,7 @@ fun Recipe.toEntity(): RecipeEntity {
             StepJson(s.id, s.phase, s.title, s.durationSecs, s.body, s.needs, s.ifCondition)
         },
         notes = notes,
+        sourceUrl = sourceUrl,
     )
     return RecipeEntity(
         id = id,
@@ -188,5 +190,6 @@ fun RecipeJson.toDomain(mine: Boolean = false, edited: Boolean = false): Recipe 
         mine = mine,
         edited = edited,
         notes = notes,
+        sourceUrl = sourceUrl,
     )
 }

@@ -549,6 +549,7 @@ fun normalize(j: Map<String, Any?>): Recipe {
         ingredients = cleanedIngredients,
         steps = steps,
         notes = (j["notes"] as? List<*>)?.filterIsInstance<String>()?.take(5) ?: emptyList(),
+        sourceUrl = j["sourceUrl"]?.toString()?.trim()?.takeIf { it.isNotBlank() },
     )
 }
 

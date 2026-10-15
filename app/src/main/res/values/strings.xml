@@ -292,6 +292,7 @@
     <string name="edit_not_found">This recipe is no longer available.</string>
     <string name="edit_details">Details</string>
     <string name="edit_title">Title</string>
+    <string name="source_link">Open original recipe</string>
     <string name="edit_summary">Summary</string>
     <string name="edit_servings">Servings</string>
     <string name="edit_time">Total time (min)</string>

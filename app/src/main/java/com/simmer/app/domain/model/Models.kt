@@ -150,6 +150,7 @@ data class Recipe(
     val mine: Boolean = false,
     val edited: Boolean = false,
     val notes: List<String> = emptyList(),
+    val sourceUrl: String? = null,
 )
 
 /**
