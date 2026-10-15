@@ -2,6 +2,8 @@ package com.simmer.app.ui.add
 
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
+import android.content.Context
+import android.content.res.Configuration
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,7 +14,6 @@ import com.simmer.app.data.ReelImport
 import com.simmer.app.data.ShareInbox
 import com.simmer.app.domain.SharedContent
 import com.simmer.app.domain.readSharedText
-import com.simmer.app.domain.captionLabel
 import com.simmer.app.domain.withCaption
 import kotlinx.coroutines.flow.filterNotNull
 import com.simmer.app.data.ImportJob
@@ -43,7 +44,9 @@ import com.simmer.app.domain.orderAppliances
 import com.simmer.app.domain.newRecipeId
 import com.simmer.app.domain.readerAction
 import com.simmer.app.domain.usesExampleShortcut
+import com.simmer.app.R
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -53,6 +56,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import java.util.Locale
 import javax.inject.Inject
 
 private const val KEY_TEXT = "text"
@@ -130,6 +134,7 @@ class AddRecipeViewModel @Inject constructor(
     readerState: ReaderStateSource,
     fetcher: CaptionFetcher,
     private val inbox: ShareInbox,
+    @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
     /** Straight from saved state so typing never lags behind the screen state. */
@@ -157,6 +162,12 @@ class AddRecipeViewModel @Inject constructor(
     /** The Reel import: the card's state and the shared link; a found caption goes into the text field. */
     private val reelImport = ReelImport(savedState, fetcher, viewModelScope) { caption ->
         setText(withCaption(text.value, caption, captionLabel(prefs.lang.first())))
+    }
+
+    /** The caption's label line in the Settings language, which may differ from the device's. */
+    private fun captionLabel(lang: String): String {
+        val config = Configuration(context.resources.configuration).apply { setLocale(Locale(lang)) }
+        return context.createConfigurationContext(config).getString(R.string.reel_caption_label)
     }
 
     /** The Reel card on the paste stage; null unless the user arrived by sharing an Instagram link. */
@@ -203,6 +214,9 @@ class AddRecipeViewModel @Inject constructor(
     }.onEach { if (it is AddRecipeUi.Review) reviewShown = true }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AddRecipeUi.Loading)
 
+    /** A conversion is running or a recipe is open in the review: leaving them for a share would lose work. */
+    private val busy = combine(drafts.current, job.state) { draft, state -> draft != null || state is ImportState.Working }
+
     private var saving = false
     private var adding = false
 
@@ -213,11 +227,14 @@ class AddRecipeViewModel @Inject constructor(
         // A conversion that was running when the process died resumes (or shows the error stage).
         job.restore()
         reelImport.resume()
+        // A share waits in the inbox while a recipe is being converted or reviewed, so it cannot destroy that work.
         viewModelScope.launch {
-            inbox.pending.filterNotNull().collect {
-                receiveShared(it)
-                inbox.taken(it)
-            }
+            combine(inbox.pending.filterNotNull(), busy) { shared, busy -> shared.takeUnless { busy } }
+                .filterNotNull()
+                .collect {
+                    receiveShared(it)
+                    inbox.taken(it)
+                }
         }
         // Back after process death: put the saved draft in the store, then keep the saved copy current.
         savedState.get<String>(KEY_DRAFT)?.let { if (drafts.current.value == null) drafts.set(draftFromJson(it)) }
@@ -240,11 +257,15 @@ class AddRecipeViewModel @Inject constructor(
      */
     fun receiveShared(shared: String) {
         val content = readSharedText(shared) ?: return
-        editText()
+        job.dismissError()
         savedState[KEY_SHARED] = true
         savedState[KEY_STEP] = AddStep.Phone.key
         when (content) {
-            is SharedContent.Reel -> reelImport.start(content.url)
+            is SharedContent.Reel -> {
+                // Like plain shared text, a Reel replaces what was in the field.
+                setText("")
+                reelImport.start(content.url)
+            }
             is SharedContent.Text -> {
                 reelImport.clear()
                 setText(content.text)
@@ -262,7 +283,11 @@ class AddRecipeViewModel @Inject constructor(
         savedState[KEY_TEXT] = text
     }
 
-    fun clear() = setText("")
+    /** Empties the field; a shared Reel's card goes with it, so its link cannot end up on another recipe. */
+    fun clear() {
+        reelImport.clear()
+        setText("")
+    }
 
     fun setPromptText(text: String) {
         savedState[KEY_PROMPT_TEXT] = text
@@ -313,7 +338,10 @@ class AddRecipeViewModel @Inject constructor(
         }
     }
 
-    fun useExample() = setText(EXAMPLE_TEXT)
+    fun useExample() {
+        reelImport.clear()
+        setText(EXAMPLE_TEXT)
+    }
 
     /** Converts the text when it is long enough: the example directly, other text through the Pipeline. */
     fun convert() {
@@ -359,6 +387,7 @@ class AddRecipeViewModel @Inject constructor(
             try {
                 session.save(reelImport.sourceUrl)?.let {
                     job.acknowledge()
+                    reelImport.clear()
                     onSaved(it.id)
                 }
             } finally {

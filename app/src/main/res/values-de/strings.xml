@@ -441,6 +441,7 @@
     <string name="import_truncated_note">Dieses Rezept ist lang. Nur der erste Teil wurde gelesen.</string>
 
     <!-- Reel import card on Add recipe -->
+    <string name="reel_caption_label">Beschreibung</string>
     <string name="reel_title">Instagram-Reel</string>
     <string name="reel_fetching">Beschreibung wird geladen…</string>
     <plurals name="reel_caption_found">
