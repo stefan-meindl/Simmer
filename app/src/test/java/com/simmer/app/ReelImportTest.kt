@@ -5,6 +5,7 @@ import com.simmer.app.data.CaptionFetcher
 import com.simmer.app.data.CaptionStatus
 import com.simmer.app.data.ReelCard
 import com.simmer.app.data.ReelImport
+import com.simmer.app.domain.captionLabel
 import com.simmer.app.domain.withCaption
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
@@ -150,5 +151,10 @@ class ReelImportTest {
         assertEquals("Caption\nPasta", withCaption("", "Pasta"))
         assertEquals("Mine\n\nCaption\nPasta", withCaption("Mine", "Pasta"))
         assertEquals("Mine\n\nCaption\nPasta", withCaption("Mine\n\n", "Pasta"))
+    }
+
+    @Test fun `the label follows the app language`() {
+        assertEquals("Beschreibung\nNudeln", withCaption("", "Nudeln", captionLabel("de")))
+        assertEquals("Caption\nPasta", withCaption("", "Pasta", captionLabel("en")))
     }
 }

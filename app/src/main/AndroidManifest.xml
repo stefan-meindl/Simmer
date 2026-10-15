@@ -39,6 +39,15 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- Share target: an Instagram Reel link (or any text) shared to Simmer opens Add recipe. -->
+            <intent-filter>
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="text/plain" />
+            </intent-filter>
         </activity>
 
         <!-- LiteRT-LM GPU backend loads these vendor libraries; optional so CPU-only phones still install. -->

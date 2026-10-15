@@ -6,6 +6,7 @@ import kotlinx.coroutines.withContext
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
+import javax.inject.Inject
 
 /** Where Add recipe gets the caption of a shared Reel. A seam: tests and the screen logic use a fake. */
 interface CaptionFetcher {
@@ -22,7 +23,9 @@ typealias HttpGet = (url: String, userAgent: String) -> String?
  * non-browser User-Agents; a browser one gets a JS shell without the caption (docs/research/instagram-caption-via-share.md).
  * Any failure is "no caption".
  */
-class InstagramCaptionFetcher(private val get: HttpGet = ::httpGet) : CaptionFetcher {
+class InstagramCaptionFetcher(private val get: HttpGet) : CaptionFetcher {
+
+    @Inject constructor() : this(::httpGet)
 
     override suspend fun fetch(reelUrl: String): String? = withContext(Dispatchers.IO) {
         val oembed = "https://www.instagram.com/api/v1/oembed/?url=" + URLEncoder.encode(reelUrl, "UTF-8")

@@ -465,3 +465,16 @@ Needs a device or emulator with gesture navigation (Android 13+; predictive back
 The release build is minified with R8 (`app/proguard-rules.pro`); unit tests and debug builds do not exercise it. Install the signed release APK (from a release or `./gradlew assembleRelease`) on a device.
 - The app starts without crashing and the main flows work: Recipes list, open a recipe, Start cooking, Shopping list, Settings.
 - `adb logcat` shows no `IllegalAccessError`, `ClassNotFoundException` or `NoSuchMethodError` from the app process. If one appears, a keep rule is missing in `app/proguard-rules.pro`.
+
+### Sharing an Instagram Reel to Simmer (#85)
+
+Needs a device with the Instagram app and internet. The caption comes from Instagram's undocumented oEmbed and embed endpoints, so test on mobile data as well as Wi-Fi (the research was done from one desktop connection only).
+- Instagram, open a public recipe Reel, Share > Simmer (it is in the share sheet for text). Simmer opens on Add recipe, paste stage, with the Instagram Reel card above the text field: shortened link, a spinner with "Fetching the caption...", then "Caption added below · N lines" and the text field holds a "Caption" line followed by the caption. A Reel with no caption text or a deleted one shows "No caption found. You can paste the text below." and nothing else breaks.
+- Airplane mode, share a Reel: the card ends on "No caption found", no crash.
+- The "Listen to the Reel" button is greyed out ("Coming soon").
+- Edit or clear the caption in the field: it stays edited. Rotate, then `adb shell am kill com.simmer.app` and reopen from recents: the card, the text and the status are back (a card that was still fetching fetches again).
+- Convert (or the chatbot path: Back to the start stage, "With a chatbot"; the prompt text field is prefilled with the field's text), review, Save recipe: the saved recipe shows "Open original recipe" on its first screen and opens the Reel.
+- Share Reel while Simmer is already open on Add recipe: the card and text are replaced by the new Reel.
+- Share plain text from another app (e.g. Notes): Add recipe opens on the paste stage with the text in the field and no card. Share a non-Instagram link: it lands in the field as text.
+- Light and dark, English and German (card strings wrap, no clipping), large font, TalkBack reads the status line when it changes.
+- Before shipping: log the real share intent extras once (action, type, `EXTRA_TEXT`, `EXTRA_SUBJECT`, `clipData`) with `adb logcat` or a temporary log in `MainActivity.acceptShare`, to confirm Instagram sends the link in `EXTRA_TEXT`, and check what a `/share/reel/<token>` link does (the code does not follow those redirects yet).

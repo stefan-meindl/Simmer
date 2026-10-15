@@ -8,7 +8,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.simmer.app.data.ShareInbox
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 import com.simmer.app.ui.MainScreen
 
 @AndroidEntryPoint
@@ -20,6 +22,8 @@ class MainActivity : AppCompatActivity() {
     /** True when a notification asked to open Add recipe; cleared once the screen has navigated. */
     private var openAddRecipe by mutableStateOf(false)
 
+    @Inject lateinit var shareInbox: ShareInbox
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -27,6 +31,7 @@ class MainActivity : AppCompatActivity() {
         if (savedInstanceState == null) {
             openSettings = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
             openAddRecipe = intent.getBooleanExtra(EXTRA_OPEN_ADD_RECIPE, false)
+            acceptShare(intent)
         }
         setContent {
             MainScreen(
@@ -43,6 +48,15 @@ class MainActivity : AppCompatActivity() {
         setIntent(intent)
         if (intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)) openSettings = true
         if (intent.getBooleanExtra(EXTRA_OPEN_ADD_RECIPE, false)) openAddRecipe = true
+        acceptShare(intent)
+    }
+
+    /** Text shared to Simmer (an Instagram link, or any text) goes to Add recipe. */
+    private fun acceptShare(intent: Intent) {
+        if (intent.action != Intent.ACTION_SEND) return
+        val text = intent.getStringExtra(Intent.EXTRA_TEXT)?.takeIf { it.isNotBlank() } ?: return
+        shareInbox.offer(text)
+        openAddRecipe = true
     }
 
     companion object {

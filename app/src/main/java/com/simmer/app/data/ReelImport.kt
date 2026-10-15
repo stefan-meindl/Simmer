@@ -26,7 +26,7 @@ class ReelImport(
     private val state: SavedStateHandle,
     private val fetcher: CaptionFetcher,
     private val scope: CoroutineScope,
-    private val onCaption: (String) -> Unit,
+    private val onCaption: suspend (String) -> Unit,
 ) {
     private var fetch: Job? = null
 

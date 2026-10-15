@@ -14,12 +14,12 @@ private val INSTAGRAM_LINK = Regex(
     RegexOption.IGNORE_CASE,
 )
 
-/** The label line a Reel's caption sits under in the Add recipe text field. */
-const val CAPTION_LABEL = "Caption"
+/** The label line a Reel's caption sits under in the Add recipe text field, in the app language [lang]. */
+fun captionLabel(lang: String): String = if (lang == "de") "Beschreibung" else "Caption"
 
-/** [text] with the Reel's [caption] added under the [CAPTION_LABEL] line, after anything already there. */
-fun withCaption(text: String, caption: String): String {
-    val block = "$CAPTION_LABEL\n$caption"
+/** [text] with the Reel's [caption] added under a [label] line, after anything already there. */
+fun withCaption(text: String, caption: String, label: String = captionLabel("en")): String {
+    val block = "$label\n$caption"
     val before = text.trimEnd()
     return if (before.isEmpty()) block else "$before\n\n$block"
 }

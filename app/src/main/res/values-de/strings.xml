@@ -439,4 +439,16 @@
     <string name="import_channel_progress">Rezept lesen</string>
     <string name="import_channel_done">Rezept fertig</string>
     <string name="import_truncated_note">Dieses Rezept ist lang. Nur der erste Teil wurde gelesen.</string>
+
+    <!-- Reel import card on Add recipe -->
+    <string name="reel_title">Instagram-Reel</string>
+    <string name="reel_fetching">Beschreibung wird geladen…</string>
+    <plurals name="reel_caption_found">
+        <item quantity="one">Beschreibung unten eingefügt · %1$d Zeile</item>
+        <item quantity="other">Beschreibung unten eingefügt · %1$d Zeilen</item>
+    </plurals>
+    <string name="reel_not_found">Keine Beschreibung gefunden. Du kannst den Text unten einfügen.</string>
+    <string name="reel_listen">Reel anhören</string>
+    <string name="reel_listen_soon">Bald verfügbar</string>
+
 </resources>

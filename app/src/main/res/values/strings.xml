@@ -442,4 +442,16 @@
     <string name="import_channel_progress">Recipe reading</string>
     <string name="import_channel_done">Recipe ready</string>
     <string name="import_truncated_note">This recipe is long. Only the first part was read.</string>
+
+    <!-- Reel import card on Add recipe -->
+    <string name="reel_title">Instagram Reel</string>
+    <string name="reel_fetching">Fetching the caption…</string>
+    <plurals name="reel_caption_found">
+        <item quantity="one">Caption added below · %1$d line</item>
+        <item quantity="other">Caption added below · %1$d lines</item>
+    </plurals>
+    <string name="reel_not_found">No caption found. You can paste the text below.</string>
+    <string name="reel_listen">Listen to the Reel</string>
+    <string name="reel_listen_soon">Coming soon</string>
+
 </resources>

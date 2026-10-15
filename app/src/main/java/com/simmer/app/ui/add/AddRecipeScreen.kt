@@ -522,6 +522,7 @@ private fun ColumnScope.PasteStage(
     val pasteText = rememberPasteAction(onPasted = viewModel::setText, onEmpty = { focus.requestFocus() })
     val textLabel = stringResource(R.string.add_recipe_text)
     val askNotificationPermission = rememberNotificationPermissionRequest()
+    val reel by viewModel.reel.collectAsStateWithLifecycle()
 
     TopRow(stringResource(R.string.add_caption_new), onBack)
     Column(
@@ -540,6 +541,8 @@ private fun ColumnScope.PasteStage(
             )
             Text(text = stringResource(R.string.add_intro), style = SimmerTextStyle_BodyMd, color = colors.textSecondary)
         }
+
+        reel?.let { ReelCardView(it) }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
