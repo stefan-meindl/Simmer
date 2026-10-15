@@ -325,6 +325,7 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
         }
     }
 
+    val reel by viewModel.reel.collectAsStateWithLifecycle()
     val scrollState = rememberScrollState()
     val errorText = stringResource(R.string.add_reply_error)
     LaunchedEffect(viewModel) {
@@ -351,6 +352,7 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             color = colors.textPrimary,
             modifier = Modifier.semantics { heading() },
         )
+        reel?.let { ReelCardView(it) }
         Text(
             text = stringResource(R.string.add_step_prompt),
             style = SimmerTextStyle_Heading5,
