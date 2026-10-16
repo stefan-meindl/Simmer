@@ -1,6 +1,6 @@
 # Simmer
 
-Simmer is an Android recipe app. Browse built-in and imported recipes, set servings and pick variations, cook step by step with timers, and keep a shopping list.
+Simmer is an Android recipe app. Browse built-in and imported recipes, set servings and pick variations, cook step by step with timers, and keep a shopping list. See the [project site](https://stefan-meindl.github.io/Simmer/).
 
 ## Screenshots
 

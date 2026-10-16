@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simmer: open-source Android recipe app</title>
+<meta name="description" content="Simmer is an open-source Android recipe app. Import recipes from Instagram Reels, set servings and variations, cook step by step with timers, and keep a shopping list. On-device AI, no account.">
+<link rel="canonical" href="https://stefan-meindl.github.io/Simmer/">
+<meta name="google-site-verification" content="REPLACE_WITH_SEARCH_CONSOLE_TOKEN">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Simmer">
+<meta property="og:title" content="Simmer: open-source Android recipe app">
+<meta property="og:description" content="Import recipes from Instagram Reels, scale servings, cook step by step with timers, and keep a shopping list. On-device AI, no account.">
+<meta property="og:url" content="https://stefan-meindl.github.io/Simmer/">
+<meta property="og:image" content="https://stefan-meindl.github.io/Simmer/screenshots/recipes.png">
+<meta property="og:image:alt" content="Simmer recipes tab with Cooking now and Planned cards">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="color-scheme" content="light dark">
+<style>
+:root{--bg:#fffaf3;--fg:#2a2118;--muted:#5c4f43;--card:#fff;--line:#e6d9c8;--accent:#a8431a;--accent-fg:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#17120d;--fg:#f5ece0;--muted:#c4b6a4;--card:#221a13;--line:#3a2f24;--accent:#ff9a6b;--accent-fg:#2a1206}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:1.0625rem/1.6 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:60rem;margin:0 auto;padding:0 1rem}
+header{padding:3rem 0 2rem;text-align:center}
+h1{font-size:clamp(2rem,6vw,3rem);line-height:1.15;margin:0 0 1rem}
+h2{font-size:1.5rem;margin:0 0 1rem}
+h3{font-size:1.125rem;margin:0 0 .25rem}
+p{margin:0 0 1rem}
+.lead{max-width:40rem;margin:0 auto 1.5rem;color:var(--muted)}
+.btn{display:inline-block;background:var(--accent);color:var(--accent-fg);padding:.75rem 1.5rem;border-radius:.5rem;font-weight:600;text-decoration:none}
+.btn:hover,.btn:focus-visible{outline:3px solid var(--fg);outline-offset:2px}
+a{color:var(--accent)}
+section{padding:2rem 0}
+.features{display:grid;gap:1rem;grid-template-columns:repeat(auto-fit,minmax(15rem,1fr));list-style:none;padding:0;margin:0}
+.features li{background:var(--card);border:1px solid var(--line);border-radius:.75rem;padding:1rem}
+.features p{margin:0;color:var(--muted)}
+.shots{display:flex;gap:1rem;overflow-x:auto;padding:0 0 1rem;margin:0;list-style:none;scroll-snap-type:x proximity}
+.shots li{flex:0 0 14rem;scroll-snap-align:start}
+.shots img{width:100%;height:auto;border-radius:.75rem;border:1px solid var(--line);display:block}
+.shots figcaption{color:var(--muted);font-size:.9rem;margin-top:.5rem}
+.shots figure{margin:0}
+footer{border-top:1px solid var(--line);padding:1.5rem 0 3rem;color:var(--muted);font-size:.95rem}
+</style>
+</head>
+<body>
+<header class="wrap">
+  <h1>Simmer: open-source Android recipe app</h1>
+  <p class="lead">Import a recipe from an Instagram Reel, set servings, pick variations, and cook step by step with timers. Runs on your phone, with on-device AI and no account.</p>
+  <a class="btn" href="https://github.com/stefan-meindl/Simmer/releases/latest">Download the latest APK</a>
+</header>
+<main class="wrap">
+  <section aria-labelledby="features">
+    <h2 id="features">What Simmer does</h2>
+    <ul class="features">
+      <li><h3>Import from Instagram Reels</h3><p>Pull a recipe from the caption, or from the spoken audio, transcribed on your device with Whisper.</p></li>
+      <li><h3>Servings and variations</h3><p>Scale amounts to the number of people and pick swaps and add-ins. Steps follow your choices.</p></li>
+      <li><h3>Step-by-step cooking</h3><p>Work through one step at a time and start a timer on any step that needs one.</p></li>
+      <li><h3>Shopping list</h3><p>Planned recipes add their ingredients, grouped by aisle.</p></li>
+      <li><h3>On-device AI, no account</h3><p>Nothing to sign up for. Transcription runs locally on your phone.</p></li>
+      <li><h3>Open source</h3><p>MIT licensed. Read the code or file an issue on <a href="https://github.com/stefan-meindl/Simmer">GitHub</a>.</p></li>
+    </ul>
+  </section>
+  <section aria-labelledby="screenshots">
+    <h2 id="screenshots">Screenshots</h2>
+    <ul class="shots">
+      <li><figure><img src="screenshots/recipes.png" width="1080" height="2400" loading="lazy" alt="Recipes tab with Cooking now and Planned cards"><figcaption>Recipes</figcaption></figure></li>
+      <li><figure><img src="screenshots/recipe-detail.png" width="1080" height="2400" loading="lazy" alt="Recipe detail with servings and variations"><figcaption>Servings and variations</figcaption></figure></li>
+      <li><figure><img src="screenshots/cooking-step.png" width="1080" height="2400" loading="lazy" alt="Cooking step with a running timer"><figcaption>Cooking with timers</figcaption></figure></li>
+      <li><figure><img src="screenshots/shopping-list.png" width="1080" height="2400" loading="lazy" alt="Shopping list grouped by aisle"><figcaption>Shopping list</figcaption></figure></li>
+      <li><figure><img src="screenshots/import.png" width="1080" height="2400" loading="lazy" alt="Add a recipe with a chatbot"><figcaption>Add a recipe</figcaption></figure></li>
+      <li><figure><img src="screenshots/recipe-created.png" width="1080" height="2400" loading="lazy" alt="The imported recipe, ready to save"><figcaption>Review before saving</figcaption></figure></li>
+    </ul>
+  </section>
+  <section aria-labelledby="install">
+    <h2 id="install">Install</h2>
+    <p>Simmer is installed by sideloading the APK. It needs Android 8.0 or newer.</p>
+    <ol>
+      <li>Download the APK from the <a href="https://github.com/stefan-meindl/Simmer/releases/latest">latest release</a>.</li>
+      <li>Allow "install unknown apps" for your browser or file manager, then open the APK.</li>
+    </ol>
+    <p>More in the <a href="https://github.com/stefan-meindl/Simmer/blob/main/docs/releasing.md">install notes</a>.</p>
+  </section>
+</main>
+<footer class="wrap">
+  <p><a href="https://github.com/stefan-meindl/Simmer">Source on GitHub</a> · <a href="https://github.com/stefan-meindl/Simmer/blob/main/LICENSE">MIT license</a></p>
+</footer>
+</body>
+</html>

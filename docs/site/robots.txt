@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://stefan-meindl.github.io/Simmer/sitemap.xml

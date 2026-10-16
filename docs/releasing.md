@@ -48,3 +48,7 @@ The keystore signs every release. If it is lost, phones with the app installed c
 - Keep the keystore file and its passwords in a password manager or other offline backup, separate from the repo.
 - Never commit the keystore or passwords.
 - GitHub Secrets cannot be read back, so they are not a backup.
+
+## Project site
+
+`docs/site/` is published to https://stefan-meindl.github.io/Simmer/ by `.github/workflows/pages.yml` on pushes to `main`. The workflow copies `docs/screenshots/` into the site. One-time owner setup: Settings → Pages → Source "GitHub Actions". For Search Console, replace `REPLACE_WITH_SEARCH_CONSOLE_TOKEN` in `docs/site/index.html` with the verification token.
