@@ -2,6 +2,20 @@ package com.simmer.app.domain
 
 import kotlin.math.abs
 
+/** The whisper.cpp base model (q5_1) Listen transcribes with, from the ggerganov/whisper.cpp repo on Hugging Face. */
+object WhisperModel {
+    const val FILE_NAME = "ggml-base-q5_1.bin"
+
+    /** Pinned to a commit of ggerganov/whisper.cpp so [SHA256] always matches the bytes. */
+    const val URL =
+        "https://huggingface.co/ggerganov/whisper.cpp/resolve/5359861c739e955e79d9a303bcbc70fb988958b1/ggml-base-q5_1.bin"
+    const val SHA256 = "422f1ae452ade6f30a004d7e5c6a43195e4433bc370bf23fac9cc591f01a8898"
+    const val SIZE_BYTES = 59_707_625L
+
+    /** Free space the download needs before it starts (model plus working room). */
+    const val REQUIRED_FREE_BYTES = 300_000_000L
+}
+
 /** Listen stops by itself after this long (the 3-minute cap of the capture). */
 const val LISTEN_MAX_SECONDS = 180
 
@@ -13,6 +27,11 @@ private const val SILENCE_PEAK = 0.005f
 
 /** True when [pcm] (float samples in -1..1) holds no audible sound, or no samples at all. */
 fun isSilent(pcm: FloatArray): Boolean = pcm.none { abs(it) >= SILENCE_PEAK }
+
+private val NON_SPEECH_TAG = Regex("""\[[^\]]*]""")
+
+/** Whisper's raw text without its bracketed non-speech tags ("[BLANK_AUDIO]", "[MUSIC]"), single-spaced and trimmed. */
+fun cleanTranscript(raw: String): String = raw.replace(NON_SPEECH_TAG, " ").replace(Regex("""\s+"""), " ").trim()
 
 /** Why a Listen run ended without a transcript, apart from silence and cancelling. */
 enum class ListenFailure {

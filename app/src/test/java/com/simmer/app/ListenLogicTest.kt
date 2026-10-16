@@ -1,5 +1,6 @@
 package com.simmer.app
 
+import com.simmer.app.domain.cleanTranscript
 import com.simmer.app.domain.isSilent
 import com.simmer.app.domain.withTranscript
 import org.junit.Assert.assertEquals
@@ -17,6 +18,12 @@ class ListenLogicTest {
     @Test fun `audible samples are not silent`() {
         assertFalse(isSilent(FloatArray(16_000) { if (it % 2 == 0) 0.2f else -0.2f }))
         assertFalse(isSilent(FloatArray(16_000).also { it[8_000] = 0.5f }))
+    }
+
+    @Test fun `whisper's bracketed non-speech tags are not words`() {
+        assertEquals("", cleanTranscript(" [BLANK_AUDIO] "))
+        assertEquals("Add two eggs.", cleanTranscript(" [MUSIC] Add two eggs. [BLANK_AUDIO]"))
+        assertEquals("Mix well", cleanTranscript("Mix [pause] well"))
     }
 
     @Test fun `the transcript goes under its label after the existing text`() {

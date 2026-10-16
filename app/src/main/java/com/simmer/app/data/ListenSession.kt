@@ -4,6 +4,7 @@ import com.simmer.app.domain.DownloadWork
 import com.simmer.app.domain.LISTEN_MAX_SECONDS
 import com.simmer.app.domain.ListenFailure
 import com.simmer.app.domain.ListenState
+import com.simmer.app.domain.cleanTranscript
 import com.simmer.app.domain.isSilent
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -163,7 +164,7 @@ class ListenSession(
         mutableState.value = ListenState.Transcribing
         work = scope.launch {
             try {
-                val text = transcriber.transcribe(pcm).trim()
+                val text = cleanTranscript(transcriber.transcribe(pcm))
                 ifCurrent(mine) {
                     if (text.isEmpty()) {
                         persistence.save(null)
