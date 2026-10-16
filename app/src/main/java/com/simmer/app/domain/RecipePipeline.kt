@@ -233,7 +233,7 @@ Reply with this shape: $PASS2_SHAPE
         /** Both styles: expand vague steps. Liberty may add methods and restructure. */
         const val PASS2_FAITHFUL = "\n- Expand vague steps with heat levels, doneness cues, timings and technique. Write other tips into the step body. Keep any methods the text lists. Adapt steps to the kitchen rule below, also for tips. In \"notes\" add one short line per kind of addition (tips, methods, restructuring)."
         const val PASS2_LIBERTY = PASS2_FAITHFUL +
-            "\n- Also offer \"methods\" (oven, air fryer, pan, ...) whenever an appliance the cook owns fits the recipe, even if the text does not list it; never an appliance the cook lacks. You may reorder, merge or split steps. Keep the amounts and main ingredients. If the recipe is only a main, add one line to \"notes\" with 2 or 3 sides that would go well with it."
+            "\n- Also offer \"methods\" (oven, air fryer, pan, ...) whenever an appliance the cook owns fits the recipe, even if the text does not list it; never an appliance the cook lacks. You may reorder, merge or split steps. Keep the amounts and main ingredients."
 
         const val PASS3_SYSTEM = """You link steps for the Simmer cooking app. Reply with one JSON object and nothing else.
 

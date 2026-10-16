@@ -147,4 +147,84 @@ class NormalizeTest {
         val recipe = normalize(input)
         assertEquals("Mains", recipe.category)
     }
+
+    // --- Sides ---
+
+    private fun side(
+        id: String = "rice",
+        label: Any? = "Rice",
+        ingredients: Any? = listOf(mapOf("id" to "i1", "name" to "Rice", "q" to 300, "u" to "g")),
+        steps: Any? = listOf(
+            mapOf("id" to "p1", "ph" to "prep", "t" to "Rinse", "b" to "Rinse the {i1:rice}."),
+            mapOf("id" to "c1", "ph" to "cook", "t" to "Cook", "b" to "Cook it.", "d" to 600, "if" to "m1=pot"),
+            mapOf("id" to "c1", "ph" to "cook", "t" to "Microwave", "b" to "Microwave it.", "d" to 480, "if" to "m1=micro"),
+        ),
+        methods: Any? = listOf(
+            mapOf("id" to "m1", "label" to "Rice", "q" to "How?", "options" to listOf(
+                mapOf("v" to "pot", "l" to "Pot"), mapOf("v" to "micro", "l" to "Microwave"))),
+        ),
+    ): Map<String, Any?> = mapOf("id" to id, "label" to label, "d" to "Soaks up the sauce.", "ingredients" to ingredients, "steps" to steps, "methods" to methods)
+
+    @Test fun `a side is normalized with its own ingredients, methods and steps`() {
+        val recipe = normalize(exampleInput() + mapOf("sides" to listOf(side())))
+
+        val rice = recipe.sides.single()
+        assertEquals("rice", rice.id)
+        assertEquals("Rice", rice.label)
+        assertEquals("Soaks up the sauce.", rice.d)
+        assertEquals(listOf("Rice"), rice.ingredients.map { it.name })
+        assertEquals(listOf("pot", "micro"), rice.methods.single().options.map { it.value })
+        assertEquals(listOf("m1=pot", "m1=micro"), rice.steps.mapNotNull { it.ifCondition })
+        assertEquals(600, rice.steps[1].durationSecs)
+    }
+
+    @Test fun `a side condition is checked against the side's own methods only`() {
+        val bad = side(steps = listOf(
+            mapOf("id" to "p1", "ph" to "prep", "t" to "Rinse", "b" to "Rinse.", "if" to "m1=pot"),
+            mapOf("id" to "c1", "ph" to "cook", "t" to "Cook", "b" to "Cook.", "if" to "m9=pot"),
+            mapOf("id" to "c2", "ph" to "cook", "t" to "Fry", "b" to "Fry.", "if" to "add:v1"),
+        ))
+        // The main has m1 (oven/air) and v1, the side must not borrow them.
+        val steps = normalize(exampleInput() + mapOf("sides" to listOf(bad))).sides.single().steps
+
+        assertEquals(listOf("m1=pot", null, null), steps.map { it.ifCondition })
+    }
+
+    @Test fun `side step links to unknown side ingredients are stripped`() {
+        val s = side(steps = listOf(mapOf("id" to "c1", "ph" to "cook", "t" to "Cook", "b" to "Cook {i1:rice} and {i2:salt}.")))
+        val body = normalize(exampleInput() + mapOf("sides" to listOf(s))).sides.single().steps.single().body
+
+        assertEquals("Cook {i1:rice} and salt.", body)
+    }
+
+    @Test fun `a side with a single method option has no method`() {
+        val one = side(methods = listOf(mapOf("id" to "m1", "label" to "R", "q" to "?", "options" to listOf(mapOf("v" to "pot", "l" to "Pot")))))
+
+        assertTrue(normalize(exampleInput() + mapOf("sides" to listOf(one))).sides.single().methods.isEmpty())
+    }
+
+    @Test fun `at most three sides are kept`() {
+        val many = (1..5).map { side(id = "s$it", label = "Side $it") }
+
+        assertEquals(listOf("s1", "s2", "s3"), normalize(exampleInput() + mapOf("sides" to many)).sides.map { it.id })
+    }
+
+    @Test fun `a bad side is dropped and the others stay`() {
+        val sides = listOf(
+            side(id = "a", label = null),
+            side(id = "b", ingredients = emptyList<Any>()),
+            side(id = "c", steps = emptyList<Any>()),
+            "not a map",
+            side(id = "d"),
+        )
+        val recipe = normalize(exampleInput() + mapOf("sides" to sides))
+
+        assertEquals(listOf("d"), recipe.sides.map { it.id })
+        assertEquals("Sheet-pan lemon chicken", recipe.title)
+    }
+
+    @Test fun `sides that are not a list or missing give none`() {
+        assertTrue(normalize(exampleInput()).sides.isEmpty())
+        assertTrue(normalize(exampleInput() + mapOf("sides" to "rice")).sides.isEmpty())
+    }
 }

@@ -127,4 +127,49 @@ class ChatbotReplyTest {
         assertEquals(3, recipe.methods.single().options.size)
         assertEquals(4, recipe.steps.size)
     }
+
+    private val WITH_RICE_SIDE = """{
+      "title": "Curry",
+      "ingredients": [{"id": "i1", "name": "Chickpeas", "q": 400, "u": "g"}],
+      "steps": [{"id": "c1", "ph": "cook", "t": "Simmer", "b": "Simmer the {i1:chickpeas}."}],
+      "sides": [{"id": "rice", "label": "Rice", "d": "Soaks up the sauce.",
+        "ingredients": [{"id": "i1", "name": "Rice", "q": 300, "u": "g"}],
+        "methods": [{"id": "m1", "label": "Rice", "q": "How?", "options": [
+          {"v": "pot", "l": "Pot"}, {"v": "cooker", "l": "Rice cooker"}, {"v": "micro", "l": "Microwave"}]}],
+        "steps": [
+          {"id": "c1", "ph": "cook", "t": "Boil", "b": "Boil it.", "if": "m1=pot"},
+          {"id": "c1", "ph": "cook", "t": "Cooker", "b": "Cook it.", "if": "m1=cooker"},
+          {"id": "c1", "ph": "cook", "t": "Zap", "b": "Zap it.", "if": "m1=micro"}]}]
+    }"""
+
+    @Test fun `sides come with the recipe`() {
+        val recipe = parse(WITH_RICE_SIDE)!!
+
+        assertEquals(listOf("rice"), recipe.sides.map { it.id })
+        assertEquals(3, recipe.sides.single().methods.single().options.size)
+        assertEquals(3, recipe.sides.single().steps.size)
+    }
+
+    @Test fun `Strict drops side options for missing appliances with their steps`() {
+        val side = parse(WITH_RICE_SIDE, setOf("hob", "microwave"), KitchenMode.Strict)!!.sides.single()
+
+        assertEquals(listOf("Pot", "Microwave"), side.methods.single().options.map { it.label })
+        assertEquals(listOf("Boil", "Zap"), side.steps.map { it.title })
+    }
+
+    @Test fun `a side method left with one option is no choice`() {
+        val side = parse(WITH_RICE_SIDE
+            .replace("""{"v": "cooker", "l": "Rice cooker"}, """, "")
+            .replace("""{"id": "c1", "ph": "cook", "t": "Cooker", "b": "Cook it.", "if": "m1=cooker"},""", ""), setOf("hob"), KitchenMode.Medium)!!.sides.single()
+
+        assertTrue(side.methods.isEmpty())
+        assertEquals(listOf("Boil"), side.steps.map { it.title })
+        assertNull(side.steps.single().ifCondition)
+    }
+
+    @Test fun `Free for all keeps every side option`() {
+        val side = parse(WITH_RICE_SIDE, setOf("hob"), KitchenMode.Free)!!.sides.single()
+
+        assertEquals(3, side.methods.single().options.size)
+    }
 }

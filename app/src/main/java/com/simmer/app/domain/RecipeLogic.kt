@@ -403,13 +403,8 @@ private val TAGS = setOf("Vegetarian", "Quick", "Spicy", "One-pot", "Make-ahead"
 private val ICONS = setOf("flame", "chef-hat", "utensils", "egg", "carrot")
 private val VALID_ICONS_OPTION = setOf("flame", "zap", "timer", "layers", "clock")
 
-/**
- * Validates and sanitizes a raw recipe map (as produced by the AI pipeline).
- * Strips invalid conditions, validates step durations (30s–24h),
- * enforces ≥2 method options, removes invalid variation refs.
- */
-fun normalize(j: Map<String, Any?>): Recipe {
-    val ingredients = (j["ingredients"] as? List<*>)
+private fun normIngredients(raw: Any?): List<Ingredient> =
+    (raw as? List<*>)
         ?.filterIsInstance<Map<*, *>>()
         ?.filter { it["name"] != null }
         ?.mapIndexed { k, i ->
@@ -435,9 +430,8 @@ fun normalize(j: Map<String, Any?>): Recipe {
             )
         } ?: emptyList()
 
-    val ingIds = ingredients.map { it.id }.toSet()
-
-    val methods = (j["methods"] as? List<*>)
+private fun normMethods(raw: Any?): List<Method> =
+    (raw as? List<*>)
         ?.filterIsInstance<Map<*, *>>()
         ?.filter { m -> m["id"] != null && (m["options"] as? List<*>)?.size?.let { it >= 2 } == true }
         ?.map { m ->
@@ -458,8 +452,89 @@ fun normalize(j: Map<String, Any?>): Recipe {
             )
         } ?: emptyList()
 
-    val mset = methods.associate { m -> m.id to m.options.map { it.value }.toSet() }
+/** Steps of a raw list; links to ids not in [ingIds] become plain text and a condition [condOk] rejects is dropped. */
+private fun normSteps(raw: Any?, ingIds: Set<String>, condOk: (String?) -> Boolean): List<Step> =
+    (raw as? List<*>)
+        ?.filterIsInstance<Map<*, *>>()
+        ?.filter { s -> s["b"] != null }
+        ?.mapIndexed { k, s ->
+            val rawD = (s["d"] as? Number)?.toDouble()?.toInt() ?: 0
+            val d = if (rawD > 0) minOf(86400, maxOf(30, rawD)) else 0
+            val rawIf = s["if"]?.toString()?.takeIf { it.isNotBlank() }
+            val cleanIf = if (condOk(rawIf)) rawIf else null
+            val rawBody = s["b"].toString()
+            // Strip links for unknown ingredient IDs
+            val body = rawBody.replace(Regex("\\{(\\w+):([^}]+)\\}")) { mr ->
+                val id = mr.groupValues[1]
+                val text = mr.groupValues[2]
+                if (ingIds.contains(id)) mr.value else text
+            }
+            Step(
+                id = s["id"]?.toString() ?: "s${k + 1}",
+                phase = if (s["ph"]?.toString() == "prep") "prep" else "cook",
+                title = s["t"]?.toString() ?: "Step ${k + 1}",
+                durationSecs = d,
+                body = body,
+                needs = (s["needs"] as? List<*>)?.map { it.toString() } ?: emptyList(),
+                ifCondition = cleanIf,
+            )
+        } ?: emptyList()
 
+/** The condition check for a recipe or side: `add:` needs a variation in [vset], `m=v` an option of a Method in [mset]. */
+private fun conditionCheck(vset: Set<String>, mset: Map<String, Set<String>>): (String?) -> Boolean = { c ->
+    if (c.isNullOrBlank()) {
+        true
+    } else {
+        val mAdd = Regex("^!?add:(\\w+)$").matchEntire(c)
+        val mMethod = Regex("^(\\w+)!?=(\\w+)$").matchEntire(c)
+        when {
+            mAdd != null -> vset.contains(mAdd.groupValues[1])
+            mMethod != null -> mset[mMethod.groupValues[1]]?.contains(mMethod.groupValues[2]) == true
+            else -> false
+        }
+    }
+}
+
+private fun methodSet(methods: List<Method>): Map<String, Set<String>> =
+    methods.associate { m -> m.id to m.options.map { it.value }.toSet() }
+
+private const val MAX_SIDES = 3
+
+/** One raw side as a [Side], or null when it lacks a label, an ingredient or a step. Its conditions see only its own Methods. */
+private fun normSide(raw: Map<*, *>, k: Int): Side? {
+    val label = raw["label"]?.toString()?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+    val ingredients = normIngredients(raw["ingredients"])
+    val methods = normMethods(raw["methods"])
+    val condOk = conditionCheck(emptySet(), methodSet(methods))
+    val steps = normSteps(raw["steps"], ingredients.map { it.id }.toSet(), condOk)
+    if (ingredients.isEmpty() || steps.isEmpty()) return null
+    return Side(
+        id = (raw["id"]?.toString() ?: "side${k + 1}").replace(Regex("\\W"), "_"),
+        label = label,
+        d = raw["d"]?.toString() ?: "",
+        ingredients = ingredients.map { if (condOk(it.ifCondition)) it else it.copy(ifCondition = null) },
+        methods = methods,
+        steps = steps,
+    )
+}
+
+/** At most [MAX_SIDES] sides with distinct ids; a bad side is dropped, never failing the recipe. */
+private fun normSides(raw: Any?): List<Side> =
+    (raw as? List<*>).orEmpty()
+        .mapIndexedNotNull { k, s -> (s as? Map<*, *>)?.let { normSide(it, k) } }
+        .distinctBy { it.id }
+        .take(MAX_SIDES)
+
+/**
+ * Validates and sanitizes a raw recipe map (as produced by the AI pipeline).
+ * Strips invalid conditions, validates step durations (30s–24h),
+ * enforces ≥2 method options, removes invalid variation refs.
+ */
+fun normalize(j: Map<String, Any?>): Recipe {
+    val ingredients = normIngredients(j["ingredients"])
+    val ingIds = ingredients.map { it.id }.toSet()
+    val methods = normMethods(j["methods"])
+    val mset = methodSet(methods)
     val variations = (j["variations"] as? List<*>)
         ?.filterIsInstance<Map<*, *>>()
         ?.filter { v -> v["id"] != null && ingIds.contains(v["ing"]?.toString()) }
@@ -493,45 +568,14 @@ fun normalize(j: Map<String, Any?>): Recipe {
 
     val vset = variations.map { it.id }.toSet()
 
-    fun condOk(c: String?): Boolean {
-        if (c.isNullOrBlank()) return true
-        val mAdd = Regex("^!?add:(\\w+)$").matchEntire(c)
-        if (mAdd != null) return vset.contains(mAdd.groupValues[1])
-        val mMethod = Regex("^(\\w+)!?=(\\w+)$").matchEntire(c)
-        if (mMethod != null) return mset[mMethod.groupValues[1]]?.contains(mMethod.groupValues[2]) == true
-        return false
-    }
+    val condOk = conditionCheck(vset, mset)
 
     // Strip invalid conditions from ingredients
     val cleanedIngredients = ingredients.map { ing ->
         if (condOk(ing.ifCondition)) ing else ing.copy(ifCondition = null)
     }
 
-    val steps = (j["steps"] as? List<*>)
-        ?.filterIsInstance<Map<*, *>>()
-        ?.filter { s -> s["b"] != null }
-        ?.mapIndexed { k, s ->
-            val rawD = (s["d"] as? Number)?.toDouble()?.toInt() ?: 0
-            val d = if (rawD > 0) minOf(86400, maxOf(30, rawD)) else 0
-            val rawIf = s["if"]?.toString()?.takeIf { it.isNotBlank() }
-            val cleanIf = if (condOk(rawIf)) rawIf else null
-            val rawBody = s["b"].toString()
-            // Strip links for unknown ingredient IDs
-            val body = rawBody.replace(Regex("\\{(\\w+):([^}]+)\\}")) { mr ->
-                val id = mr.groupValues[1]
-                val text = mr.groupValues[2]
-                if (ingIds.contains(id)) mr.value else text
-            }
-            Step(
-                id = s["id"]?.toString() ?: "s${k + 1}",
-                phase = if (s["ph"]?.toString() == "prep") "prep" else "cook",
-                title = s["t"]?.toString() ?: "Step ${k + 1}",
-                durationSecs = d,
-                body = body,
-                needs = (s["needs"] as? List<*>)?.map { it.toString() } ?: emptyList(),
-                ifCondition = cleanIf,
-            )
-        } ?: emptyList()
+    val steps = normSteps(j["steps"], ingIds, condOk)
 
     return Recipe(
         id = "u${System.currentTimeMillis().toString(36)}",
@@ -550,6 +594,7 @@ fun normalize(j: Map<String, Any?>): Recipe {
         steps = steps,
         notes = (j["notes"] as? List<*>)?.filterIsInstance<String>()?.take(5) ?: emptyList(),
         sourceUrl = j["sourceUrl"]?.toString()?.trim()?.takeIf { it.isNotBlank() },
+        sides = normSides(j["sides"]),
     )
 }
 

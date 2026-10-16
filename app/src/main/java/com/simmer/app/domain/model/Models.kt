@@ -152,6 +152,21 @@ data class Recipe(
     val edited: Boolean = false,
     val notes: List<String> = emptyList(),
     val sourceUrl: String? = null,
+    val sides: List<Side> = emptyList(),
+)
+
+/**
+ * A side dish a main can be cooked with. Self-contained: its own ingredients, [methods] and steps,
+ * with ids local to the side. It scales with the main's servings and has no servings of its own.
+ */
+data class Side(
+    val id: String,
+    val label: String,
+    /** Why it fits the main. */
+    val d: String = "",
+    val ingredients: List<Ingredient> = emptyList(),
+    val methods: List<Method> = emptyList(),
+    val steps: List<Step> = emptyList(),
 )
 
 /**
