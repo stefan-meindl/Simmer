@@ -5,10 +5,8 @@ import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.projection.MediaProjectionConfig
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
-import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -98,15 +96,9 @@ internal fun ListenFlow(state: ListenState, viewModel: AddRecipeViewModel) {
     }
 }
 
-/** Full screen (not "a single app") capture, so the sound of whichever app plays the Reel is included. */
-private fun screenCaptureIntent(context: Context): Intent {
-    val manager = context.getSystemService(MediaProjectionManager::class.java)
-    return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
-        manager.createScreenCaptureIntent(MediaProjectionConfig.createConfigForDefaultDisplay())
-    } else {
-        manager.createScreenCaptureIntent()
-    }
-}
+/** The system picker: the user shares the whole screen or just Instagram (single app). */
+private fun screenCaptureIntent(context: Context): Intent =
+    context.getSystemService(MediaProjectionManager::class.java).createScreenCaptureIntent()
 
 /** Opens the Reel in Instagram (or, without it, whatever opens the link). */
 private fun openReel(context: Context, url: String?) {
