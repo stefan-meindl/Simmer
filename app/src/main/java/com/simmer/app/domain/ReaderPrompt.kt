@@ -88,7 +88,7 @@ private const val EXAMPLE_EN =
         """{"id":"p1","ph":"prep","t":"Prepare the tray","b":"Halve the {i2:potatoes} and tip them on a tray with the {i3:garlic}.","d":0,"needs":[]},""" +
         """{"id":"c1","ph":"cook","t":"Roast","b":"Add the {i1:chicken} skin side up and roast at 220°C until the skin is golden and crisp and the juices run clear. Pat the skin dry first for a crisper result.","d":2280,"needs":["p1"],"if":"m1=oven"},""" +
         """{"id":"c1","ph":"cook","t":"Air-fry","b":"Air-fry the {i1:chicken} and potatoes at 200°C in two batches.","d":1500,"needs":["p1"],"if":"m1=air"}],""" +
-        """"notes":["Chilli flakes were optional, so they are an add-in.","Added a tip on potatoes and a doneness cue.","Suggested smoked paprika for smoky depth."]}"""
+        """"notes":["Chilli flakes were optional, so they are an add-in.","Added a tip on potatoes and a doneness cue.","Suggested smoked paprika for smoky depth.","Serves well with a green salad and crusty bread."]}"""
 
 private const val EXAMPLE_DE =
     """{"title":"Blech-Zitronenhähnchen","summary":"Knusprige Hähnchenschenkel mit Kartoffeln und Zitrone auf einem Blech.","category":"Mains","tags":["One-pot"],"time":60,"difficulty":"Easy","base":4,"icon":"flame",""" +
@@ -107,4 +107,4 @@ private const val EXAMPLE_DE =
         """{"id":"p1","ph":"prep","t":"Blech vorbereiten","b":"Halbiere die {i2:Drillinge} und gib sie mit dem {i3:Knoblauch} auf ein Blech.","d":0,"needs":[]},""" +
         """{"id":"c1","ph":"cook","t":"Backen","b":"Lege die {i1:Hähnchenschenkel} mit der Haut nach oben darauf und backe sie bei 220°C, bis die Haut goldbraun und knusprig ist und der Saft klar läuft. Trockne die Haut vorher ab, dann wird sie knuspriger.","d":2280,"needs":["p1"],"if":"m1=oven"},""" +
         """{"id":"c1","ph":"cook","t":"Frittieren","b":"Gare die {i1:Hähnchenschenkel} und Kartoffeln bei 200°C in zwei Durchgängen.","d":1500,"needs":["p1"],"if":"m1=air"}],""" +
-        """"notes":["Chiliflocken waren optional, daher sind sie ein Extra.","Tipp zu Kartoffeln und Garpunkt-Hinweis ergänzt.","Geräuchertes Paprikapulver für rauchige Tiefe vorgeschlagen."]}"""
+        """"notes":["Chiliflocken waren optional, daher sind sie ein Extra.","Tipp zu Kartoffeln und Garpunkt-Hinweis ergänzt.","Geräuchertes Paprikapulver für rauchige Tiefe vorgeschlagen.","Passt gut zu grünem Salat und knusprigem Brot."]}"""
