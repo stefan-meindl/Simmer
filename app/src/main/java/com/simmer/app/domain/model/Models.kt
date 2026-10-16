@@ -124,10 +124,13 @@ data class ResolvedIngredient(
  * The complete set of a user's current choices for a recipe.
  * choice: map of method picks and swap variation picks.
  * add: map of add-in toggle states.
+ * sides: map of ticked side ids.
  */
 data class Selection(
     val choice: Map<String, String> = emptyMap(),
     val add: Map<String, Boolean> = emptyMap(),
+    /** Ticked side ids; unticked equals absent. A side's method picks live in [choice] as `s_<sideId>_<methodId>`. */
+    val sides: Map<String, Boolean> = emptyMap(),
 )
 
 /**

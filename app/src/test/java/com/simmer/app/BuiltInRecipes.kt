@@ -225,5 +225,23 @@ object BuiltInRecipes {
         ),
     )
 
+    /** A rice side (local ids) with pot / microwave / rice cooker, for the Sides tests. */
+    fun riceSide(): Side = Side(
+        id = "rice", label = "Rice", d = "Soaks up the sauce.",
+        ingredients = listOf(
+            Ingredient("ri", "Basmati rice", 200.0, "g", aisle = "Pantry"),
+            Ingredient("wa", "Water", 400.0, "ml"),
+        ),
+        methods = listOf(riceMethod()),
+        steps = listOf(
+            Step("rinse", "prep", "Rinse the rice", 0, "Rinse the {ri:rice} until the water runs clear."),
+            Step("r-pot", "cook", "Cook the rice", 1080, "Cook the {ri:rice} with the {wa:water} in a pot.", listOf("rinse"), "rice=pot"),
+            Step("r-mw", "cook", "Microwave the rice", 720, "Microwave the {ri:rice} and {wa:water}.", listOf("rinse"), "rice=microwave"),
+            Step("r-rc", "cook", "Start the rice cooker", 1800, "Cook the {ri:rice} in the rice cooker.", listOf("rinse"), "rice=cooker"),
+        ),
+    )
+
+    fun chilliWithRice(): Recipe = chilli().copy(sides = listOf(riceSide()))
+
     fun all(): List<Recipe> = listOf(chilli(), curry(), tagliatelle(), shakshuka(), carrots())
 }

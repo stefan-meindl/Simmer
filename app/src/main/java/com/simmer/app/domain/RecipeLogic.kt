@@ -213,6 +213,47 @@ fun parseBody(b: String, byId: Map<String, ResolvedIngredient>, units: String): 
 // Resolve
 // ---------------------------------------------------------------------------
 
+/** Key of a side's method pick in [Selection.choice]. Only word characters, so conditions and links keep parsing. */
+fun sideMethodKey(sideId: String, methodId: String) = "s_${sideId}_$methodId"
+
+private val SIDE_LINK_RE = Regex("\\{(\\w+):")
+
+private fun sideCond(c: String?, sideId: String): String? =
+    if (c.isNullOrBlank()) c else "s_${sideId}_$c"
+
+/**
+ * Folds the ticked sides into the recipe: ids namespaced `s_<sideId>_<id>`, step titles prefixed with the
+ * side label, items appended after the main's. A side method without a pick gets its first option.
+ * Unknown and unticked side ids are ignored.
+ */
+private fun withTickedSides(r: Recipe, sel: Selection): Pair<Recipe, Selection> {
+    val ticked = r.sides.filter { sel.sides[it.id] == true }
+    if (ticked.isEmpty()) return r to sel
+    val choice = sel.choice.toMutableMap()
+    var ingredients = r.ingredients
+    var steps = r.steps
+    ticked.forEach { s ->
+        fun ns(id: String) = "s_${s.id}_$id"
+        s.methods.forEach { m ->
+            val key = sideMethodKey(s.id, m.id)
+            if (key !in choice && m.options.isNotEmpty()) choice[key] = m.options[0].value
+        }
+        ingredients = ingredients + s.ingredients.map { ing ->
+            ing.copy(id = ns(ing.id), ifCondition = sideCond(ing.ifCondition, s.id), alt = ing.alt.map { (c, v) -> sideCond(c, s.id)!! to v })
+        }
+        steps = steps + s.steps.map { st ->
+            st.copy(
+                id = ns(st.id),
+                title = "${s.label}: ${st.title}",
+                body = SIDE_LINK_RE.replace(st.body) { "{${ns(it.groupValues[1])}:" },
+                needs = st.needs.map(::ns),
+                ifCondition = sideCond(st.ifCondition, s.id),
+            )
+        }
+    }
+    return r.copy(ingredients = ingredients, steps = steps) to sel.copy(choice = choice)
+}
+
 /**
  * Resolves a recipe for a given servings count and selection.
  *
@@ -228,13 +269,14 @@ fun parseBody(b: String, byId: Map<String, ResolvedIngredient>, units: String): 
  * @param lang  Language for step labels: "en" (default) or "de"
  */
 fun resolve(
-    r: Recipe,
+    recipe: Recipe,
     servings: Int,
-    sel: Selection,
+    selection: Selection,
     units: String = "metric",
     spices: String = "spoons",
     lang: String = "en",
 ): ResolvedRecipe {
+    val (r, sel) = withTickedSides(recipe, selection)
     val k = servings.toDouble() / r.base.toDouble()
 
     val prepPrefix = if (lang == "de") "Vorb." else "Prep"

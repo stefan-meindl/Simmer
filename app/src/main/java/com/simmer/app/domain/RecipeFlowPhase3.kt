@@ -51,7 +51,7 @@ fun cookingView(steps: List<ResolvedStep>, done: Set<String>): CookingView {
 fun selectionSummary(recipe: Recipe, selection: Selection, servingsText: String): String =
     (listOf(servingsText) + selectionLabels(recipe, selection)).joinToString(" · ")
 
-/** Label of every swap option that differs from its default and every add-in that is on. */
+/** Label of every swap option that differs from its default, every add-in that is on and every ticked side. */
 fun selectionLabels(recipe: Recipe, selection: Selection): List<String> {
     val bits = mutableListOf<String>()
     recipe.variations.forEach { v ->
@@ -62,6 +62,7 @@ fun selectionLabels(recipe: Recipe, selection: Selection): List<String> {
             bits += v.label
         }
     }
+    recipe.sides.forEach { if (selection.sides[it.id] == true) bits += it.label }
     return bits
 }
 
