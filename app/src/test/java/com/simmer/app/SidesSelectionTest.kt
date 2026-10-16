@@ -4,7 +4,9 @@ import com.simmer.app.data.decodeSelection
 import com.simmer.app.data.encodeSelection
 import com.simmer.app.domain.Phase1State
 import com.simmer.app.domain.PlannedChoice
+import com.simmer.app.domain.cookingView
 import com.simmer.app.domain.defaults
+import com.simmer.app.domain.hasSelectableMethod
 import com.simmer.app.domain.model.BodySegment
 import com.simmer.app.domain.model.Selection
 import com.simmer.app.domain.resolve
@@ -118,5 +120,23 @@ class SidesSelectionTest {
     @Test fun `selection labels append ticked side labels`() {
         assertEquals(emptyList<String>(), selectionLabels(recipe, defaults(recipe)))
         assertEquals(listOf("Rice"), selectionLabels(recipe, ticked().selection))
+    }
+
+    // --- cook flow ---------------------------------------------------------------------
+
+    @Test fun `cooking view tracks side steps by their namespaced ids`() {
+        val steps = resolve(recipe, 4, ticked().withSideMethod("rice", "rice", "cooker").selection).steps
+        val start = steps.last()
+        val open = cookingView(steps, emptySet()).steps.last()
+        assertEquals(listOf("s_rice_rinse"), open.pendingNeeds.map { it.id })
+        val done = cookingView(steps, setOf("s_rice_rinse")).steps.last()
+        assertEquals(emptyList<String>(), done.pendingNeeds.map { it.id })
+        assertEquals(listOf("s_rice_rinse"), done.doneNeeds.map { it.id })
+        assertEquals(1, cookingView(steps, setOf("s_rice_rinse", "nope")).doneCount)
+        assertEquals(start.durationSecs, done.step.durationSecs)
+    }
+
+    @Test fun `a side with a method choice does not add Phase 2`() {
+        assertEquals(hasSelectableMethod(main), hasSelectableMethod(recipe))
     }
 }

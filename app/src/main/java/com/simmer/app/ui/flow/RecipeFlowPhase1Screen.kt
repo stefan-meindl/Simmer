@@ -49,6 +49,7 @@ import com.simmer.app.domain.MAX_SERVINGS
 import com.simmer.app.domain.MIN_SERVINGS
 import com.simmer.app.domain.Phase1State
 import com.simmer.app.domain.hasSelectableMethod
+import com.simmer.app.domain.sideMethodKey
 import com.simmer.app.domain.addInAmount
 import com.simmer.app.domain.isYourPick
 import com.simmer.app.ui.components.Badge
@@ -159,6 +160,9 @@ private fun Phase1Content(
                 )
                 if (recipe.variations.isNotEmpty()) {
                     Variations(ui, viewModel)
+                }
+                if (recipe.sides.isNotEmpty()) {
+                    Sides(ui, viewModel)
                 }
                 IngredientList(ui)
             }
@@ -420,6 +424,91 @@ private fun Variations(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
                         checked = s.selection.add[v.id] == true,
                         onCheckedChange = { viewModel.setAddIn(v.id, it) },
                     )
+                }
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sides
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun Sides(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
+    val colors = LocalSimmerColors.current
+    val s = ui.state
+    val sides = s.recipe.sides
+    val noneTicked = sides.none { s.selection.sides[it.id] == true }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column {
+            Text(
+                text = stringResource(R.string.flow_sides),
+                style = SimmerTextStyle_Heading5,
+                color = colors.textPrimary,
+            )
+            Text(
+                text = stringResource(R.string.flow_sides_hint),
+                style = SimmerTextStyle_Caption,
+                color = colors.textTertiary,
+            )
+        }
+
+        RowCard {
+            CheckRow(
+                label = stringResource(R.string.flow_no_sides),
+                checked = noneTicked,
+                onCheckedChange = { viewModel.clearSides() },
+            )
+            sides.forEach { side ->
+                RowDivider()
+                CheckRow(
+                    label = side.label,
+                    subtitle = side.d.ifBlank { null },
+                    checked = s.selection.sides[side.id] == true,
+                    onCheckedChange = { viewModel.toggleSide(side.id, it) },
+                )
+            }
+        }
+
+        sides.filter { s.selection.sides[it.id] == true }.forEach { side ->
+            side.methods.filter { it.options.size > 1 }.forEach { m ->
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "${side.label}: ${m.q.ifBlank { m.label }}",
+                        style = SimmerTextStyle_BodySmMedium,
+                        color = colors.textSecondary,
+                    )
+                    val picked = s.selection.choice[sideMethodKey(side.id, m.id)] ?: m.options.first().value
+                    m.options.chunked(2).forEach { row ->
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+                            row.forEach { o ->
+                                val selected = picked == o.value
+                                OptionCard(
+                                    selected = selected,
+                                    onClick = { viewModel.selectSideMethod(side.id, m.id, o.value) },
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Box(
+                                        contentAlignment = Alignment.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .defaultMinSize(minHeight = 48.dp)
+                                            .padding(horizontal = 12.dp),
+                                    ) {
+                                        Text(
+                                            text = o.label,
+                                            style = SimmerTextStyle_BodySmMedium,
+                                            color = if (selected) colors.textPrimary else colors.textSecondary,
+                                            textAlign = TextAlign.Center,
+                                        )
+                                    }
+                                }
+                            }
+                            if (row.size == 1) Box(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
         }

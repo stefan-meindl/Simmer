@@ -24,6 +24,9 @@
     <string name="flow_extra_suggestion">Extra suggestion</string>
     <string name="flow_your_way_hint">Optional swaps and additions. They change the ingredients and steps.</string>
     <string name="flow_your_pick">Your pick</string>
+    <string name="flow_sides">Sides</string>
+    <string name="flow_sides_hint">Optional. Ticked sides add their ingredients and steps.</string>
+    <string name="flow_no_sides">No sides</string>
     <string name="flow_ingredients">Ingredients</string>
     <plurals name="flow_items_count">
         <item quantity="one">%1$d item</item>
@@ -362,7 +365,7 @@
     <string name="import_style_faithful">Faithful</string>
     <string name="import_style_liberty">Liberty</string>
     <string name="import_style_faithful_hint">Keeps to the source and fills in detail: clearer steps and tips.</string>
-    <string name="import_style_liberty_hint">Also suggests extra ingredients and other ways to cook, and may restructure the steps.</string>
+    <string name="import_style_liberty_hint">Also suggests extra ingredients, sides and other ways to cook, and may restructure the steps.</string>
     <string name="add_prompt_text_note">You can also attach a photo or a link in the chatbot instead.</string>
     <string name="add_copy_prompt">Copy prompt</string>
     <string name="add_prompt_copied">Prompt copied</string>

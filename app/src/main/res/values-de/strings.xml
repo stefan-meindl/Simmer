@@ -22,6 +22,9 @@
     <string name="flow_extra_suggestion">Extra-Vorschlag</string>
     <string name="flow_your_way_hint">Optionale Varianten und Extras. Sie ändern Zutaten und Schritte.</string>
     <string name="flow_your_pick">Deine Wahl</string>
+    <string name="flow_sides">Beilagen</string>
+    <string name="flow_sides_hint">Optional. Gewählte Beilagen fügen ihre Zutaten und Schritte hinzu.</string>
+    <string name="flow_no_sides">Keine Beilagen</string>
     <string name="flow_ingredients">Zutaten</string>
     <plurals name="flow_items_count">
         <item quantity="one">%1$d Zutat</item>
@@ -359,7 +362,7 @@
     <string name="import_style_faithful">Originalgetreu</string>
     <string name="import_style_liberty">Freier</string>
     <string name="import_style_faithful_hint">Bleibt beim Original und ergänzt Details: klarere Schritte und Tipps.</string>
-    <string name="import_style_liberty_hint">Schlägt auch zusätzliche Zutaten und andere Garwege vor und darf Schritte umstrukturieren.</string>
+    <string name="import_style_liberty_hint">Schlägt auch zusätzliche Zutaten, Beilagen und andere Garwege vor und darf Schritte umstrukturieren.</string>
     <string name="add_prompt_text_note">Du kannst im Chatbot stattdessen auch ein Foto oder einen Link anhängen.</string>
     <string name="add_copy_prompt">Prompt kopieren</string>
     <string name="add_prompt_copied">Prompt kopiert</string>
