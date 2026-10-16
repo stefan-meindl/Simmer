@@ -330,6 +330,10 @@
     <string name="edit_move_up">Nach oben</string>
     <string name="edit_move_down">Nach unten</string>
     <string name="edit_remove_step">Schritt entfernen</string>
+    <string name="edit_sides">Beilagen</string>
+    <string name="edit_sides_hint">Bearbeite oder entferne die Beilagen zu diesem Rezept.</string>
+    <string name="edit_side_name">Name der Beilage</string>
+    <string name="edit_remove_side">Beilage entfernen</string>
     <string name="edit_add_prep">Vorbereitungsschritt hinzufügen</string>
     <string name="edit_add_cook">Kochschritt hinzufügen</string>
     <string name="edit_only_when">Nur wenn: %1$s</string>
