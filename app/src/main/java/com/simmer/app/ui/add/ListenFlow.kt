@@ -29,7 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.simmer.app.R
 import com.simmer.app.domain.ListenState
-import com.simmer.app.domain.formatGigabytes
+import com.simmer.app.domain.megabytes
 import com.simmer.app.listen.ListenService
 import com.simmer.app.ui.components.PrimaryButton
 import com.simmer.app.ui.components.SecondaryButton
@@ -37,7 +37,6 @@ import com.simmer.app.ui.flow.rememberNotificationPermissionRequest
 import com.simmer.app.ui.theme.LocalSimmerColors
 import com.simmer.app.ui.theme.SimmerTextStyle_BodyMd
 import com.simmer.app.ui.theme.SimmerTextStyle_Heading4
-import java.util.Locale
 
 /**
  * The platform steps of Listen that need an Activity: the explainer and size dialogs, the RECORD_AUDIO request,
@@ -76,7 +75,7 @@ internal fun ListenFlow(state: ListenState, viewModel: AddRecipeViewModel) {
     when (state) {
         is ListenState.ConfirmDownload -> ListenDialog(
             title = stringResource(R.string.listen_download_title),
-            body = stringResource(R.string.listen_download_body, formatMegabytes(state.sizeBytes)),
+            body = stringResource(R.string.listen_download_body, stringResource(R.string.listen_size_megabytes, megabytes(state.sizeBytes))),
             confirm = stringResource(R.string.listen_download),
             onConfirm = viewModel::confirmListenDownload,
             onCancel = viewModel::cancelListen,
@@ -98,10 +97,6 @@ internal fun ListenFlow(state: ListenState, viewModel: AddRecipeViewModel) {
         else -> Unit
     }
 }
-
-private fun formatMegabytes(bytes: Long): String =
-    if (bytes >= 1_000_000_000L) formatGigabytes(bytes, Locale.getDefault())
-    else String.format(Locale.getDefault(), "%d MB", (bytes + 500_000) / 1_000_000)
 
 /** Full screen (not "a single app") capture, so the sound of whichever app plays the Reel is included. */
 private fun screenCaptureIntent(context: Context): Intent {

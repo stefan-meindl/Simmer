@@ -470,6 +470,7 @@
     <string name="listen_cancel">Cancel</string>
     <string name="listen_download_title">Download the speech model?</string>
     <string name="listen_download_body">Listening needs a speech model of %1$s. It is downloaded once and then works without internet.</string>
+    <string name="listen_size_megabytes">%1$d MB</string>
     <string name="listen_download">Download</string>
     <string name="listen_downloading">Downloading the speech model · %1$d%%</string>
     <string name="listen_downloading_waiting">Speech model download waiting for a connection · %1$d%%</string>

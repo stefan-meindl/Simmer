@@ -467,6 +467,7 @@
     <string name="listen_cancel">Abbrechen</string>
     <string name="listen_download_title">Sprachmodell laden?</string>
     <string name="listen_download_body">Zum Anhören braucht Simmer ein Sprachmodell von %1$s. Es wird einmal geladen und funktioniert danach ohne Internet.</string>
+    <string name="listen_size_megabytes">%1$d MB</string>
     <string name="listen_download">Laden</string>
     <string name="listen_downloading">Sprachmodell wird geladen · %1$d %%</string>
     <string name="listen_downloading_waiting">Download des Sprachmodells wartet auf eine Verbindung · %1$d %%</string>

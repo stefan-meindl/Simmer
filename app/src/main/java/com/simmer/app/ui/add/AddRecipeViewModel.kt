@@ -15,7 +15,6 @@ import com.simmer.app.data.ReelImport
 import com.simmer.app.data.ShareInbox
 import com.simmer.app.domain.ListenState
 import com.simmer.app.domain.SharedContent
-import com.simmer.app.domain.withTranscript
 import com.simmer.app.domain.readSharedText
 import com.simmer.app.domain.withCaption
 import kotlinx.coroutines.flow.filterNotNull
@@ -267,7 +266,7 @@ class AddRecipeViewModel @Inject constructor(
         viewModelScope.launch {
             listenSession.state.collect { state ->
                 if (state is ListenState.Done) {
-                    setText(withTranscript(text.value, state.transcript, labelIn(prefs.lang.first(), R.string.listen_transcript_label)))
+                    setText(withCaption(text.value, state.transcript, labelIn(prefs.lang.first(), R.string.listen_transcript_label)))
                     fillChatbotPrompt()
                     listenSession.acknowledge()
                 }
