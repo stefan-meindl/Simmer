@@ -72,10 +72,14 @@ object ListenNotifications {
             .setContentIntent(openAddRecipe(context))
             .build()
 
-    private fun stopIntent(context: Context): PendingIntent = PendingIntent.getService(
+    /** Opens Simmer, which then stops the capture: an activity PendingIntent may start from the background. */
+    private fun stopIntent(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
         2,
-        Intent(context, ListenService::class.java).setAction(ListenService.ACTION_STOP),
+        Intent(context, MainActivity::class.java)
+            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            .putExtra(MainActivity.EXTRA_OPEN_ADD_RECIPE, true)
+            .putExtra(MainActivity.EXTRA_STOP_LISTEN, true),
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 

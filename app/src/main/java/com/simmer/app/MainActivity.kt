@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.simmer.app.listen.ListenService
 import com.simmer.app.data.ShareInbox
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -32,6 +33,7 @@ class MainActivity : AppCompatActivity() {
             openSettings = intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)
             openAddRecipe = intent.getBooleanExtra(EXTRA_OPEN_ADD_RECIPE, false)
             acceptShare(intent)
+            stopListenIfAsked(intent)
         }
         setContent {
             MainScreen(
@@ -49,6 +51,12 @@ class MainActivity : AppCompatActivity() {
         if (intent.getBooleanExtra(EXTRA_OPEN_SETTINGS, false)) openSettings = true
         if (intent.getBooleanExtra(EXTRA_OPEN_ADD_RECIPE, false)) openAddRecipe = true
         acceptShare(intent)
+        stopListenIfAsked(intent)
+    }
+
+    /** The Listen notification's Stop opens Simmer first (so we come back to the app at once), then stops. */
+    private fun stopListenIfAsked(intent: Intent) {
+        if (intent.getBooleanExtra(EXTRA_STOP_LISTEN, false)) ListenService.stop(this)
     }
 
     /** Text shared to Simmer (an Instagram link, or any text) goes to Add recipe. */
@@ -65,5 +73,8 @@ class MainActivity : AppCompatActivity() {
 
         /** Set by the Pipeline notifications: tapping one opens Add recipe (Working, Review or error stage). */
         const val EXTRA_OPEN_ADD_RECIPE = "open_add_recipe"
+
+        /** Set by the Listen notification's Stop action. */
+        const val EXTRA_STOP_LISTEN = "stop_listen"
     }
 }

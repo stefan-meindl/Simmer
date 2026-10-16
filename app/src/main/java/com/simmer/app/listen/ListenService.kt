@@ -13,6 +13,7 @@ import android.os.Looper
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.app.ServiceCompat
 import androidx.core.content.ContextCompat
+import com.simmer.app.MainActivity
 import com.simmer.app.data.ListenSession
 import com.simmer.app.domain.ListenState
 import dagger.hilt.android.AndroidEntryPoint
@@ -38,7 +39,7 @@ class ListenService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var projection: MediaProjection? = null
     private var started = false
-    private val floatingStop by lazy { FloatingStop(this) { session.stop() } }
+    private val floatingStop by lazy { FloatingStop(this) { openApp(); session.stop() } }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -56,6 +57,15 @@ class ListenService : Service() {
             else -> stopSelf()
         }
         return START_NOT_STICKY
+    }
+
+    /** The overlay permission lets a service start an activity from the background. */
+    private fun openApp() {
+        startActivity(
+            Intent(this, MainActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                .putExtra(MainActivity.EXTRA_OPEN_ADD_RECIPE, true),
+        )
     }
 
     private fun begin(intent: Intent) {
@@ -143,6 +153,11 @@ class ListenService : Service() {
         const val ACTION_STOP = "com.simmer.app.listen.STOP"
         private const val EXTRA_RESULT_CODE = "result_code"
         private const val EXTRA_DATA = "data"
+
+        /** Stops the capture and moves on to transcribing. */
+        fun stop(context: Context) {
+            context.startService(Intent(context, ListenService::class.java).setAction(ACTION_STOP))
+        }
 
         /** Starts the service with the screen-capture consent result. */
         fun start(context: Context, resultCode: Int, data: Intent) {
