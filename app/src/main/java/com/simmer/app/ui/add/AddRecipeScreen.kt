@@ -94,7 +94,9 @@ import com.simmer.app.domain.model.ResolvedStep
 import com.simmer.app.ui.components.EditAction
 import com.simmer.app.ui.components.EditIconAction
 import com.simmer.app.ui.components.GradientHeroCard
+import com.simmer.app.domain.ImportStyle
 import com.simmer.app.ui.components.LinkButton
+import com.simmer.app.ui.components.OptionCard
 import com.simmer.app.ui.components.PrimaryButton
 import com.simmer.app.ui.components.RowCard
 import com.simmer.app.ui.components.RowDivider
@@ -375,6 +377,7 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             style = SimmerTextStyle_BodySm,
             color = colors.textSecondary,
         )
+        ImportStyleToggle(ui.style, viewModel::setImportStyle)
         SecondaryButton(
             text = stringResource(R.string.add_copy_prompt),
             onClick = {
@@ -444,6 +447,40 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             onClick = viewModel::addFromReply,
             enabled = ui.canAdd,
             modifier = Modifier.fillMaxWidth(),
+        )
+    }
+}
+
+/** Faithful / Liberty: how much the Reader may add. The choice is remembered for the next import. */
+@Composable
+private fun ImportStyleToggle(style: ImportStyle, onSelect: (ImportStyle) -> Unit) {
+    val colors = LocalSimmerColors.current
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = stringResource(R.string.import_style_label), style = SimmerTextStyle_BodySmMedium, color = colors.textPrimary)
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            ImportStyle.entries.forEach { option ->
+                val selected = option == style
+                OptionCard(selected = selected, onClick = { onSelect(option) }, modifier = Modifier.weight(1f)) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .defaultMinSize(minHeight = 48.dp)
+                            .padding(horizontal = 12.dp),
+                    ) {
+                        Text(
+                            text = stringResource(if (option == ImportStyle.Liberty) R.string.import_style_liberty else R.string.import_style_faithful),
+                            style = SimmerTextStyle_BodySmMedium,
+                            color = if (selected) colors.textPrimary else colors.textSecondary,
+                        )
+                    }
+                }
+            }
+        }
+        Text(
+            text = stringResource(if (style == ImportStyle.Liberty) R.string.import_style_liberty_hint else R.string.import_style_faithful_hint),
+            style = SimmerTextStyle_Caption,
+            color = colors.textTertiary,
         )
     }
 }
@@ -597,6 +634,8 @@ private fun ColumnScope.PasteStage(
                 LinkButton(text = stringResource(R.string.add_try_example), onClick = viewModel::useExample)
             }
         }
+
+        ImportStyleToggle(ui.style, viewModel::setImportStyle)
 
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             Row(

@@ -17,6 +17,21 @@ enum class KitchenMode(val key: String) {
     }
 }
 
+/**
+ * How much the Reader may add when it converts a recipe (the toggle on the import screens). Faithful keeps to
+ * the source and only fills in detail; Liberty may also suggest extra ingredients, offer other ways to cook
+ * with an appliance the cook owns, and restructure the steps. Stored as [key].
+ */
+enum class ImportStyle(val key: String) {
+    Faithful("faithful"),
+    Liberty("liberty");
+
+    companion object {
+        /** Unknown or missing values fall back to the default, [Faithful]. */
+        fun fromKey(key: String?): ImportStyle = entries.firstOrNull { it.key == key } ?: Faithful
+    }
+}
+
 /** Catalogue appliance keys in display order. Custom ones are stored as "c:Name". */
 val APPLIANCE_CATALOGUE = listOf(
     "hob", "oven", "microwave", "airfryer", "slowcooker", "pressure", "multicooker", "ricecooker",

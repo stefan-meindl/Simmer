@@ -29,7 +29,14 @@ fun readChatbotReply(reply: String, id: String, appliances: Set<String>, kitchen
     val owned = if (kitchenMode == KitchenMode.Free) null else appliances
     // A Method whose options are all for missing appliances stays (nothing to offer instead), as in the Pipeline.
     val (methods, steps) = filterMethodsByKitchen(mapsIn(json["methods"]), mapsIn(json["steps"]), owned)
-    val recipe = normalize(json + mapOf("methods" to methods, "steps" to steps))
+    // Each side has its own Methods, so the same rule applies per side.
+    val sides = (json["sides"] as? List<*>)?.map { side ->
+        if (side !is Map<*, *>) return@map side
+        val raw = side.entries.associate { it.key.toString() to it.value }
+        val (sideMethods, sideSteps) = filterMethodsByKitchen(mapsIn(raw["methods"]), mapsIn(raw["steps"]), owned)
+        raw + mapOf("methods" to sideMethods, "steps" to sideSteps)
+    }
+    val recipe = normalize(json + mapOf("methods" to methods, "steps" to steps) + if (sides != null) mapOf("sides" to sides) else emptyMap())
     if (recipe.ingredients.isEmpty()) return ReplyResult.Failed(ReplyError.NoIngredient)
     if (recipe.steps.isEmpty()) return ReplyResult.Failed(ReplyError.NoStep)
     return ReplyResult.Done(recipe.copy(id = id, mine = true))

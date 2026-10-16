@@ -64,6 +64,22 @@ data class StepDraft(
 )
 
 /**
+ * One existing side of the form: its name and its ingredient and step rows, which are the same
+ * rows as the main's. Its methods and why-it-fits line are not editable and come from [RecipeDraft.base].
+ */
+@Serializable
+data class SideDraft(
+    val id: String,
+    val label: String,
+    val ingredients: List<IngredientDraft> = emptyList(),
+    val steps: List<StepDraft> = emptyList(),
+) {
+    /** True when saving would remove this side: no name, no named ingredient or no step with text. */
+    val removedOnSave: Boolean
+        get() = label.isBlank() || ingredients.none { it.name.isNotBlank() } || steps.none { it.text.isNotBlank() }
+}
+
+/**
  * The Edit recipe form. Built from a [Recipe], edited through the functions below,
  * and turned back into a [Recipe] by [toRecipe]. Serializable so it survives process death.
  */
@@ -81,6 +97,8 @@ data class RecipeDraft(
     val ingredients: List<IngredientDraft>,
     val steps: List<StepDraft>,
     val nextKey: Int,
+    /** Existing sides. Row keys are unique across the main and all sides. */
+    val sides: List<SideDraft> = emptyList(),
     /** False for the Add recipe draft, which is not in storage yet. */
     val stored: Boolean = true,
 ) {
@@ -97,18 +115,40 @@ data class RecipeDraft(
      */
     val canSave: Boolean
         get() = title.isNotBlank() && keptIngredients().isNotEmpty() && keptSteps().isNotEmpty() &&
-            keptIngredients().all { it.qtyValid } && keptSteps().all { it.minutesValid }
+            keptIngredients().all { it.qtyValid } && keptSteps().all { it.minutesValid } &&
+            sides.all { s -> s.keptIngredients().all { it.qtyValid } && s.keptSteps().all { it.minutesValid } }
 
     private fun keptIngredients() = ingredients.filter { it.name.isNotBlank() }
 
     private fun keptSteps() = steps.filter { it.text.isNotBlank() }
 
+    private fun SideDraft.keptIngredients() = ingredients.filter { it.name.isNotBlank() }
+
+    private fun SideDraft.keptSteps() = steps.filter { it.text.isNotBlank() }
+
+    /** Applies [change] to the ingredient rows holding [key]: the main's or one side's. */
+    private fun editIngredients(key: String, change: (List<IngredientDraft>) -> List<IngredientDraft>): RecipeDraft =
+        if (ingredients.any { it.key == key }) copy(ingredients = change(ingredients))
+        else copy(sides = sides.map { s -> if (s.ingredients.any { it.key == key }) s.copy(ingredients = change(s.ingredients)) else s })
+
+    /** Applies [change] to the step rows holding [key]: the main's or one side's. */
+    private fun editSteps(key: String, change: (List<StepDraft>) -> List<StepDraft>): RecipeDraft =
+        if (steps.any { it.key == key }) copy(steps = change(steps))
+        else copy(sides = sides.map { s -> if (s.steps.any { it.key == key }) s.copy(steps = change(s.steps)) else s })
+
+    private fun stepsHolding(key: String): List<StepDraft> =
+        if (steps.any { it.key == key }) steps else sides.firstOrNull { s -> s.steps.any { it.key == key } }?.steps ?: emptyList()
+
+    fun renameSide(id: String, label: String) = copy(sides = sides.map { if (it.id == id) it.copy(label = label) else it })
+
+    fun removeSide(id: String) = copy(sides = sides.filter { it.id != id })
+
     fun stepsIn(phase: String): List<StepDraft> = steps.filter { it.phase == phase }
 
     fun updateIngredient(key: String, change: (IngredientDraft) -> IngredientDraft) =
-        copy(ingredients = ingredients.map { if (it.key == key) change(it) else it })
+        editIngredients(key) { rows -> rows.map { if (it.key == key) change(it) else it } }
 
-    fun removeIngredient(key: String) = copy(ingredients = ingredients.filter { it.key != key })
+    fun removeIngredient(key: String) = editIngredients(key) { rows -> rows.filter { it.key != key } }
 
     /** Appends a blank ingredient; it is the last row. */
     fun addIngredient(): RecipeDraft {
@@ -119,9 +159,9 @@ data class RecipeDraft(
     }
 
     fun updateStep(key: String, change: (StepDraft) -> StepDraft) =
-        copy(steps = steps.map { if (it.key == key) change(it) else it })
+        editSteps(key) { rows -> rows.map { if (it.key == key) change(it) else it } }
 
-    fun removeStep(key: String) = copy(steps = steps.filter { it.key != key })
+    fun removeStep(key: String) = editSteps(key) { rows -> rows.filter { it.key != key } }
 
     /** Appends a blank step to [phase] (`prep` or `cook`); it is the last row. */
     fun addStep(phase: String): RecipeDraft {
@@ -133,14 +173,15 @@ data class RecipeDraft(
 
     /** Moves the step to [phase], at the end of that group. */
     fun setPhase(key: String, phase: String): RecipeDraft {
-        val step = steps.firstOrNull { it.key == key } ?: return this
+        val step = stepsHolding(key).firstOrNull { it.key == key } ?: return this
         if (step.phase == phase) return this
-        return copy(steps = steps.filter { it.key != key } + step.copy(phase = phase))
+        return editSteps(key) { rows -> rows.filter { it.key != key } + step.copy(phase = phase) }
     }
 
     private fun neighbour(key: String, dir: Int): StepDraft? {
-        val me = steps.firstOrNull { it.key == key } ?: return null
-        val group = stepsIn(me.phase)
+        val rows = stepsHolding(key)
+        val me = rows.firstOrNull { it.key == key } ?: return null
+        val group = rows.filter { it.phase == me.phase }
         return group.getOrNull(group.indexOfFirst { it.key == key } + dir)
     }
 
@@ -150,29 +191,40 @@ data class RecipeDraft(
     /** Swaps the step with its neighbour in the same phase; steps of the other phase stay put. */
     fun moveStep(key: String, dir: Int): RecipeDraft {
         val other = neighbour(key, dir) ?: return this
-        return copy(
-            steps = steps.map {
+        return editSteps(key) { rows ->
+            rows.map {
                 when (it.key) {
                     key -> other
-                    other.key -> steps.first { s -> s.key == key }
+                    other.key -> rows.first { s -> s.key == key }
                     else -> it
                 }
-            },
-        )
+            }
+        }
     }
 
-    private fun linkable(): List<Ingredient> = keptIngredients().map { Ingredient(it.id, it.name.trim(), 0.0, "") }
+    /** The ingredients a step can link to: its side's, or the main's. */
+    private fun linkable(stepKey: String): List<Ingredient> {
+        val rows = sides.firstOrNull { s -> s.steps.any { it.key == stepKey } }?.keptIngredients() ?: keptIngredients()
+        return rows.map { Ingredient(it.id, it.name.trim(), 0.0, "") }
+    }
 
     /** Names of the ingredients found in the step's text, in reading order. */
     fun linkedNames(stepKey: String): List<String> {
-        val step = steps.firstOrNull { it.key == stepKey } ?: return emptyList()
-        val byId = linkable().associateBy { it.id }
+        val step = stepsHolding(stepKey).firstOrNull { it.key == stepKey } ?: return emptyList()
+        val byId = linkable(stepKey).associateBy { it.id }
         return linkMarks(step.text, byId.values.toList()).map { it.id }.distinct().mapNotNull { byId[it]?.name }
     }
 
     /** Puts an ingredient or step Condition into words, e.g. "Plant-based" or "Dark beer added". */
-    fun conditionLabel(condition: String, words: ConditionWords): String {
+    fun conditionLabel(condition: String, words: ConditionWords, sideId: String? = null): String {
         val recipe = base.toDomain()
+        if (sideId != null) {
+            val side = recipe.sides.firstOrNull { it.id == sideId }
+            val negated = condition.contains("!=")
+            val (key, value) = condition.split(if (negated) "!=" else "=", limit = 2).let { it[0] to it.getOrElse(1) { "" } }
+            val label = side?.methods?.firstOrNull { it.id == key }?.options?.firstOrNull { it.value == value }?.label ?: value
+            return if (negated) String.format(words.not, label) else label
+        }
         if (condition.startsWith("!add:") || condition.startsWith("add:")) {
             val negated = condition.startsWith("!")
             val id = condition.substringAfter("add:")
@@ -195,11 +247,14 @@ data class RecipeDraft(
      * ingredient is gone are dropped.
      */
     fun toRecipe(): Recipe {
-        val kept = keptIngredients()
-        val ingredientsOut = kept.map { it.toIngredient() }
-        val stepRows = keptSteps()
-        val stepIds = stepRows.map { it.id }.toSet()
         val original = base.toDomain(mine = mine, edited = edited)
+        val (ingredientsOut, stepsOut) = buildRows(keptIngredients(), keptSteps())
+        val sidesOut = sides.mapNotNull { s ->
+            val (ings, sideSteps) = buildRows(s.keptIngredients(), s.keptSteps())
+            val orig = original.sides.firstOrNull { it.id == s.id } ?: return@mapNotNull null
+            if (s.label.isBlank() || ings.isEmpty() || sideSteps.isEmpty()) null
+            else orig.copy(label = s.label.trim(), ingredients = ings, steps = sideSteps)
+        }
         return original.copy(
             title = title.trim(),
             summary = summary.trim(),
@@ -208,25 +263,30 @@ data class RecipeDraft(
             difficulty = difficulty,
             category = category,
             ingredients = ingredientsOut,
-            steps = stepRows.map { it.toStep(ingredientsOut, kept.associate { r -> r.id to r.origName.trim() }, stepIds) },
-            variations = original.variations.filter { v -> v.kind != "add" || ingredientsOut.any { it.id == v.ing } },
+            steps = stepsOut,
+            variations = original.variations.filter { v -> v.kind == "swap" || ingredientsOut.any { it.id == v.ing } },
+            sides = sidesOut,
         )
+    }
+
+    /** Ingredients and steps for kept rows of one scope (the main or a side); links are redone against that scope only. */
+    private fun buildRows(kept: List<IngredientDraft>, stepRows: List<StepDraft>): Pair<List<Ingredient>, List<Step>> {
+        val ingredientsOut = kept.map { it.toIngredient() }
+        val stepIds = stepRows.map { it.id }.toSet()
+        val origNames = kept.associate { r -> r.id to r.origName.trim() }
+        return ingredientsOut to stepRows.map { it.toStep(ingredientsOut, origNames, stepIds) }
     }
 
     companion object {
         fun from(recipe: Recipe): RecipeDraft {
-            val ingredients = recipe.ingredients.mapIndexed { i, ing ->
-                IngredientDraft(
-                    key = "k${i}i", id = ing.id, name = ing.name, qty = decimalText(ing.quantity), unit = ing.unit,
-                    note = ing.note, aisle = ing.aisle, origQty = ing.quantity, origName = ing.name, origUnit = ing.unit, uPlural = ing.uPlural,
-                    tips = ing.tips, ifCondition = ing.ifCondition, alt = ing.alt,
-                )
-            }
-            val steps = recipe.steps.mapIndexed { i, s ->
-                StepDraft(
-                    key = "k${i}s", id = s.id, phase = s.phase, title = s.title, text = plainText(s.body),
-                    minutes = minutesText(s.durationSecs), origSecs = s.durationSecs,
-                    originalBody = s.body, needs = s.needs, ifCondition = s.ifCondition,
+            val ingredients = recipe.ingredients.mapIndexed { i, ing -> ingredientDraft(ing, "k${i}i") }
+            val steps = recipe.steps.mapIndexed { i, s -> stepDraft(s, "k${i}s") }
+            var n = ingredients.size + steps.size
+            val sideDrafts = recipe.sides.map { side ->
+                SideDraft(
+                    id = side.id, label = side.label,
+                    ingredients = side.ingredients.map { ing -> ingredientDraft(ing, "k${n++}i") },
+                    steps = side.steps.map { s -> stepDraft(s, "k${n++}s") },
                 )
             }
             return RecipeDraft(
@@ -241,11 +301,24 @@ data class RecipeDraft(
                 category = recipe.category,
                 ingredients = ingredients,
                 steps = steps,
-                nextKey = ingredients.size + steps.size,
+                nextKey = n,
+                sides = sideDrafts,
             )
         }
     }
 }
+
+private fun ingredientDraft(ing: Ingredient, key: String) = IngredientDraft(
+    key = key, id = ing.id, name = ing.name, qty = decimalText(ing.quantity), unit = ing.unit,
+    note = ing.note, aisle = ing.aisle, origQty = ing.quantity, origName = ing.name, origUnit = ing.unit, uPlural = ing.uPlural,
+    tips = ing.tips, ifCondition = ing.ifCondition, alt = ing.alt,
+)
+
+private fun stepDraft(s: Step, key: String) = StepDraft(
+    key = key, id = s.id, phase = s.phase, title = s.title, text = plainText(s.body),
+    minutes = minutesText(s.durationSecs), origSecs = s.durationSecs,
+    originalBody = s.body, needs = s.needs, ifCondition = s.ifCondition,
+)
 
 /** The amount is as it was, or reads as a number above zero. */
 val IngredientDraft.qtyValid: Boolean get() = qty.trim() == decimalText(origQty) || parseQty(qty) > 0

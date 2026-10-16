@@ -1,5 +1,6 @@
 package com.simmer.app
 
+import com.simmer.app.domain.ImportStyle
 import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.ReaderPromptTexts
 import com.simmer.app.domain.readerPrompt
@@ -11,6 +12,9 @@ import org.junit.Test
 private val TEXTS = ReaderPromptTexts(
     intro = "INTRO",
     rules = "RULES",
+    enrichment = "ENRICH",
+    faithful = "STYLE-FAITHFUL",
+    liberty = "STYLE-LIBERTY",
     schemaHeading = "SCHEMA-HEADING",
     exampleHeading = "EXAMPLE-HEADING",
     kitchenAny = "KITCHEN-ANY",
@@ -22,8 +26,8 @@ private val TEXTS = ReaderPromptTexts(
     noRecipeText = "NO-TEXT",
 )
 
-private fun prompt(text: String = "", names: List<String> = listOf("Hob", "Oven"), mode: KitchenMode = KitchenMode.Medium, lang: String = "en") =
-    readerPrompt(TEXTS, text, names, mode, lang)
+private fun prompt(text: String = "", names: List<String> = listOf("Hob", "Oven"), mode: KitchenMode = KitchenMode.Medium, lang: String = "en", style: ImportStyle = ImportStyle.Faithful) =
+    readerPrompt(TEXTS, text, names, mode, lang, style)
 
 /** Seam: [readerPrompt], the Reader prompt for the chatbot path, from localised texts, the recipe text and the Kitchen. */
 class ReaderPromptTest {
@@ -52,6 +56,20 @@ class ReaderPromptTest {
         assertFalse(p.contains("KITCHEN-ONLY"))
         assertFalse(p.contains("RULE-STRICT"))
         assertFalse(p.contains("RULE-MEDIUM"))
+    }
+
+    @Test fun `Faithful adds the shared rules and the faithful block only`() {
+        val p = prompt(style = ImportStyle.Faithful)
+
+        assertTrue(p.contains("ENRICH") && p.contains("STYLE-FAITHFUL"))
+        assertFalse(p.contains("STYLE-LIBERTY"))
+    }
+
+    @Test fun `Liberty adds the shared rules and the liberty block only`() {
+        val p = prompt(style = ImportStyle.Liberty)
+
+        assertTrue(p.contains("ENRICH") && p.contains("STYLE-LIBERTY"))
+        assertFalse(p.contains("STYLE-FAITHFUL"))
     }
 
     @Test fun `recipe text is included under its heading`() {

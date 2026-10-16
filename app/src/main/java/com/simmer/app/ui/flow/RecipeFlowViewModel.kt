@@ -206,6 +206,13 @@ class RecipeFlowViewModel @Inject constructor(
 
     fun setAddIn(variationId: String, on: Boolean) = edit { it.withAddIn(variationId, on) }
 
+    fun toggleSide(sideId: String, on: Boolean) = edit { it.withSide(sideId, on) }
+
+    fun clearSides() = edit { it.clearSides() }
+
+    fun selectSideMethod(sideId: String, methodId: String, value: String) =
+        edit { it.withSideMethod(sideId, methodId, value) }
+
     /** This recipe's StepTimers by step id. Running timers continue after the flow is left. */
     val timers: StateFlow<Map<String, TimerState>> = stepTimers.timers
         .map { all ->

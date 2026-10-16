@@ -36,7 +36,7 @@ fun isYourPick(recipe: Recipe, ingredient: Ingredient, selection: Selection): Bo
     val condition = ingredient.ifCondition ?: return false
     if (condition.contains('!')) return false
     return recipe.variations.any { variation ->
-        if (variation.kind == "add") condition == "add:${variation.id}"
+        if (variation.kind != "swap") condition == "add:${variation.id}"
         else selection.choice[variation.id] != variation.def &&
             condition == "${variation.id}=${selection.choice[variation.id]}"
     }

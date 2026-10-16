@@ -36,6 +36,7 @@ class PrefsRepository @Inject constructor(
         val KEY_KITCHEN_MODE = stringPreferencesKey("kitchen_mode")
         val KEY_THEME = stringPreferencesKey("theme")
         val KEY_SHARE_ENGINE = stringPreferencesKey("share_engine")
+        val KEY_IMPORT_STYLE = stringPreferencesKey("import_style")
         val KEY_READER_WIFI_ONLY = booleanPreferencesKey("reader_wifi_only")
     }
 
@@ -69,6 +70,9 @@ class PrefsRepository @Inject constructor(
     /** How a link shared from Instagram is turned into a recipe: "chatbot" | "phone". Defaults to "chatbot". */
     val shareEngine: Flow<String> = store.data.map { it[KEY_SHARE_ENGINE] ?: "chatbot" }
 
+    /** How much the Reader may add on import: "faithful" | "liberty". Remembers the last choice; defaults to "faithful". */
+    val importStyle: Flow<String> = store.data.map { it[KEY_IMPORT_STYLE] ?: "faithful" }
+
     /** Whether to download the AI model on Wi-Fi only. Defaults to true. */
     val readerWifiOnly: Flow<Boolean> = store.data.map { it[KEY_READER_WIFI_ONLY] ?: true }
 
@@ -92,5 +96,6 @@ class PrefsRepository @Inject constructor(
     suspend fun setKitchenMode(value: String) = store.edit { it[KEY_KITCHEN_MODE] = value }
     suspend fun setTheme(value: String) = store.edit { it[KEY_THEME] = value }
     suspend fun setShareEngine(value: String) = store.edit { it[KEY_SHARE_ENGINE] = value }
+    suspend fun setImportStyle(value: String) = store.edit { it[KEY_IMPORT_STYLE] = value }
     suspend fun setReaderWifiOnly(value: Boolean) = store.edit { it[KEY_READER_WIFI_ONLY] = value }
 }

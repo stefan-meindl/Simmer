@@ -30,6 +30,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +58,7 @@ import com.simmer.app.domain.IngredientDraft
 import com.simmer.app.domain.RECIPE_CATEGORIES
 import com.simmer.app.domain.RECIPE_DIFFICULTIES
 import com.simmer.app.domain.RecipeDraft
+import com.simmer.app.domain.SideDraft
 import com.simmer.app.domain.StepDraft
 import com.simmer.app.domain.StepPhase
 import com.simmer.app.domain.minutesValid
@@ -122,6 +126,7 @@ fun EditRecipeScreen(
                     DetailsSection(u.draft, viewModel)
                     IngredientsSection(u, viewModel)
                     StepsSection(u, viewModel)
+                    if (u.draft.sides.isNotEmpty()) SidesSection(u, viewModel)
                     if (u.draft.canRestore) {
                         IconLinkButton(R.drawable.ic_rotate_ccw, stringResource(R.string.edit_restore)) {
                             viewModel.restoreOriginal(onSaved)
@@ -417,9 +422,9 @@ private fun InfoLine(text: String) {
 
 /** "Only when ..." line for an ingredient or step Condition; nothing when there is none. */
 @Composable
-private fun ConditionLine(condition: String?, draft: RecipeDraft) {
+private fun ConditionLine(condition: String?, draft: RecipeDraft, sideId: String? = null) {
     condition?.takeIf { it.isNotBlank() }?.let { cond ->
-        InfoLine(stringResource(R.string.edit_only_when, draft.conditionLabel(cond, conditionWords())))
+        InfoLine(stringResource(R.string.edit_only_when, draft.conditionLabel(cond, conditionWords(), sideId)))
     }
 }
 
@@ -465,7 +470,7 @@ private fun IngredientsSection(ui: EditUi.Content, vm: EditRecipeViewModel) {
 }
 
 @Composable
-private fun IngredientRow(ing: IngredientDraft, draft: RecipeDraft, open: Boolean, vm: EditRecipeViewModel) {
+private fun IngredientRow(ing: IngredientDraft, draft: RecipeDraft, open: Boolean, vm: EditRecipeViewModel, sideId: String? = null) {
     val colors = LocalSimmerColors.current
     val change = { patch: (IngredientDraft) -> IngredientDraft -> vm.edit { it.updateIngredient(ing.key, patch) } }
     val meta = listOf(ing.note, ing.aisle).filter { it.isNotBlank() }.joinToString(" · ")
@@ -523,7 +528,7 @@ private fun IngredientRow(ing: IngredientDraft, draft: RecipeDraft, open: Boolea
                 onValueChange = { v -> change { it.copy(aisle = v) } },
                 label = stringResource(R.string.edit_aisle),
             )
-            ConditionLine(ing.ifCondition, draft)
+            ConditionLine(ing.ifCondition, draft, sideId)
             IconLinkButton(R.drawable.ic_trash, stringResource(R.string.edit_remove_ingredient)) {
                 vm.edit { it.removeIngredient(ing.key) }
             }
@@ -578,7 +583,7 @@ private fun timerText(minutes: String): String? {
 }
 
 @Composable
-private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Boolean, vm: EditRecipeViewModel) {
+private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Boolean, vm: EditRecipeViewModel, sideId: String? = null) {
     val colors = LocalSimmerColors.current
     val change = { patch: (StepDraft) -> StepDraft -> vm.edit { it.updateStep(step.key, patch) } }
     AccordionHeader(open = open, onToggle = { vm.toggleStep(step.key) }) { mod ->
@@ -658,7 +663,7 @@ private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Bool
                     }
                 }
             }
-            ConditionLine(step.ifCondition, draft)
+            ConditionLine(step.ifCondition, draft, sideId)
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 SecondaryButton(
                     text = stringResource(R.string.edit_move_up),
@@ -679,5 +684,78 @@ private fun StepRow(step: StepDraft, number: Int, draft: RecipeDraft, open: Bool
                 vm.edit { it.removeStep(step.key) }
             }
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sides
+// ---------------------------------------------------------------------------
+
+/** Collapsible "Sides" section: each existing side can be renamed, its rows edited, or the whole side removed. */
+@Composable
+private fun SidesSection(ui: EditUi.Content, vm: EditRecipeViewModel) {
+    val colors = LocalSimmerColors.current
+    var open by rememberSaveable { mutableStateOf(false) }
+    Column(verticalArrangement = Arrangement.spacedBy(FieldGap)) {
+        AccordionCard {
+            AccordionHeader(open = open, onToggle = { open = !open }) { mod ->
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp), modifier = mod) {
+                    Text(
+                        text = stringResource(R.string.edit_sides),
+                        style = SimmerTextStyle_Heading5,
+                        color = colors.textPrimary,
+                        modifier = Modifier.semantics { heading() },
+                    )
+                    Text(text = stringResource(R.string.edit_sides_hint), style = SimmerTextStyle_Caption, color = colors.textTertiary)
+                }
+            }
+        }
+        if (open) {
+            ui.draft.sides.forEach { side -> key(side.id) { SideEditor(side, ui, vm) } }
+        }
+    }
+}
+
+@Composable
+private fun SideEditor(side: SideDraft, ui: EditUi.Content, vm: EditRecipeViewModel) {
+    val draft = ui.draft
+    Column(verticalArrangement = Arrangement.spacedBy(FieldGap)) {
+        SimmerTextField(
+            value = side.label,
+            onValueChange = { v -> vm.edit { it.renameSide(side.id, v) } },
+            label = stringResource(R.string.edit_side_name),
+        )
+        if (side.removedOnSave) {
+            Text(text = stringResource(R.string.edit_side_removed_hint), style = SimmerTextStyle_Caption, color = LocalSimmerColors.current.textTertiary)
+        }
+        FieldLabel(stringResource(R.string.edit_ingredients))
+        if (side.ingredients.isNotEmpty()) {
+            AccordionCard {
+                side.ingredients.forEachIndexed { i, ing ->
+                    if (i > 0) RowDivider()
+                    key(ing.key) {
+                        IngredientRow(ing = ing, draft = draft, open = ui.openIngredient == ing.key, vm = vm, sideId = side.id)
+                    }
+                }
+            }
+        }
+        StepPhase.all.forEach { phase ->
+            val steps = side.steps.filter { it.phase == phase }
+            if (steps.isNotEmpty()) {
+                FieldLabel(stringResource(if (phase == StepPhase.PREP) R.string.flow_phase_preparation else R.string.flow_phase_cooking))
+                AccordionCard {
+                    steps.forEachIndexed { i, step ->
+                        if (i > 0) RowDivider()
+                        key(step.key) {
+                            StepRow(step = step, number = i + 1, draft = draft, open = ui.openStep == step.key, vm = vm, sideId = side.id)
+                        }
+                    }
+                }
+            }
+        }
+        IconLinkButton(R.drawable.ic_trash, stringResource(R.string.edit_remove_side)) {
+            vm.edit { it.removeSide(side.id) }
+        }
+        RowDivider()
     }
 }

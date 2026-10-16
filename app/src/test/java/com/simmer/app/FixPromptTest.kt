@@ -96,4 +96,8 @@ class FixPromptTest {
         assertEquals(en, de)
         assertEquals(7, en.size)
     }
+
+    @Test fun `the Fix prompt asks for the sides shape too`() {
+        listOf("en", "de").forEach { assertTrue(fix(it, ReplyError.NotValid, "x").contains("\"sides\":[{")) }
+    }
 }

@@ -1,6 +1,7 @@
 package com.simmer.app.domain
 
 import com.simmer.app.domain.model.Recipe
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 
@@ -13,6 +14,7 @@ data class ImportRequest(
     val lang: String,
     val appliances: Set<String>,
     val kitchenMode: KitchenMode,
+    val style: ImportStyle = ImportStyle.Faithful,
 )
 
 sealed interface PipelineResult {
@@ -29,6 +31,15 @@ class PassTimeoutException(val stage: PipelineStage) : Exception("Pass $stage ti
 /** Each pass asks for this many tokens at most (between 1,200 and 2,000). */
 private const val TOKENS_LARGE = 2_000
 private const val TOKENS_SMALL = 1_200
+
+/** Liberty adds suggestions, tips and alternative methods to the two big passes, so they may run longer (the engines cap near 4,096). */
+private const val TOKENS_LIBERTY = 3_000
+
+/** The Liberty sides pass writes up to three small recipes, so it gets the big budget. */
+private const val TOKENS_SIDES = 3_000
+
+/** Only a main dish gets sides suggested. */
+private val MAIN_CATEGORIES = setOf("Mains", "Pasta")
 
 /** A repair prompt carries at most this much of the broken reply and of the recipe text, so it fits the model's context. */
 const val REPAIR_BROKEN_CHARS = 2_000
@@ -63,11 +74,15 @@ class RecipePipeline(
         val trimmed = trimRecipeText(request.text)
         val kitchenRule = kitchenRuleFor(request.appliances, request.kitchenMode)
         val owned = if (request.kitchenMode == KitchenMode.Free) null else request.appliances
+        val liberty = request.style == ImportStyle.Liberty
+        val tokensLarge = if (liberty) TOKENS_LIBERTY else TOKENS_LARGE
+        val ingredientRules = if (liberty) PASS1_LIBERTY else PASS1_FAITHFUL
+        val stepRules = if (liberty) PASS2_LIBERTY else PASS2_FAITHFUL
         val german = if (request.lang == "de") GERMAN_RULE else ""
         var repairs = 0
 
-        suspend fun pass(stage: PipelineStage, system: String, user: String, shape: String, tokens: Int, valid: (JsonMap) -> Boolean): JsonMap? {
-            onStage(stage)
+        suspend fun pass(stage: PipelineStage, system: String, user: String, shape: String, tokens: Int, announce: Boolean = true, valid: (JsonMap) -> Boolean): JsonMap? {
+            if (announce) onStage(stage)
             val first = ask(stage, system + german, user, tokens)
             parseModelJson(first)?.takeIf(valid)?.let { return it }
             repairs++
@@ -77,7 +92,7 @@ class RecipePipeline(
         }
 
         // Pass 1: ingredients and metadata.
-        val ingredientsReply = pass(PipelineStage.Ingredients, PASS1_SYSTEM, "Recipe text:\n${trimmed.text}", PASS1_SHAPE, TOKENS_LARGE) {
+        val ingredientsReply = pass(PipelineStage.Ingredients, PASS1_SYSTEM + ingredientRules, "Recipe text:\n${trimmed.text}", PASS1_SHAPE, tokensLarge) {
             it["ok"] == false || objectsIn(it["ingredients"]).isNotEmpty()
         } ?: return PipelineResult.Failed(PipelineStage.Ingredients)
         if (ingredientsReply["ok"] == false) return PipelineResult.Failed(PipelineStage.Ingredients)
@@ -88,10 +103,10 @@ class RecipePipeline(
         // Pass 2: methods and steps.
         val splitReply = pass(
             PipelineStage.Splitting,
-            PASS2_SYSTEM + kitchenRule,
+            PASS2_SYSTEM + stepRules + kitchenRule,
             "Recipe text:\n${trimmed.text}\n\nIngredients already read:\n$ingredientsJson",
             PASS2_SHAPE,
-            TOKENS_LARGE,
+            tokensLarge,
         ) { reply ->
             val steps = stepsIn(reply)
             steps.isNotEmpty() && steps.all { it["ph"] == "prep" || it["ph"] == "cook" }
@@ -141,6 +156,31 @@ class RecipePipeline(
         }.toMap()
         val withTimers = withNeeds.map { step -> step + ("d" to (timers[step["id"]] ?: 0)) }
 
+        // Extra pass (Liberty, mains only): sides. Any failure leaves the recipe without sides, never Failed.
+        val isMain = MAIN_CATEGORIES.any { it.equals(ingredientsReply["category"]?.toString()?.trim(), ignoreCase = true) }
+        val sides: List<JsonMap> = if (liberty && isMain) {
+            try {
+                val sidesReply = pass(
+                    PipelineStage.Timers,
+                    SIDES_SYSTEM + kitchenRule,
+                    "Recipe text:\n${trimmed.text}\n\nIngredients of the main dish:\n$ingredientsJson",
+                    SIDES_SHAPE,
+                    TOKENS_SIDES,
+                    announce = false,
+                ) { it["sides"] is List<*> }
+                objectsIn(sidesReply?.get("sides")).map { side ->
+                    val (sideMethods, sideSteps) = filterMethodsByKitchen(mapsIn(side["methods"]), mapsIn(side["steps"]), owned)
+                    side + mapOf("methods" to sideMethods, "steps" to sideSteps)
+                }
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
+                emptyList()
+            }
+        } else {
+            emptyList()
+        }
+
         val notes = listOfNotNull(truncatedNote.takeIf { trimmed.truncated }) +
             strings(splitReply["notes"]) + strings(timersReply["notes"])
         val recipe = normalize(
@@ -149,6 +189,7 @@ class RecipePipeline(
                 "methods" to methods,
                 "steps" to withTimers,
                 "notes" to notes,
+                "sides" to sides,
             ),
         )
         return PipelineResult.Done(recipe.copy(id = id, mine = true), repairs)
@@ -193,6 +234,7 @@ class RecipePipeline(
 
         const val PASS1_SHAPE = """{"ok":true,"title":"","summary":"","category":"","tags":[],"time":0,"difficulty":"","base":0,"icon":"","ingredients":[{"name":"","q":0,"u":"","note":"","aisle":"","tips":[],"if":""}],"variations":[{"id":"v1","kind":"add","label":"","d":"","ing":"i1"}]}"""
         const val PASS2_SHAPE = """{"methods":[{"id":"m1","label":"","q":"","options":[{"v":"","l":"","icon":"flame","time":"","d":""}]}],"steps":[{"ph":"prep","t":"","b":"","if":""}],"notes":[]}"""
+        const val SIDES_SHAPE = """{"sides":[{"id":"s1","label":"","d":"","ingredients":[{"id":"i1","name":"","q":0,"u":"","aisle":""}],"methods":[{"id":"m1","label":"","q":"","options":[{"v":"","l":"","icon":"flame","time":"","d":""}]}],"steps":[{"id":"p1","ph":"prep","t":"","b":"","d":0,"needs":[],"if":""}]}]}"""
         const val PASS3_SHAPE = """{"needs":{"c1":["p1"]}}"""
         const val PASS4_SHAPE = """{"timers":{"c1":900},"notes":[]}"""
 
@@ -217,10 +259,29 @@ Reply with this shape: $PASS2_SHAPE
 - Each step: a short imperative title "t" and a body "b" of 1-3 sentences in plain text, with no markup or ids. Keep the author's quantities and temperatures; use °C.
 - "notes" lists anything you changed or could not read."""
 
+        /** Both styles: ingredient tips. Liberty also proposes extra ingredients as "suggest" variations. */
+        const val PASS1_FAITHFUL = "\n- Put a useful tip (a substitute, how to choose or prepare it) in an ingredient's \"tips\" when you know one."
+        const val PASS1_LIBERTY = PASS1_FAITHFUL +
+            "\n- Also suggest 3 to 5 extra ingredients that would improve the dish, as variations of kind \"suggest\" (ids after the optional ones, e.g. v3). Each is its own extra ingredient entry at the end of the list with \"if\": \"add:<variation id>\"; the variation's \"d\" says what it adds to the dish in a few words, like \"smoky depth\". Never change the amounts or main ingredients."
+
+        /** Both styles: expand vague steps. Liberty may add methods and restructure. */
+        const val PASS2_FAITHFUL = "\n- Expand vague steps with heat levels, doneness cues, timings and technique. Write other tips into the step body. Keep any methods the text lists. Adapt steps to the kitchen rule below, also for tips. In \"notes\" add one short line per kind of addition (tips, methods, restructuring)."
+        const val PASS2_LIBERTY = PASS2_FAITHFUL +
+            "\n- Also offer \"methods\" (oven, air fryer, pan, ...) whenever an appliance the cook owns fits the recipe, even if the text does not list it; never an appliance the cook lacks. You may reorder, merge or split steps. Keep the amounts and main ingredients."
+
         const val PASS3_SYSTEM = """You link steps for the Simmer cooking app. Reply with one JSON object and nothing else.
 
 For each cook step, list the prep step ids it depends on (a cook step needs a prep step when it uses something made in it). Reply with this shape: $PASS3_SHAPE
 Use [] when a cook step needs none."""
+
+        const val SIDES_SYSTEM = """You suggest sides for a main dish in the Simmer cooking app. Reply with one JSON object and nothing else.
+
+Reply with this shape: $SIDES_SHAPE
+- Suggest at most 3 sides that go well with the main dish, each a small recipe of its own: a short "label", a few words in "d" on why it goes with the dish, about 6 ingredients at most, 1-2 prep steps and 1-2 cook steps.
+- Ids are local to the side (i1, p1, c1, m1). A cook step "needs" the prep step ids it depends on. Link ingredients in step bodies as {i1:rice}. "d" on a step is seconds of waiting, 0 if none.
+- Only add "methods" (at least 2 options) when an appliance the cook owns gives a real alternative; each option needs its own steps, marked "if": "<method id>=<option v>". Otherwise use []. Never use an appliance the cook lacks.
+- Do not repeat ingredients of the main dish as the side. Use no "add:" conditions.
+- Write in British English, sentence case, no emoji. Use °C."""
 
         const val PASS4_SYSTEM = """You set timers for the Simmer cooking app. Reply with one JSON object and nothing else.
 

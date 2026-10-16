@@ -39,6 +39,9 @@ private fun texts(lang: String): ReaderPromptTexts {
     return ReaderPromptTexts(
         intro = get("intro"),
         rules = get("rules"),
+        enrichment = get("enrichment"),
+        faithful = get("faithful"),
+        liberty = get("liberty"),
         schemaHeading = get("schema_heading"),
         exampleHeading = get("example_heading"),
         kitchenAny = get("kitchen_any"),
@@ -163,8 +166,9 @@ class ReaderPromptLanguageTest {
             val recipe = readRecipe(reply, "u-new", emptySet(), KitchenMode.Free)!!
 
             assertEquals(if (lang == "de") "Blech-Zitronenhähnchen" else "Sheet-pan lemon chicken", recipe.title)
-            assertEquals(4, recipe.ingredients.size)
-            assertEquals(1, recipe.variations.size)
+            assertEquals(5, recipe.ingredients.size)
+            assertEquals(listOf("add", "suggest"), recipe.variations.map { it.kind })
+            assertEquals(1, recipe.ingredients.single { it.name.startsWith("Baby") || it.name == "Drillinge" }.tips.size)
             assertEquals(listOf("oven", "air"), recipe.methods.single().options.map { it.value })
             assertEquals(3, recipe.steps.size)
         }
@@ -181,5 +185,53 @@ class ReaderPromptLanguageTest {
     @Test fun `text that is not the example gives no recipe`() {
         assertNull(readRecipe(READER_PROMPT_SCHEMA, "u-new", emptySet(), KitchenMode.Free))
         assertNotNull(readRecipe(readerPromptExample("de"), "u-new", emptySet(), KitchenMode.Free))
+    }
+
+    // --- Sides ---
+
+    @Test fun `the schema has a sides array holding a whole side`() {
+        val side = mapsIn(parseModelJson(READER_PROMPT_SCHEMA)!!["sides"]).single()
+
+        assertTrue(side.keys.containsAll(listOf("id", "label", "d", "ingredients", "methods", "steps")))
+    }
+
+    @Test fun `Liberty offers sides when the recipe is a main, with the limits and rice-like methods`() {
+        val en = texts("en").liberty
+        val de = texts("de").liberty
+
+        listOf(en, de).forEach { assertTrue(it, it.contains("\"sides\"") && it.contains("3") && it.contains("6")) }
+        assertTrue(en, en.contains("only a main") && en.contains("rice cooker") && en.contains("microwave"))
+        assertTrue(de, de.contains("nur aus einem Hauptgericht") && de.contains("Reiskocher") && de.contains("Mikrowelle"))
+    }
+
+    @Test fun `Faithful keeps only sides the source lists and never invents`() {
+        assertTrue(texts("en").faithful.contains("\"sides\""))
+        assertTrue(texts("en").faithful.contains("do not invent"))
+        assertTrue(texts("de").faithful.contains("\"sides\""))
+        assertTrue(texts("de").faithful.contains("erfinde keine"))
+    }
+
+    @Test fun `the serves well with notes line is gone everywhere`() {
+        listOf("en", "de").forEach { lang ->
+            val all = listOf(texts(lang).liberty, readerPromptExample(lang), prompt(lang, KitchenMode.Free)).joinToString("\n")
+
+            assertFalse(lang, all.contains("Serves well", ignoreCase = true) || all.contains("Passt gut zu"))
+        }
+    }
+
+    @Test fun `the example has a rice side with two methods that follows the Kitchen rule`() {
+        listOf("en", "de").forEach { lang ->
+            val free = readRecipe(readerPromptExample(lang), "u-new", emptySet(), KitchenMode.Free)!!
+            val side = free.sides.single()
+
+            assertEquals("rice", side.id)
+            assertEquals(2, side.methods.single().options.size)
+            assertTrue(side.steps.any { it.phase == "prep" } && side.steps.any { it.phase == "cook" })
+            assertTrue(side.ingredients.size <= 6)
+
+        }
+        val strict = readRecipe(readerPromptExample("en"), "u-new", setOf("oven"), KitchenMode.Strict)!!.sides.single()
+        assertTrue(strict.methods.isEmpty())
+        assertEquals(listOf("Rinse the rice", "Simmer the rice"), strict.steps.map { it.title })
     }
 }

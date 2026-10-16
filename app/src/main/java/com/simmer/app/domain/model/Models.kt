@@ -39,10 +39,11 @@ data class Option(
  * An optional modification to a recipe.
  * kind = "swap": replaces one set of ingredients with another.
  * kind = "add": adds extra optional ingredients (add-in).
+ * kind = "suggest": an add-in the Reader proposed that the source does not have ("Extra suggestion"); off by default.
  */
 data class Variation(
     val id: String,
-    val kind: String,  // "swap" | "add"
+    val kind: String,  // "swap" | "add" | "suggest"
     val label: String,
     val options: List<Option> = emptyList(),  // for swap
     val def: String = "",                      // default option for swap
@@ -123,10 +124,13 @@ data class ResolvedIngredient(
  * The complete set of a user's current choices for a recipe.
  * choice: map of method picks and swap variation picks.
  * add: map of add-in toggle states.
+ * sides: map of ticked side ids.
  */
 data class Selection(
     val choice: Map<String, String> = emptyMap(),
     val add: Map<String, Boolean> = emptyMap(),
+    /** Ticked side ids; unticked equals absent. A side's method picks live in [choice] as `s_<sideId>_<methodId>`. */
+    val sides: Map<String, Boolean> = emptyMap(),
 )
 
 /**
@@ -151,6 +155,21 @@ data class Recipe(
     val edited: Boolean = false,
     val notes: List<String> = emptyList(),
     val sourceUrl: String? = null,
+    val sides: List<Side> = emptyList(),
+)
+
+/**
+ * A side dish a main can be cooked with. Self-contained: its own ingredients, [methods] and steps,
+ * with ids local to the side. It scales with the main's servings and has no servings of its own.
+ */
+data class Side(
+    val id: String,
+    val label: String,
+    /** Why it fits the main. */
+    val d: String = "",
+    val ingredients: List<Ingredient> = emptyList(),
+    val methods: List<Method> = emptyList(),
+    val steps: List<Step> = emptyList(),
 )
 
 /**

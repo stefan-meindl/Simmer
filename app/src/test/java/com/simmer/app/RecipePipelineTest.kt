@@ -7,6 +7,7 @@ import com.simmer.app.domain.RecipePipeline
 import com.simmer.app.domain.RecipeReader
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.ImportRequest
+import com.simmer.app.domain.ImportStyle
 import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.PassTimeoutException
 import com.simmer.app.domain.REPAIR_BROKEN_CHARS
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -57,6 +59,14 @@ private val PASS2 = """
 private val PASS3 = """{"needs":{"c1":["p1","p9"]}}"""
 private val PASS4 = """{"timers":{"c1":2280},"notes":["Roast time was 35-40 min; used 38."]}"""
 
+private val SIDES = """
+{"sides":[{"id":"rice","label":"Steamed rice","d":"Soaks up the juices.",
+ "ingredients":[{"id":"i1","name":"Basmati rice","q":300,"u":"g","aisle":"Pantry"}],
+ "methods":[],
+ "steps":[{"id":"p1","ph":"prep","t":"Rinse","b":"Rinse the {i1:rice}."},
+  {"id":"c1","ph":"cook","t":"Steam","b":"Steam the {i1:rice} until tender.","d":720,"needs":["p1"]}]}]}
+"""
+
 private const val NOTE = "This recipe is long. Only the first part was read."
 
 private fun run(
@@ -66,10 +76,34 @@ private fun run(
     mode: KitchenMode = KitchenMode.Free,
     lang: String = "en",
     stages: MutableList<PipelineStage> = mutableListOf(),
-) = runBlocking { RecipePipeline(reader).run(ImportRequest(text, lang, appliances, mode), "u1", NOTE) { stages += it } }
+    style: ImportStyle = ImportStyle.Faithful,
+) = runBlocking { RecipePipeline(reader).run(ImportRequest(text, lang, appliances, mode, style), "u1", NOTE) { stages += it } }
 
 /** Seam: [RecipePipeline.run] against a scripted [RecipeReader]. */
 class RecipePipelineTest {
+
+    @Test fun `Faithful asks for tips and detail but no suggestions and keeps the token budget`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4))
+
+        run(reader, style = ImportStyle.Faithful)
+
+        assertTrue(reader.calls[0].system.contains("\"tips\""))
+        assertTrue(reader.calls[1].system.contains("Expand vague steps"))
+        assertFalse(reader.calls.any { it.system.contains("suggest") })
+        assertEquals(2_000, reader.calls[0].maxTokens)
+    }
+
+    @Test fun `Liberty asks for suggestions and methods and raises the budget of the big passes`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4, SIDES))
+
+        run(reader, style = ImportStyle.Liberty)
+
+        assertTrue(reader.calls[0].system.contains("\"suggest\""))
+        assertTrue(reader.calls[1].system.contains("even if the text does not list it"))
+        assertEquals(3_000, reader.calls[0].maxTokens)
+        assertEquals(3_000, reader.calls[1].maxTokens)
+        assertEquals(1_200, reader.calls[2].maxTokens)
+    }
 
     @Test fun `four passes build a normalized recipe and report each stage in order`() {
         val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4))
@@ -272,5 +306,117 @@ class RecipePipelineTest {
 
         assertTrue(outcome is PassTimeoutException)
         assertEquals(PipelineStage.Ingredients, (outcome as PassTimeoutException).stage)
+    }
+
+    @Test fun `Liberty adds sides in a fifth pass without a new stage`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4, SIDES))
+        val stages = mutableListOf<PipelineStage>()
+
+        val done = run(reader, style = ImportStyle.Liberty, stages = stages, lang = "de", appliances = setOf("hob"), mode = KitchenMode.Strict) as PipelineResult.Done
+
+        assertEquals(5, reader.calls.size)
+        assertEquals(4, stages.size)
+        assertEquals(3_000, reader.calls[4].maxTokens)
+        assertTrue(reader.calls[4].system.contains("The cook owns these appliances"))
+        assertTrue(reader.calls[4].system.contains("German"))
+        assertTrue(reader.calls[4].user.contains("Chicken thighs"))
+        val side = done.recipe.sides.single()
+        assertEquals("rice", side.id)
+        assertEquals(listOf("i1"), side.ingredients.map { it.id })
+        assertEquals(listOf("p1", "c1"), side.steps.map { it.id })
+        assertEquals(0, done.repairs)
+    }
+
+    @Test fun `Liberty sides get one repair then the recipe is saved without sides`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4, "no json", "still no json"))
+
+        val done = run(reader, style = ImportStyle.Liberty) as PipelineResult.Done
+
+        assertEquals(6, reader.calls.size)
+        assertEquals(1, done.repairs)
+        assertTrue(done.recipe.sides.isEmpty())
+        assertEquals(listOf("p1", "c1"), done.recipe.steps.map { it.id })
+    }
+
+    @Test fun `a repaired sides reply is used`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4, "oops", SIDES))
+
+        val done = run(reader, style = ImportStyle.Liberty) as PipelineResult.Done
+
+        assertEquals(1, done.recipe.sides.size)
+    }
+
+    @Test fun `a sides pass that stalls still saves the recipe without sides`() {
+        var n = 0
+        val replies = listOf(PASS1, PASS2, PASS3, PASS4)
+        val reader = object : RecipeReader {
+            override suspend fun status() = ReaderStatus.Ready
+            override fun download(): Flow<DownloadProgress> = flowOf(DownloadProgress.Complete)
+            override suspend fun generate(system: String, user: String, maxTokens: Int): Flow<String> =
+                if (n < replies.size) flowOf(replies[n++]) else flow { CompletableDeferred<Unit>().await() }
+        }
+
+        val done = runBlocking {
+            RecipePipeline(reader, passTimeoutMs = 50).run(ImportRequest("text", "en", emptySet(), KitchenMode.Free, ImportStyle.Liberty), "u1", NOTE) {}
+        } as PipelineResult.Done
+
+        assertTrue(done.recipe.sides.isEmpty())
+        assertEquals(2, done.recipe.steps.size)
+    }
+
+    @Test fun `the main category is matched ignoring case`() {
+        val lower = PASS1.replace("\"Mains\"", "\"mains\"")
+        val reader = ScriptedReader(listOf(lower, PASS2, PASS3, PASS4, SIDES))
+
+        val done = run(reader, style = ImportStyle.Liberty) as PipelineResult.Done
+
+        assertEquals(1, done.recipe.sides.size)
+    }
+
+    @Test fun `any failure of the sides pass saves the recipe without sides`() {
+        var n = 0
+        val replies = listOf(PASS1, PASS2, PASS3, PASS4)
+        val reader = object : RecipeReader {
+            override suspend fun status() = ReaderStatus.Ready
+            override fun download(): Flow<DownloadProgress> = flowOf(DownloadProgress.Complete)
+            override suspend fun generate(system: String, user: String, maxTokens: Int): Flow<String> =
+                if (n < replies.size) flowOf(replies[n++]) else throw IllegalStateException("engine crashed")
+        }
+
+        val done = run(reader, style = ImportStyle.Liberty) as PipelineResult.Done
+
+        assertTrue(done.recipe.sides.isEmpty())
+        assertEquals(2, done.recipe.steps.size)
+    }
+
+    @Test fun `Liberty asks no sides for a recipe that is not a main`() {
+        val dessert = PASS1.replace("\"Mains\"", "\"Desserts\"")
+        val reader = ScriptedReader(listOf(dessert, PASS2, PASS3, PASS4))
+
+        val done = run(reader, style = ImportStyle.Liberty) as PipelineResult.Done
+
+        assertEquals(4, reader.calls.size)
+        assertTrue(done.recipe.sides.isEmpty())
+    }
+
+    @Test fun `Faithful runs no sides pass`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4))
+
+        val done = run(reader, style = ImportStyle.Faithful) as PipelineResult.Done
+
+        assertEquals(4, reader.calls.size)
+        assertTrue(done.recipe.sides.isEmpty())
+    }
+
+    @Test fun `side methods for appliances the cook lacks are filtered`() {
+        val sideWithMethods = """{"sides":[{"id":"rice","label":"Rice","ingredients":[{"id":"i1","name":"Rice","q":300,"u":"g"}],
+            "methods":[{"id":"m1","label":"Rice","q":"How?","options":[{"v":"pot","l":"Pot"},{"v":"cooker","l":"Rice cooker"}]}],
+            "steps":[{"id":"c1","ph":"cook","t":"Cook","b":"Cook the {i1:rice}.","if":"m1=pot"},
+             {"id":"c2","ph":"cook","t":"Cook in cooker","b":"Cook the {i1:rice}.","if":"m1=cooker"}]}]}"""
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4, sideWithMethods))
+
+        val done = run(reader, style = ImportStyle.Liberty, appliances = setOf("hob"), mode = KitchenMode.Strict) as PipelineResult.Done
+
+        assertEquals(listOf("c1"), done.recipe.sides.single().steps.map { it.id })
     }
 }

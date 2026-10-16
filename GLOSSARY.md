@@ -79,7 +79,7 @@ Turns a pasted chatbot reply into a User Recipe (`readChatbotReply`): takes the 
 _Avoid_: Chatbot importer, reply converter
 
 **Reader prompt**:
-What the chatbot screen's "Copy prompt" puts on the clipboard (`readerPrompt`): instructions, the recipe JSON schema with a short example, the Kitchen line with the appliance rule for the Kitchen mode, and the optional recipe text (or a note that a photo or link is attached in the chatbot). Its prose follows the Settings language (string resources `reader_prompt_*`); JSON keys stay English. The reply it asks for is what the Reply parser reads.
+What the chatbot screen's "Copy prompt" puts on the clipboard (`readerPrompt`): instructions, the enrichment rules for the **Import style** (Faithful keeps to the source and adds detail and tips; Liberty also suggests extra ingredients as `suggest` variations ("Extra suggestion", off by default), offers other methods for owned appliances and may restructure steps), the recipe JSON schema with a short example, the Kitchen line with the appliance rule for the Kitchen mode, and the optional recipe text (or a note that a photo or link is attached in the chatbot). Its prose follows the Settings language (string resources `reader_prompt_*`); JSON keys stay English. The reply it asks for is what the Reply parser reads.
 _Avoid_: Chatbot prompt, import prompt
 
 **Fix prompt**:
@@ -183,6 +183,10 @@ _Avoid_: Option, customisation, modification
 **Method**:
 A cooking-technique choice that determines which steps are shown and what timers apply (e.g. hob vs. oven vs. microwave). Flow Phase 2 is skipped when no Method offers more than one option (`hasSelectableMethod`); Flow Phase 1 then starts cooking directly.
 _Avoid_: Technique, cooking mode, appliance mode
+
+**Side**:
+A self-contained mini-recipe (a label, ingredients, optional Methods and prep and cook Steps) offered with a main recipe, such as rice with a curry. Written only by the Liberty import style (at most 3 per recipe, about 6 ingredients and 2 prep plus 2 cook steps each); Faithful keeps only sides the source lists. Ticked in Flow Phase 1 (`Selection.sides`), where "No sides" unticks all of them; an unticked side contributes nothing. A ticked side scales with the main's servings, its ingredients join the shopping entries, its steps join the cook phases after the main's (titles prefixed with the side label) and its own Methods are chosen inline in Phase 1. Its ids are namespaced `s_<sideId>_<id>` (side ids are letters and digits only). Not a Variation (which modifies the main) and its Methods and conditions never see the main's.
+_Avoid_: Accompaniment, extra, add-in
 
 **Step plan**:
 The count of prep and cook Steps the current servings and Selection lead to (`StepPlan`), shown on Flow Phase 2.

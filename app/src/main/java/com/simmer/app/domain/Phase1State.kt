@@ -28,9 +28,9 @@ data class Phase1State(
     val selection: Selection,
     val added: PlannedChoice?,
 ) {
-    /** An add-in toggled off counts the same as one never toggled. */
+    /** An add-in or side toggled off counts the same as one never toggled. */
     val isOnList: Boolean
-        get() = added?.let { it.servings == servings && it.selection.normalised() == selection.normalised() } == true
+        get() = added?.let { it.servings == servings && it.selection.normalised(recipe) == selection.normalised(recipe) } == true
 
     /** Callers clamp via [stepServings]. */
     fun withServings(servings: Int) = copy(servings = servings)
@@ -43,10 +43,19 @@ data class Phase1State(
 
     /** True when [other] cooks differently, so Cooking Progress made on this state no longer applies. */
     fun changesCookingPlan(other: Phase1State): Boolean =
-        servings != other.servings || selection.normalised() != other.selection.normalised()
+        servings != other.servings || selection.normalised(recipe) != other.selection.normalised(recipe)
 
     fun withAddIn(variationId: String, on: Boolean) =
         copy(selection = selection.copy(add = selection.add + (variationId to on)))
+
+    fun withSide(sideId: String, on: Boolean) =
+        copy(selection = selection.copy(sides = selection.sides + (sideId to on)))
+
+    /** The "No sides" row: unticks every side. */
+    fun clearSides() = copy(selection = selection.copy(sides = emptyMap()))
+
+    fun withSideMethod(sideId: String, methodId: String, value: String) =
+        copy(selection = selection.copy(choice = selection.choice + (sideKey(sideId, methodId) to value)))
 
     fun resolved(units: String = "metric", spices: String = "spoons", lang: String = "en") =
         resolve(recipe, servings, selection, units, spices, lang)
@@ -77,4 +86,13 @@ data class Phase1State(
     }
 }
 
-private fun Selection.normalised() = copy(add = add.filterValues { it })
+/** Drops toggled-off add-ins and sides, and the method picks of sides that are not ticked. */
+private fun Selection.normalised(recipe: Recipe): Selection {
+    val ticked = sides.filterValues { it }
+    val unticked = recipe.sides.map { it.id }.filter { it !in ticked }
+    return copy(
+        add = add.filterValues { it },
+        sides = ticked,
+        choice = choice.filterKeys { k -> unticked.none { k.startsWith(sideKeyPrefix(it)) } },
+    )
+}

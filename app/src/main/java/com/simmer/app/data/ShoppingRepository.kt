@@ -21,6 +21,7 @@ import javax.inject.Singleton
 fun encodeSelection(sel: Selection): String = buildJsonObject {
     put("choice", buildJsonObject { sel.choice.forEach { (k, v) -> put(k, v) } })
     put("add", buildJsonObject { sel.add.forEach { (k, v) -> put(k, v) } })
+    if (sel.sides.isNotEmpty()) put("sides", buildJsonObject { sel.sides.forEach { (k, v) -> put(k, v) } })
 }.toString()
 
 fun decodeSelection(json: String): Selection {
@@ -31,7 +32,10 @@ fun decodeSelection(json: String): Selection {
     val add = (o["add"] as? JsonObject).orEmpty().mapNotNull { (k, v) ->
         (v as? JsonPrimitive)?.booleanOrNull?.let { k to it }
     }.toMap()
-    return Selection(choice, add)
+    val sides = (o["sides"] as? JsonObject).orEmpty().mapNotNull { (k, v) ->
+        (v as? JsonPrimitive)?.booleanOrNull?.let { k to it }
+    }.toMap()
+    return Selection(choice, add, sides)
 }
 
 private fun JsonObject?.orEmpty(): JsonObject = this ?: JsonObject(emptyMap())

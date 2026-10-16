@@ -67,6 +67,16 @@ data class StepJson(
 )
 
 @Serializable
+data class SideJson(
+    val id: String,
+    val label: String,
+    val d: String = "",
+    val ingredients: List<IngredientJson> = emptyList(),
+    val methods: List<MethodJson> = emptyList(),
+    val steps: List<StepJson> = emptyList(),
+)
+
+@Serializable
 data class RecipeJson(
     val id: String,
     val title: String,
@@ -83,6 +93,7 @@ data class RecipeJson(
     val steps: List<StepJson> = emptyList(),
     val notes: List<String> = emptyList(),
     val sourceUrl: String? = null,
+    val sides: List<SideJson> = emptyList(),
 )
 
 // ---------------------------------------------------------------------------
@@ -105,31 +116,14 @@ fun Recipe.toEntity(): RecipeEntity {
         variations = variations.map { v ->
             VariationJson(v.id, v.kind, v.label, v.options.map { OptionJson(it.value, it.label) }, v.def, v.d, v.ing)
         },
-        methods = methods.map { m ->
-            MethodJson(m.id, m.label, m.q, m.options.map { o ->
-                MethodOptionJson(o.value, o.label, o.icon, o.time, o.d)
-            })
-        },
-        ingredients = ingredients.map { i ->
-            IngredientJson(
-                id = i.id,
-                name = i.name,
-                q = i.quantity,
-                u = i.unit,
-                uPlural = i.uPlural,
-                note = i.note,
-                aisle = i.aisle,
-                tips = i.tips,
-                ifCondition = i.ifCondition,
-                altConditions = i.alt.map { it.first },
-                altValues = i.alt.map { it.second },
-            )
-        },
-        steps = steps.map { s ->
-            StepJson(s.id, s.phase, s.title, s.durationSecs, s.body, s.needs, s.ifCondition)
-        },
+        methods = methods.map { it.toJson() },
+        ingredients = ingredients.map { it.toJson() },
+        steps = steps.map { it.toJson() },
         notes = notes,
         sourceUrl = sourceUrl,
+        sides = sides.map { sd ->
+            SideJson(sd.id, sd.label, sd.d, sd.ingredients.map { it.toJson() }, sd.methods.map { it.toJson() }, sd.steps.map { it.toJson() })
+        },
     )
     return RecipeEntity(
         id = id,
@@ -165,31 +159,52 @@ fun RecipeJson.toDomain(mine: Boolean = false, edited: Boolean = false): Recipe 
         variations = variations.map { v ->
             Variation(v.id, v.kind, v.label, v.options.map { Option(it.v, it.l) }, v.def, v.d, v.ing)
         },
-        methods = methods.map { m ->
-            Method(m.id, m.label, m.q, m.options.map { o ->
-                MethodOption(o.v, o.l, o.icon, o.time, o.d)
-            })
-        },
-        ingredients = ingredients.map { i ->
-            Ingredient(
-                id = i.id,
-                name = i.name,
-                quantity = i.q,
-                unit = i.u,
-                uPlural = i.uPlural,
-                note = i.note,
-                aisle = i.aisle,
-                tips = i.tips,
-                ifCondition = i.ifCondition,
-                alt = i.altConditions.zip(i.altValues),
-            )
-        },
-        steps = steps.map { s ->
-            Step(s.id, s.ph, s.t, s.d, s.b, s.needs, s.ifCondition)
-        },
+        methods = methods.map { it.toDomain() },
+        ingredients = ingredients.map { it.toDomain() },
+        steps = steps.map { it.toDomain() },
         mine = mine,
         edited = edited,
         notes = notes,
         sourceUrl = sourceUrl,
+        sides = sides.map { sd ->
+            Side(sd.id, sd.label, sd.d, sd.ingredients.map { it.toDomain() }, sd.methods.map { it.toDomain() }, sd.steps.map { it.toDomain() })
+        },
     )
 }
+
+private fun Method.toJson() =
+    MethodJson(id, label, q, options.map { o -> MethodOptionJson(o.value, o.label, o.icon, o.time, o.d) })
+
+private fun MethodJson.toDomain() =
+    Method(id, label, q, options.map { o -> MethodOption(o.v, o.l, o.icon, o.time, o.d) })
+
+private fun Ingredient.toJson() = IngredientJson(
+    id = id,
+    name = name,
+    q = quantity,
+    u = unit,
+    uPlural = uPlural,
+    note = note,
+    aisle = aisle,
+    tips = tips,
+    ifCondition = ifCondition,
+    altConditions = alt.map { it.first },
+    altValues = alt.map { it.second },
+)
+
+private fun IngredientJson.toDomain() = Ingredient(
+    id = id,
+    name = name,
+    quantity = q,
+    unit = u,
+    uPlural = uPlural,
+    note = note,
+    aisle = aisle,
+    tips = tips,
+    ifCondition = ifCondition,
+    alt = altConditions.zip(altValues),
+)
+
+private fun Step.toJson() = StepJson(id, phase, title, durationSecs, body, needs, ifCondition)
+
+private fun StepJson.toDomain() = Step(id, ph, t, d, b, needs, ifCondition)
