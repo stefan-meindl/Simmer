@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.media.projection.MediaProjectionManager
 import android.net.Uri
+import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,15 @@ internal fun ListenFlow(state: ListenState, viewModel: AddRecipeViewModel) {
     val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
         if (granted) viewModel.listenPermissionGranted() else viewModel.listenPermissionDenied()
     }
+    val continueToAudio = {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
+            viewModel.listenPermissionGranted()
+        } else {
+            permission.launch(Manifest.permission.RECORD_AUDIO)
+        }
+    }
+    val overlay = rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { continueToAudio() }
+    var overlayAsk by rememberSaveable { mutableStateOf(false) }
 
     // Launched once per consent step, also across rotation (the flag is saved).
     var consentLaunched by rememberSaveable { mutableStateOf(false) }
@@ -84,17 +94,37 @@ internal fun ListenFlow(state: ListenState, viewModel: AddRecipeViewModel) {
             confirm = stringResource(R.string.listen_continue),
             onConfirm = {
                 askNotifications()
-                if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) {
-                    viewModel.listenPermissionGranted()
-                } else {
-                    permission.launch(Manifest.permission.RECORD_AUDIO)
-                }
+                if (!Settings.canDrawOverlays(context) && !overlayAsked(context)) overlayAsk = true else continueToAudio()
             },
             onCancel = viewModel::cancelListen,
         )
         else -> Unit
     }
+
+    if (overlayAsk && state == ListenState.AwaitingPermission) {
+        ListenDialog(
+            title = stringResource(R.string.listen_overlay_title),
+            body = stringResource(R.string.listen_overlay_body),
+            confirm = stringResource(R.string.listen_overlay_allow),
+            dismiss = stringResource(R.string.listen_overlay_skip),
+            onConfirm = {
+                overlayAsk = false
+                markOverlayAsked(context)
+                overlay.launch(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:${context.packageName}")))
+            },
+            onCancel = {
+                overlayAsk = false
+                markOverlayAsked(context)
+                continueToAudio()
+            },
+        )
+    }
 }
+
+private const val PREFS = "listen_ui"
+private fun overlayAsked(context: Context) = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("overlay_asked", false)
+private fun markOverlayAsked(context: Context) =
+    context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putBoolean("overlay_asked", true).apply()
 
 /** The system picker: the user shares the whole screen or just Instagram (single app). */
 private fun screenCaptureIntent(context: Context): Intent =
@@ -116,7 +146,7 @@ private fun openReel(context: Context, url: String?) {
 }
 
 @Composable
-private fun ListenDialog(title: String, body: String, confirm: String, onConfirm: () -> Unit, onCancel: () -> Unit) {
+private fun ListenDialog(title: String, body: String, confirm: String, onConfirm: () -> Unit, onCancel: () -> Unit, dismiss: String = stringResource(R.string.listen_cancel)) {
     val colors = LocalSimmerColors.current
     AlertDialog(
         onDismissRequest = onCancel,
@@ -126,7 +156,7 @@ private fun ListenDialog(title: String, body: String, confirm: String, onConfirm
         confirmButton = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 PrimaryButton(confirm, onClick = onConfirm, modifier = Modifier.fillMaxWidth())
-                SecondaryButton(stringResource(R.string.listen_cancel), onClick = onCancel, modifier = Modifier.fillMaxWidth())
+                SecondaryButton(dismiss, onClick = onCancel, modifier = Modifier.fillMaxWidth())
             }
         },
     )

@@ -38,6 +38,7 @@ class ListenService : Service() {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private var projection: MediaProjection? = null
     private var started = false
+    private val floatingStop by lazy { FloatingStop(this) { session.stop() } }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
@@ -98,7 +99,7 @@ class ListenService : Service() {
 
     private fun onState(state: ListenState) {
         when (state) {
-            is ListenState.Capturing -> Unit
+            is ListenState.Capturing -> floatingStop.show()
             ListenState.Transcribing -> {
                 releaseProjection()
                 notifyIfAllowed(ListenNotifications.CAPTURE_ID) { ListenNotifications.transcribing(this) }
@@ -110,6 +111,7 @@ class ListenService : Service() {
     }
 
     private fun releaseProjection() {
+        floatingStop.hide()
         projection?.stop()
         projection = null
         audio.detach()

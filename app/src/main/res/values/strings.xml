@@ -466,6 +466,10 @@
     <string name="listen_transcript_label">Transcript</string>
     <string name="listen_explainer_title">Listen to the Reel</string>
     <string name="listen_explainer_body">Simmer records only the Reel\'s sound, not your microphone. It opens the Reel in Instagram; play it there, then tap Stop in the notification. The audio stays on this phone and is deleted after it is turned into text.</string>
+    <string name="listen_overlay_title">Floating Stop button?</string>
+    <string name="listen_overlay_body">Simmer can show a small Stop button over Instagram while it listens. This needs \"Display over other apps\". You can skip it; Stop in the notification always works.</string>
+    <string name="listen_overlay_allow">Allow</string>
+    <string name="listen_overlay_skip">Skip</string>
     <string name="listen_continue">Continue</string>
     <string name="listen_cancel">Cancel</string>
     <string name="listen_download_title">Download the speech model?</string>

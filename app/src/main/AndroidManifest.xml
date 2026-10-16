@@ -10,6 +10,7 @@
     <uses-permission android:name="android.permission.INTERNET" />
     <!-- Listen: records the Reel's playback sound (AudioPlaybackCapture), never the microphone. -->
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <uses-permission android:name="android.permission.VIBRATE" />
 

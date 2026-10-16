@@ -463,6 +463,10 @@
     <string name="listen_transcript_label">Transkript</string>
     <string name="listen_explainer_title">Reel anhören</string>
     <string name="listen_explainer_body">Simmer nimmt nur den Ton des Reels auf, nicht dein Mikrofon. Das Reel wird in Instagram geöffnet; spiele es dort ab und tippe dann in der Benachrichtigung auf Stopp. Der Ton bleibt auf diesem Handy und wird nach der Umwandlung in Text gelöscht.</string>
+    <string name="listen_overlay_title">Schwebende Stopp-Taste?</string>
+    <string name="listen_overlay_body">Simmer kann beim Zuhören eine kleine Stopp-Taste über Instagram anzeigen. Dafür ist \"Über anderen Apps einblenden\" nötig. Du kannst das überspringen; Stopp in der Benachrichtigung funktioniert immer.</string>
+    <string name="listen_overlay_allow">Erlauben</string>
+    <string name="listen_overlay_skip">Überspringen</string>
     <string name="listen_continue">Weiter</string>
     <string name="listen_cancel">Abbrechen</string>
     <string name="listen_download_title">Sprachmodell laden?</string>
