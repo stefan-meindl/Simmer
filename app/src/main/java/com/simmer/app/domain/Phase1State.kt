@@ -55,7 +55,7 @@ data class Phase1State(
     fun clearSides() = copy(selection = selection.copy(sides = emptyMap()))
 
     fun withSideMethod(sideId: String, methodId: String, value: String) =
-        copy(selection = selection.copy(choice = selection.choice + (sideMethodKey(sideId, methodId) to value)))
+        copy(selection = selection.copy(choice = selection.choice + (sideKey(sideId, methodId) to value)))
 
     fun resolved(units: String = "metric", spices: String = "spoons", lang: String = "en") =
         resolve(recipe, servings, selection, units, spices, lang)
@@ -93,6 +93,6 @@ private fun Selection.normalised(recipe: Recipe): Selection {
     return copy(
         add = add.filterValues { it },
         sides = ticked,
-        choice = choice.filterKeys { k -> unticked.none { k.startsWith("s_${it}_") } },
+        choice = choice.filterKeys { k -> unticked.none { k.startsWith(sideKeyPrefix(it)) } },
     )
 }

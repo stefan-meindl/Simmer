@@ -203,6 +203,27 @@ class NormalizeTest {
         assertTrue(normalize(exampleInput() + mapOf("sides" to listOf(one))).sides.single().methods.isEmpty())
     }
 
+    @Test fun `side ids keep letters and digits only`() {
+        val sides = listOf(side(id = "r_x-1"), side(id = "__"))
+        assertEquals(listOf("rx1", "side2"), normalize(exampleInput() + mapOf("sides" to sides)).sides.map { it.id })
+    }
+
+    @Test fun `a side keeps at most six ingredients and links to the dropped ones become text`() {
+        val ings = (1..8).map { mapOf("id" to "i$it", "name" to "Ing $it", "q" to 1, "u" to "g") }
+        val steps = listOf(mapOf("id" to "c1", "ph" to "cook", "t" to "Cook", "b" to "Add {i2:two} and {i8:eight}."))
+        val s = normalize(exampleInput() + mapOf("sides" to listOf(side(ingredients = ings, steps = steps, methods = emptyList<Any>())))).sides.single()
+        assertEquals((1..6).map { "i$it" }, s.ingredients.map { it.id })
+        assertEquals("Add {i2:two} and eight.", s.steps.single().body)
+    }
+
+    @Test fun `a side keeps at most two prep and two cook steps and drops needs on dropped ones`() {
+        fun st(id: String, ph: String, needs: List<String> = emptyList()) = mapOf("id" to id, "ph" to ph, "t" to id, "b" to "Do $id.", "needs" to needs)
+        val steps = listOf(st("p1", "prep"), st("p2", "prep"), st("p3", "prep"), st("c1", "cook", listOf("p1", "p3")), st("c2", "cook"), st("c3", "cook"))
+        val s = normalize(exampleInput() + mapOf("sides" to listOf(side(steps = steps, methods = emptyList<Any>())))).sides.single()
+        assertEquals(listOf("p1", "p2", "c1", "c2"), s.steps.map { it.id })
+        assertEquals(listOf("p1"), s.steps.first { it.id == "c1" }.needs)
+    }
+
     @Test fun `at most three sides are kept`() {
         val many = (1..5).map { side(id = "s$it", label = "Side $it") }
 

@@ -334,6 +334,7 @@
     <string name="edit_move_down">Nach unten</string>
     <string name="edit_remove_step">Schritt entfernen</string>
     <string name="edit_sides">Beilagen</string>
+    <string name="edit_side_removed_hint">Dieser Beilage fehlt ein Name, eine Zutat oder ein Schritt. Sie wird beim Speichern entfernt.</string>
     <string name="edit_sides_hint">Bearbeite oder entferne die Beilagen zu diesem Rezept.</string>
     <string name="edit_side_name">Name der Beilage</string>
     <string name="edit_remove_side">Beilage entfernen</string>

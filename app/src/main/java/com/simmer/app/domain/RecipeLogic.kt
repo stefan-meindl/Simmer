@@ -213,13 +213,23 @@ fun parseBody(b: String, byId: Map<String, ResolvedIngredient>, units: String): 
 // Resolve
 // ---------------------------------------------------------------------------
 
-/** Key of a side's method pick in [Selection.choice]. Only word characters, so conditions and links keep parsing. */
-fun sideMethodKey(sideId: String, methodId: String) = "s_${sideId}_$methodId"
+/**
+ * The one place that builds namespaced side ids: ingredient, step and method ids, conditions and keys in
+ * [Selection.choice]. Side ids hold letters and digits only (see [cleanSideId]), so `s_<sideId>_` never
+ * prefixes another side's keys. Only word characters, so conditions and links keep parsing.
+ */
+fun sideKey(sideId: String, localId: String) = "s_${sideId}_$localId"
+
+/** The prefix shared by every [sideKey] of [sideId]. */
+fun sideKeyPrefix(sideId: String) = sideKey(sideId, "")
+
+/** A side id reduced to letters and digits; blank when nothing is left. */
+fun cleanSideId(raw: String) = raw.filter { it.isLetterOrDigit() && it.code < 128 }
 
 private val SIDE_LINK_RE = Regex("\\{(\\w+):")
 
 private fun sideCond(c: String?, sideId: String): String? =
-    if (c.isNullOrBlank()) c else "s_${sideId}_$c"
+    if (c.isNullOrBlank()) c else sideKey(sideId, c)
 
 /**
  * Folds the ticked sides into the recipe: ids namespaced `s_<sideId>_<id>`, step titles prefixed with the
@@ -233,9 +243,9 @@ private fun withTickedSides(r: Recipe, sel: Selection): Pair<Recipe, Selection> 
     var ingredients = r.ingredients
     var steps = r.steps
     ticked.forEach { s ->
-        fun ns(id: String) = "s_${s.id}_$id"
+        fun ns(id: String) = sideKey(s.id, id)
         s.methods.forEach { m ->
-            val key = sideMethodKey(s.id, m.id)
+            val key = sideKey(s.id, m.id)
             if (key !in choice && m.options.isNotEmpty()) choice[key] = m.options[0].value
         }
         ingredients = ingredients + s.ingredients.map { ing ->
@@ -541,17 +551,27 @@ private fun methodSet(methods: List<Method>): Map<String, Set<String>> =
     methods.associate { m -> m.id to m.options.map { it.value }.toSet() }
 
 private const val MAX_SIDES = 3
+private const val MAX_SIDE_INGREDIENTS = 6
+private const val MAX_SIDE_STEPS_PER_PHASE = 2
+
+/** Keeps the first [MAX_SIDE_STEPS_PER_PHASE] step ids of each phase (alternatives sharing an id stay together); needs on dropped steps go. */
+private fun capSideSteps(steps: List<Step>): List<Step> {
+    val kept = steps.groupBy { it.phase }.flatMap { (_, group) ->
+        group.map { it.id }.distinct().take(MAX_SIDE_STEPS_PER_PHASE)
+    }.toSet()
+    return steps.filter { it.id in kept }.map { st -> st.copy(needs = st.needs.filter { it in kept }) }
+}
 
 /** One raw side as a [Side], or null when it lacks a label, an ingredient or a step. Its conditions see only its own Methods. */
 private fun normSide(raw: Map<*, *>, k: Int): Side? {
     val label = raw["label"]?.toString()?.trim()?.takeIf { it.isNotEmpty() } ?: return null
-    val ingredients = normIngredients(raw["ingredients"])
+    val ingredients = normIngredients(raw["ingredients"]).take(MAX_SIDE_INGREDIENTS)
     val methods = normMethods(raw["methods"])
     val condOk = conditionCheck(emptySet(), methodSet(methods))
-    val steps = normSteps(raw["steps"], ingredients.map { it.id }.toSet(), condOk)
+    val steps = capSideSteps(normSteps(raw["steps"], ingredients.map { it.id }.toSet(), condOk))
     if (ingredients.isEmpty() || steps.isEmpty()) return null
     return Side(
-        id = (raw["id"]?.toString() ?: "side${k + 1}").replace(Regex("\\W"), "_"),
+        id = cleanSideId(raw["id"]?.toString().orEmpty()).ifEmpty { "side${k + 1}" },
         label = label,
         d = raw["d"]?.toString() ?: "",
         ingredients = ingredients.map { if (condOk(it.ifCondition)) it else it.copy(ifCondition = null) },

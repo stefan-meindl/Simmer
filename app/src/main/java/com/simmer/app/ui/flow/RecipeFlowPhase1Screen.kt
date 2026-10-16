@@ -49,7 +49,7 @@ import com.simmer.app.domain.MAX_SERVINGS
 import com.simmer.app.domain.MIN_SERVINGS
 import com.simmer.app.domain.Phase1State
 import com.simmer.app.domain.hasSelectableMethod
-import com.simmer.app.domain.sideMethodKey
+import com.simmer.app.domain.sideKey
 import com.simmer.app.domain.addInAmount
 import com.simmer.app.domain.isYourPick
 import com.simmer.app.ui.components.Badge
@@ -480,7 +480,7 @@ private fun Sides(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
                         style = SimmerTextStyle_BodySmMedium,
                         color = colors.textSecondary,
                     )
-                    val picked = s.selection.choice[sideMethodKey(side.id, m.id)] ?: m.options.first().value
+                    val picked = s.selection.choice[sideKey(side.id, m.id)] ?: m.options.first().value
                     m.options.chunked(2).forEach { row ->
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                             row.forEach { o ->

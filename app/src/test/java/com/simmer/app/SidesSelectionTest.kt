@@ -54,6 +54,16 @@ class SidesSelectionTest {
         assertEquals("cooker", ticked().withSideMethod("rice", "rice", "cooker").selection.choice["s_rice_rice"])
     }
 
+    @Test fun `an unticked side never strips the method picks of another ticked side`() {
+        val rice = recipe.sides.single()
+        val two = recipe.copy(sides = listOf(rice.copy(id = "r"), rice.copy(id = "rx")))
+        val pick = mapOf("s_rx_rice" to "cooker")
+        val planned = PlannedChoice(4, Selection(pick, emptyMap(), mapOf("rx" to true)))
+        val state = Phase1State(two, 4, Selection(pick, emptyMap(), mapOf("rx" to true, "r" to false)), planned)
+        assertTrue(state.isOnList)
+        assertTrue(state.changesCookingPlan(Phase1State(two, 4, Selection(emptyMap(), emptyMap(), mapOf("rx" to true)), planned)))
+    }
+
     // --- persistence -----------------------------------------------------------
 
     @Test fun `old selection json without sides decodes equal to the old selection`() {

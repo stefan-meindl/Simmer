@@ -364,6 +364,31 @@ class RecipePipelineTest {
         assertEquals(2, done.recipe.steps.size)
     }
 
+    @Test fun `the main category is matched ignoring case`() {
+        val lower = PASS1.replace("\"Mains\"", "\"mains\"")
+        val reader = ScriptedReader(listOf(lower, PASS2, PASS3, PASS4, SIDES))
+
+        val done = run(reader, style = ImportStyle.Liberty) as PipelineResult.Done
+
+        assertEquals(1, done.recipe.sides.size)
+    }
+
+    @Test fun `any failure of the sides pass saves the recipe without sides`() {
+        var n = 0
+        val replies = listOf(PASS1, PASS2, PASS3, PASS4)
+        val reader = object : RecipeReader {
+            override suspend fun status() = ReaderStatus.Ready
+            override fun download(): Flow<DownloadProgress> = flowOf(DownloadProgress.Complete)
+            override suspend fun generate(system: String, user: String, maxTokens: Int): Flow<String> =
+                if (n < replies.size) flowOf(replies[n++]) else throw IllegalStateException("engine crashed")
+        }
+
+        val done = run(reader, style = ImportStyle.Liberty) as PipelineResult.Done
+
+        assertTrue(done.recipe.sides.isEmpty())
+        assertEquals(2, done.recipe.steps.size)
+    }
+
     @Test fun `Liberty asks no sides for a recipe that is not a main`() {
         val dessert = PASS1.replace("\"Mains\"", "\"Desserts\"")
         val reader = ScriptedReader(listOf(dessert, PASS2, PASS3, PASS4))

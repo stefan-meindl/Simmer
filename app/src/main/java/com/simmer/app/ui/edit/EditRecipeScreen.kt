@@ -725,6 +725,9 @@ private fun SideEditor(side: SideDraft, ui: EditUi.Content, vm: EditRecipeViewMo
             onValueChange = { v -> vm.edit { it.renameSide(side.id, v) } },
             label = stringResource(R.string.edit_side_name),
         )
+        if (side.removedOnSave) {
+            Text(text = stringResource(R.string.edit_side_removed_hint), style = SimmerTextStyle_Caption, color = LocalSimmerColors.current.textTertiary)
+        }
         FieldLabel(stringResource(R.string.edit_ingredients))
         if (side.ingredients.isNotEmpty()) {
             AccordionCard {

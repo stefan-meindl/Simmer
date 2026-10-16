@@ -73,7 +73,11 @@ data class SideDraft(
     val label: String,
     val ingredients: List<IngredientDraft> = emptyList(),
     val steps: List<StepDraft> = emptyList(),
-)
+) {
+    /** True when saving would remove this side: no name, no named ingredient or no step with text. */
+    val removedOnSave: Boolean
+        get() = label.isBlank() || ingredients.none { it.name.isNotBlank() } || steps.none { it.text.isNotBlank() }
+}
 
 /**
  * The Edit recipe form. Built from a [Recipe], edited through the functions below,

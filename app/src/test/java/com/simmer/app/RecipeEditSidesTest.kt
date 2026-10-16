@@ -99,6 +99,14 @@ class RecipeEditSidesTest {
         assertTrue(side.steps.all { it.needs.isEmpty() })
     }
 
+    @Test fun `a side shows as removed on save once its label, ingredients or steps are gone`() {
+        val side = draft().sides.single()
+        assertFalse(side.removedOnSave)
+        assertTrue(side.copy(label = " ").removedOnSave)
+        assertTrue(side.copy(ingredients = side.ingredients.map { it.copy(name = "") }).removedOnSave)
+        assertTrue(side.copy(steps = side.steps.map { it.copy(text = "") }).removedOnSave)
+    }
+
     @Test fun `deleting a side removes it`() {
         assertTrue(draft().removeSide("rice").toRecipe().sides.isEmpty())
     }

@@ -337,6 +337,7 @@
     <string name="edit_move_down">Move down</string>
     <string name="edit_remove_step">Remove step</string>
     <string name="edit_sides">Sides</string>
+    <string name="edit_side_removed_hint">This side has no name, ingredient or step left, so it will be removed when you save.</string>
     <string name="edit_sides_hint">Edit or remove the sides that come with this recipe.</string>
     <string name="edit_side_name">Side name</string>
     <string name="edit_remove_side">Remove side</string>

@@ -1,6 +1,7 @@
 package com.simmer.app.domain
 
 import com.simmer.app.domain.model.Recipe
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.math.roundToInt
 
@@ -156,7 +157,7 @@ class RecipePipeline(
         val withTimers = withNeeds.map { step -> step + ("d" to (timers[step["id"]] ?: 0)) }
 
         // Extra pass (Liberty, mains only): sides. Any failure leaves the recipe without sides, never Failed.
-        val isMain = ingredientsReply["category"] in MAIN_CATEGORIES
+        val isMain = MAIN_CATEGORIES.any { it.equals(ingredientsReply["category"]?.toString()?.trim(), ignoreCase = true) }
         val sides: List<JsonMap> = if (liberty && isMain) {
             try {
                 val sidesReply = pass(
@@ -171,7 +172,9 @@ class RecipePipeline(
                     val (sideMethods, sideSteps) = filterMethodsByKitchen(mapsIn(side["methods"]), mapsIn(side["steps"]), owned)
                     side + mapOf("methods" to sideMethods, "steps" to sideSteps)
                 }
-            } catch (_: PassTimeoutException) {
+            } catch (e: CancellationException) {
+                throw e
+            } catch (_: Exception) {
                 emptyList()
             }
         } else {
