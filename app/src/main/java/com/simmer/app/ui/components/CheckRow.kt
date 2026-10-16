@@ -45,12 +45,12 @@ private val CheckBoxShape = RoundedCornerShape(6.dp)
 private val RowCardShape = RoundedCornerShape(12.dp)
 
 /**
- * Check row for lists (shopping list, ingredient add-ins), after the design's ShoppingListItem.
+ * Check row for lists (shopping list, ingredient add-ins, appliances), after the design's ShoppingListItem.
  *
  * - Row height >= 56 dp, padding 12/16 dp, 16 dp gap after the box.
  * - Leading 24 dp rounded box (radius-sm, 2 dp border-strong; accent border and fill when checked)
  *   with a 16 dp check icon.
- * - Label (body-md; struck through and text-tertiary when checked), optional note below (caption, tertiary).
+ * - Label (body-md; struck through and text-tertiary when checked only if [strikeThroughWhenChecked]), optional note below (caption, tertiary).
  * - Optional trailing amount (body-sm-medium, tertiary, tabular numerals).
  * - The whole row is one checkbox for accessibility.
  *
@@ -59,7 +59,7 @@ private val RowCardShape = RoundedCornerShape(12.dp)
  * @param onCheckedChange Callback when the user toggles the row.
  * @param subtitle Optional note below the label.
  * @param animate Animate the box fill and label colour over `duration-fast` when [checked] changes.
- * @param strikeThroughWhenChecked False keeps a checked label plain (primary colour, no strike-through); the box still fills.
+ * @param strikeThroughWhenChecked True (the shopping list) strikes a checked label through in text-tertiary; the default keeps it plain (primary colour, no strike-through) and only the box fills.
  * @param trailing Optional short text (e.g. an amount) at the end of the row.
  */
 @Composable
@@ -71,7 +71,7 @@ fun CheckRow(
     subtitle: String? = null,
     trailing: String? = null,
     animate: Boolean = false,
-    strikeThroughWhenChecked: Boolean = true,
+    strikeThroughWhenChecked: Boolean = false,
 ) {
     val colors = LocalSimmerColors.current
     val struck = checked && strikeThroughWhenChecked

@@ -296,6 +296,7 @@ private fun ItemRow(item: ShoppingItem, onChecked: (String, Boolean) -> Unit, an
         subtitle = item.note.ifBlank { null },
         trailing = item.amount.ifBlank { null },
         animate = animate,
+        strikeThroughWhenChecked = true,
     )
 }
 
