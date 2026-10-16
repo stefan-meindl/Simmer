@@ -39,6 +39,9 @@ private fun texts(lang: String): ReaderPromptTexts {
     return ReaderPromptTexts(
         intro = get("intro"),
         rules = get("rules"),
+        enrichment = get("enrichment"),
+        faithful = get("faithful"),
+        liberty = get("liberty"),
         schemaHeading = get("schema_heading"),
         exampleHeading = get("example_heading"),
         kitchenAny = get("kitchen_any"),
@@ -163,8 +166,9 @@ class ReaderPromptLanguageTest {
             val recipe = readRecipe(reply, "u-new", emptySet(), KitchenMode.Free)!!
 
             assertEquals(if (lang == "de") "Blech-Zitronenhähnchen" else "Sheet-pan lemon chicken", recipe.title)
-            assertEquals(4, recipe.ingredients.size)
-            assertEquals(1, recipe.variations.size)
+            assertEquals(5, recipe.ingredients.size)
+            assertEquals(listOf("add", "suggest"), recipe.variations.map { it.kind })
+            assertEquals(1, recipe.ingredients.single { it.name.startsWith("Baby") || it.name == "Drillinge" }.tips.size)
             assertEquals(listOf("oven", "air"), recipe.methods.single().options.map { it.value })
             assertEquals(3, recipe.steps.size)
         }

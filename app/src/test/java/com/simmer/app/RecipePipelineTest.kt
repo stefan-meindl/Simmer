@@ -7,6 +7,7 @@ import com.simmer.app.domain.RecipePipeline
 import com.simmer.app.domain.RecipeReader
 import com.simmer.app.domain.ReaderStatus
 import com.simmer.app.domain.ImportRequest
+import com.simmer.app.domain.ImportStyle
 import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.PassTimeoutException
 import com.simmer.app.domain.REPAIR_BROKEN_CHARS
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -66,10 +68,34 @@ private fun run(
     mode: KitchenMode = KitchenMode.Free,
     lang: String = "en",
     stages: MutableList<PipelineStage> = mutableListOf(),
-) = runBlocking { RecipePipeline(reader).run(ImportRequest(text, lang, appliances, mode), "u1", NOTE) { stages += it } }
+    style: ImportStyle = ImportStyle.Faithful,
+) = runBlocking { RecipePipeline(reader).run(ImportRequest(text, lang, appliances, mode, style), "u1", NOTE) { stages += it } }
 
 /** Seam: [RecipePipeline.run] against a scripted [RecipeReader]. */
 class RecipePipelineTest {
+
+    @Test fun `Faithful asks for tips and detail but no suggestions and keeps the token budget`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4))
+
+        run(reader, style = ImportStyle.Faithful)
+
+        assertTrue(reader.calls[0].system.contains("\"tips\""))
+        assertTrue(reader.calls[1].system.contains("Expand vague steps"))
+        assertFalse(reader.calls.any { it.system.contains("suggest") })
+        assertEquals(2_000, reader.calls[0].maxTokens)
+    }
+
+    @Test fun `Liberty asks for suggestions and methods and raises the budget of the big passes`() {
+        val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4))
+
+        run(reader, style = ImportStyle.Liberty)
+
+        assertTrue(reader.calls[0].system.contains("\"suggest\""))
+        assertTrue(reader.calls[1].system.contains("even if the text does not list it"))
+        assertEquals(3_000, reader.calls[0].maxTokens)
+        assertEquals(3_000, reader.calls[1].maxTokens)
+        assertEquals(1_200, reader.calls[2].maxTokens)
+    }
 
     @Test fun `four passes build a normalized recipe and report each stage in order`() {
         val reader = ScriptedReader(listOf(PASS1, PASS2, PASS3, PASS4))

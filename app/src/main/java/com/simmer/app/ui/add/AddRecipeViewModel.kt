@@ -33,6 +33,7 @@ import com.simmer.app.domain.EXAMPLE_TEXT
 import com.simmer.app.domain.KitchenLine
 import com.simmer.app.domain.ImportRequest
 import com.simmer.app.domain.ImportState
+import com.simmer.app.domain.ImportStyle
 import com.simmer.app.domain.KitchenMode
 import com.simmer.app.domain.PipelineStage
 import com.simmer.app.domain.ReaderStatus
@@ -74,7 +75,7 @@ private const val KEY_SHARED = "shared"
 /** The cook's Appliance keys in catalogue order (custom ones after) and Kitchen mode, as the Reader prompt needs them. */
 data class PromptKitchen(val appliances: List<String>, val mode: KitchenMode)
 
-private data class ChatbotInputs(val kitchen: PromptKitchen, val lang: String, val promptText: String, val reply: String, val error: ReplyResult.Failed?)
+private data class ChatbotInputs(val kitchen: PromptKitchen, val lang: String, val promptText: String, val reply: String, val error: ReplyResult.Failed?, val style: ImportStyle)
 
 /** How the review shows amounts and labels. */
 private data class DisplayPrefs(val units: String, val spices: String, val lang: String)
@@ -100,6 +101,7 @@ sealed interface AddRecipeUi {
         val canAdd: Boolean,
         /** Why the last "Add recipe" failed; shown with "Copy fix prompt" until the reply changes. */
         val error: ReplyResult.Failed?,
+        val style: ImportStyle = ImportStyle.Faithful,
     ) : AddRecipeUi
 
     /** The paste stage. */
@@ -110,6 +112,7 @@ sealed interface AddRecipeUi {
         /** False below the minimum text length: the bottom button is disabled. */
         val canConvert: Boolean,
         val kitchen: KitchenLine,
+        val style: ImportStyle = ImportStyle.Faithful,
     ) : AddRecipeUi
 
     /** The Working stage: the Pipeline is running the pass at [stage]. */
@@ -219,20 +222,22 @@ class AddRecipeViewModel @Inject constructor(
 
     private val step = savedState.getStateFlow(KEY_STEP, AddStep.Start.key)
 
-    private val paste = combine(text, kitchen, readerReady) { text, line, ready ->
-        AddRecipeUi.Paste(text, readerAction(text, ready), canConvert(text), line)
+    private val style = prefs.importStyle.map { ImportStyle.fromKey(it) }
+
+    private val paste = combine(text, kitchen, readerReady, style) { text, line, ready, style ->
+        AddRecipeUi.Paste(text, readerAction(text, ready), canConvert(text), line, style)
     }
 
-    private val replyAndError = combine(reply, replyError, ::Pair)
+    private val replyAndError = combine(reply, replyError, style, ::Triple)
 
-    private val chatbotInputs = combine(prefs.appliances, prefs.kitchenMode, prefs.lang, promptText, replyAndError) { appliances, mode, lang, promptText, (reply, error) ->
-        ChatbotInputs(PromptKitchen(orderAppliances(appliances), KitchenMode.fromKey(mode)), lang, promptText, reply, error)
+    private val chatbotInputs = combine(prefs.appliances, prefs.kitchenMode, prefs.lang, promptText, replyAndError) { appliances, mode, lang, promptText, (reply, error, style) ->
+        ChatbotInputs(PromptKitchen(orderAppliances(appliances), KitchenMode.fromKey(mode)), lang, promptText, reply, error, style)
     }
 
     private val start = combine(step, paste, readerFlow, chatbotInputs) { step, paste, reader, chatbot ->
         when (addStepFromKey(step)) {
             AddStep.Start -> AddRecipeUi.Start(reader)
-            AddStep.Chatbot -> AddRecipeUi.Chatbot(chatbot.promptText, chatbot.kitchen, chatbot.lang, chatbot.reply, chatbot.reply.isNotBlank(), chatbot.error)
+            AddStep.Chatbot -> AddRecipeUi.Chatbot(chatbot.promptText, chatbot.kitchen, chatbot.lang, chatbot.reply, chatbot.reply.isNotBlank(), chatbot.error, chatbot.style)
             AddStep.Phone -> paste
         }
     }
@@ -416,9 +421,15 @@ class AddRecipeViewModel @Inject constructor(
                     lang = prefs.lang.first(),
                     appliances = prefs.appliances.first(),
                     kitchenMode = KitchenMode.fromKey(prefs.kitchenMode.first()),
+                    style = ImportStyle.fromKey(prefs.importStyle.first()),
                 ),
             )
         }
+    }
+
+    /** The Faithful/Liberty toggle: remembered for the next import. */
+    fun setImportStyle(style: ImportStyle) {
+        viewModelScope.launch { prefs.setImportStyle(style.key) }
     }
 
     /** Cancel on the Working stage: stops generation and returns to the paste stage with the text kept. */

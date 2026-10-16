@@ -79,7 +79,7 @@ Turns a pasted chatbot reply into a User Recipe (`readChatbotReply`): takes the 
 _Avoid_: Chatbot importer, reply converter
 
 **Reader prompt**:
-What the chatbot screen's "Copy prompt" puts on the clipboard (`readerPrompt`): instructions, the recipe JSON schema with a short example, the Kitchen line with the appliance rule for the Kitchen mode, and the optional recipe text (or a note that a photo or link is attached in the chatbot). Its prose follows the Settings language (string resources `reader_prompt_*`); JSON keys stay English. The reply it asks for is what the Reply parser reads.
+What the chatbot screen's "Copy prompt" puts on the clipboard (`readerPrompt`): instructions, the enrichment rules for the **Import style** (Faithful keeps to the source and adds detail and tips; Liberty also suggests extra ingredients as `suggest` variations ("Extra suggestion", off by default), offers other methods for owned appliances and may restructure steps), the recipe JSON schema with a short example, the Kitchen line with the appliance rule for the Kitchen mode, and the optional recipe text (or a note that a photo or link is attached in the chatbot). Its prose follows the Settings language (string resources `reader_prompt_*`); JSON keys stay English. The reply it asks for is what the Reply parser reads.
 _Avoid_: Chatbot prompt, import prompt
 
 **Fix prompt**:

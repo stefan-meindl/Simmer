@@ -483,7 +483,7 @@ fun normalize(j: Map<String, Any?>): Recipe {
             } else {
                 Variation(
                     id = v["id"].toString(),
-                    kind = "add",
+                    kind = if (kind == "suggest") "suggest" else "add",
                     label = v["label"]?.toString() ?: "Add-in",
                     d = v["d"]?.toString() ?: "",
                     ing = v["ing"]?.toString() ?: "",

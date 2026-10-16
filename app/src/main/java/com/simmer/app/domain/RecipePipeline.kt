@@ -13,6 +13,7 @@ data class ImportRequest(
     val lang: String,
     val appliances: Set<String>,
     val kitchenMode: KitchenMode,
+    val style: ImportStyle = ImportStyle.Faithful,
 )
 
 sealed interface PipelineResult {
@@ -29,6 +30,9 @@ class PassTimeoutException(val stage: PipelineStage) : Exception("Pass $stage ti
 /** Each pass asks for this many tokens at most (between 1,200 and 2,000). */
 private const val TOKENS_LARGE = 2_000
 private const val TOKENS_SMALL = 1_200
+
+/** Liberty adds suggestions, tips and alternative methods to the two big passes, so they may run longer (the engines cap near 4,096). */
+private const val TOKENS_LIBERTY = 3_000
 
 /** A repair prompt carries at most this much of the broken reply and of the recipe text, so it fits the model's context. */
 const val REPAIR_BROKEN_CHARS = 2_000
@@ -63,6 +67,10 @@ class RecipePipeline(
         val trimmed = trimRecipeText(request.text)
         val kitchenRule = kitchenRuleFor(request.appliances, request.kitchenMode)
         val owned = if (request.kitchenMode == KitchenMode.Free) null else request.appliances
+        val liberty = request.style == ImportStyle.Liberty
+        val tokensLarge = if (liberty) TOKENS_LIBERTY else TOKENS_LARGE
+        val ingredientRules = if (liberty) PASS1_LIBERTY else PASS1_FAITHFUL
+        val stepRules = if (liberty) PASS2_LIBERTY else PASS2_FAITHFUL
         val german = if (request.lang == "de") GERMAN_RULE else ""
         var repairs = 0
 
@@ -77,7 +85,7 @@ class RecipePipeline(
         }
 
         // Pass 1: ingredients and metadata.
-        val ingredientsReply = pass(PipelineStage.Ingredients, PASS1_SYSTEM, "Recipe text:\n${trimmed.text}", PASS1_SHAPE, TOKENS_LARGE) {
+        val ingredientsReply = pass(PipelineStage.Ingredients, PASS1_SYSTEM + ingredientRules, "Recipe text:\n${trimmed.text}", PASS1_SHAPE, tokensLarge) {
             it["ok"] == false || objectsIn(it["ingredients"]).isNotEmpty()
         } ?: return PipelineResult.Failed(PipelineStage.Ingredients)
         if (ingredientsReply["ok"] == false) return PipelineResult.Failed(PipelineStage.Ingredients)
@@ -88,10 +96,10 @@ class RecipePipeline(
         // Pass 2: methods and steps.
         val splitReply = pass(
             PipelineStage.Splitting,
-            PASS2_SYSTEM + kitchenRule,
+            PASS2_SYSTEM + stepRules + kitchenRule,
             "Recipe text:\n${trimmed.text}\n\nIngredients already read:\n$ingredientsJson",
             PASS2_SHAPE,
-            TOKENS_LARGE,
+            tokensLarge,
         ) { reply ->
             val steps = stepsIn(reply)
             steps.isNotEmpty() && steps.all { it["ph"] == "prep" || it["ph"] == "cook" }
@@ -216,6 +224,16 @@ Reply with this shape: $PASS2_SHAPE
 - Split the method into preparation steps ("ph":"prep": chopping, mixing, marinating, anything without heat) and cooking steps ("ph":"cook"). Preparation comes first.
 - Each step: a short imperative title "t" and a body "b" of 1-3 sentences in plain text, with no markup or ids. Keep the author's quantities and temperatures; use °C.
 - "notes" lists anything you changed or could not read."""
+
+        /** Both styles: ingredient tips. Liberty also proposes extra ingredients as "suggest" variations. */
+        const val PASS1_FAITHFUL = "\n- Put a useful tip (a substitute, how to choose or prepare it) in an ingredient's \"tips\" when you know one."
+        const val PASS1_LIBERTY = PASS1_FAITHFUL +
+            "\n- Also suggest 3 to 5 extra ingredients that would improve the dish, as variations of kind \"suggest\" (ids after the optional ones, e.g. v3). Each is its own extra ingredient entry at the end of the list with \"if\": \"add:<variation id>\"; the variation's \"d\" says what it adds to the dish in a few words, like \"smoky depth\". Never change the amounts or main ingredients."
+
+        /** Both styles: expand vague steps. Liberty may add methods and restructure. */
+        const val PASS2_FAITHFUL = "\n- Expand vague steps with heat levels, doneness cues, timings and technique. Write other tips into the step body. Keep any methods the text lists. Adapt steps to the kitchen rule below, also for tips. In \"notes\" add one short line per kind of addition (tips, methods, restructuring)."
+        const val PASS2_LIBERTY = PASS2_FAITHFUL +
+            "\n- Also offer \"methods\" (oven, air fryer, pan, ...) whenever an appliance the cook owns fits the recipe, even if the text does not list it; never an appliance the cook lacks. You may reorder, merge or split steps. Keep the amounts and main ingredients."
 
         const val PASS3_SYSTEM = """You link steps for the Simmer cooking app. Reply with one JSON object and nothing else.
 

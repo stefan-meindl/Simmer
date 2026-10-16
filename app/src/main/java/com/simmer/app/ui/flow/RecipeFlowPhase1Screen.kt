@@ -355,7 +355,7 @@ private fun Variations(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
     val s = ui.state
     val r = s.recipe
     val swaps = r.variations.filter { it.kind == "swap" }
-    val addIns = r.variations.filter { it.kind == "add" }
+    val addIns = r.variations.filter { it.kind != "swap" }
 
     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
         Column {
@@ -411,7 +411,11 @@ private fun Variations(ui: Phase1Ui.Content, viewModel: RecipeFlowViewModel) {
                     if (i > 0) RowDivider()
                     CheckRow(
                         label = v.label,
-                        subtitle = v.d.ifBlank { null },
+                        subtitle = if (v.kind == "suggest") {
+                            listOf(stringResource(R.string.flow_extra_suggestion), v.d).filter { it.isNotBlank() }.joinToString(" · ")
+                        } else {
+                            v.d.ifBlank { null }
+                        },
                         trailing = addInAmount(r, v, s.servings, ui.units, ui.spices, s.selection, ui.lang),
                         checked = s.selection.add[v.id] == true,
                         onCheckedChange = { viewModel.setAddIn(v.id, it) },

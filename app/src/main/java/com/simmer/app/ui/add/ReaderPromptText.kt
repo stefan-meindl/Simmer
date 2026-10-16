@@ -29,6 +29,9 @@ fun readerPromptFor(context: Context, ui: AddRecipeUi.Chatbot): String {
     val texts = ReaderPromptTexts(
         intro = localized.getString(R.string.reader_prompt_intro),
         rules = localized.getString(R.string.reader_prompt_rules),
+        enrichment = localized.getString(R.string.reader_prompt_enrichment),
+        faithful = localized.getString(R.string.reader_prompt_faithful),
+        liberty = localized.getString(R.string.reader_prompt_liberty),
         schemaHeading = localized.getString(R.string.reader_prompt_schema_heading),
         exampleHeading = localized.getString(R.string.reader_prompt_example_heading),
         kitchenAny = localized.getString(R.string.reader_prompt_kitchen_any),
@@ -42,7 +45,7 @@ fun readerPromptFor(context: Context, ui: AddRecipeUi.Chatbot): String {
     val names = ui.kitchen.appliances.map { key ->
         if (key.startsWith("c:")) key.removePrefix("c:") else APPLIANCE_LABELS[key]?.let(localized::getString) ?: key
     }
-    return readerPrompt(texts, ui.promptText, names, ui.kitchen.mode, ui.lang)
+    return readerPrompt(texts, ui.promptText, names, ui.kitchen.mode, ui.lang, ui.style)
 }
 
 private const val GEMINI_PACKAGE = "com.google.android.apps.bard"

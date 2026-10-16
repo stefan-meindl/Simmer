@@ -51,6 +51,18 @@ class ChatbotReplyTest {
         assertEquals("Whisk the {i1:flour} with the {i2:milk}.", recipe.steps[0].body)
     }
 
+    @Test fun `a suggest variation keeps its kind and its ingredient`() {
+        val recipe = parse(
+            """{"title":"Soup","ingredients":[{"id":"i1","name":"Leek","q":1},{"id":"i2","name":"Smoked paprika","q":1,"u":"tsp","if":"add:v1"}],
+              "variations":[{"id":"v1","kind":"suggest","label":"Smoked paprika","d":"Smoky depth.","ing":"i2"}],
+              "steps":[{"id":"c1","ph":"cook","t":"Simmer","b":"Simmer the {i1:leek}."}]}""",
+        )!!
+
+        assertEquals(listOf("suggest"), recipe.variations.map { it.kind })
+        assertEquals("Smoky depth.", recipe.variations[0].d)
+        assertEquals("add:v1", recipe.ingredients[1].ifCondition)
+    }
+
     @Test fun `a code fence around the JSON is ignored`() {
         assertEquals("Pancakes", parse("```json\n$PANCAKES\n```")!!.title)
     }

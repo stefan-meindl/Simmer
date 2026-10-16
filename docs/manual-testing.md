@@ -281,7 +281,7 @@ Recipes tab, + , "With a chatbot". Step 1 is on top of the chatbot screen, step 
 - Real chatbot: paste the prompt (with a recipe text, and again with a photo or link attached and an empty field) into a real chatbot, copy its reply, paste it into "Chatbot reply", Add recipe: the review shows the recipe. Try English and German.
 - Rotate with text in the recipe field: it stays. Process death (`adb shell am kill com.simmer.app`, reopen from Recents): still on the chatbot screen with the recipe text. Back to the start stage and "With a chatbot" again: the text is still there.
 - Large font: nothing clipped, the keyboard does not cover the focused field or the bottom bar.
-- Automated (JVM): `ReaderPromptTest` (builder: Kitchen line and rule per mode, recipe text, empty field, schema and example), `ReaderPromptLanguageTest` (the shipped English and German strings, and that the prompt's example parses with the #48 parser and follows the Kitchen rule). Not covered by tests: the clipboard write, the Toast and the saved-state wiring (this checklist).
+- Automated (JVM): `ReaderPromptTest` (builder: Kitchen line and rule per mode, recipe text, empty field, schema and example), `ReaderPromptLanguageTest` (the shipped English and German strings, and that the prompt's example parses with the #48 parser and follows the Kitchen rule). The Faithful/Liberty toggle (Import style) on the paste and chatbot screens is remembered between imports and defaults to Faithful; Liberty reads `suggest` variations as off-by-default "Extra suggestion" add-ins in the recipe's Your way section. Not covered by tests: the clipboard write, the Toast and the saved-state wiring (this checklist).
 
 ### Tips tooltip (#33)
 

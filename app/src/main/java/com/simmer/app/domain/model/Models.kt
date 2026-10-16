@@ -39,10 +39,11 @@ data class Option(
  * An optional modification to a recipe.
  * kind = "swap": replaces one set of ingredients with another.
  * kind = "add": adds extra optional ingredients (add-in).
+ * kind = "suggest": an add-in the Reader proposed that the source does not have ("Extra suggestion"); off by default.
  */
 data class Variation(
     val id: String,
-    val kind: String,  // "swap" | "add"
+    val kind: String,  // "swap" | "add" | "suggest"
     val label: String,
     val options: List<Option> = emptyList(),  // for swap
     val def: String = "",                      // default option for swap

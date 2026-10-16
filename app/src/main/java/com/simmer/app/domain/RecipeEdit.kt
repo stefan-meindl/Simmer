@@ -209,7 +209,7 @@ data class RecipeDraft(
             category = category,
             ingredients = ingredientsOut,
             steps = stepRows.map { it.toStep(ingredientsOut, kept.associate { r -> r.id to r.origName.trim() }, stepIds) },
-            variations = original.variations.filter { v -> v.kind != "add" || ingredientsOut.any { it.id == v.ing } },
+            variations = original.variations.filter { v -> v.kind == "swap" || ingredientsOut.any { it.id == v.ing } },
         )
     }
 
