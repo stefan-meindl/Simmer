@@ -27,6 +27,7 @@ private val SPEECH = FloatArray(16_000) { if (it % 2 == 0) 0.4f else -0.4f }
 private val QUIET = FloatArray(16_000)
 
 private class FakeAudio(var pcm: FloatArray = SPEECH, var failToStart: Boolean = false) : AudioSource {
+    var onStop: () -> Unit = {}
     var started = 0
     var stopped = 0
     override fun start() {
@@ -35,6 +36,7 @@ private class FakeAudio(var pcm: FloatArray = SPEECH, var failToStart: Boolean =
     }
     override fun stop(): FloatArray {
         stopped++
+        onStop()
         return pcm
     }
 }
@@ -56,6 +58,8 @@ private class FakeModel(var installed: Boolean = true) : ListenModel {
     override fun isInstalled() = installed
     override val downloadWork get() = work
     override fun startDownload() { downloads++ }
+    var cancelledDownloads = 0
+    override fun cancelDownload() { cancelledDownloads++ }
 }
 
 private class FakeListenPersistence(var saved: PersistedListen? = null) : ListenPersistence {
@@ -338,5 +342,89 @@ class ListenSessionTest {
         persistence.saved = PersistedListen.Capturing
         s.restore()
         assertEquals(ListenState.AwaitingPermission, s.state.value)
+    }
+
+    @Test fun `cancel while downloading stops the download task`() = runTest {
+        model.installed = false
+        val s = session()
+        s.listen()
+        s.confirmDownload()
+        runCurrent()
+        model.work.value = DownloadWork.Running(40)
+        runCurrent()
+        s.cancel()
+        model.work.value = DownloadWork.Idle
+        runCurrent()
+        assertEquals(1, model.cancelledDownloads)
+        assertEquals(ListenState.Cancelled, s.state.value)
+    }
+
+    @Test fun `cancel outside a download leaves the download task alone`() = runTest {
+        val s = capturing()
+        s.cancel()
+        assertEquals(0, model.cancelledDownloads)
+    }
+
+    @Test fun `a transcript that finishes with no screen listening is waiting for the next one`() = runTest {
+        val gate = CompletableDeferred<Unit>()
+        transcriber.gate = gate
+        val s = capturing()
+        s.stop()
+        runCurrent()
+        gate.complete(Unit)
+        runCurrent()
+        assertEquals(ListenState.Done("Add two eggs"), s.state.value)
+        assertEquals(PersistedListen.Done("Add two eggs"), persistence.saved)
+        // A new screen (and a new process) both find it.
+        val after = session()
+        after.restore()
+        assertEquals(ListenState.Done("Add two eggs"), after.state.value)
+    }
+
+    @Test fun `listen does not throw away a transcript nobody took yet`() = runTest {
+        persistence.saved = PersistedListen.Done("two eggs")
+        val s = session()
+        s.restore()
+        s.listen()
+        assertEquals(ListenState.Done("two eggs"), s.state.value)
+        assertEquals(PersistedListen.Done("two eggs"), persistence.saved)
+    }
+
+    @Test fun `consent arriving when no run waits for it shows as interrupted`() = runTest {
+        val s = session()
+        s.consentGranted()
+        assertEquals(ListenState.Interrupted, s.state.value)
+        assertEquals(0, audio.started)
+    }
+
+    @Test fun `consent arriving after cancelling keeps the cancelled message`() = runTest {
+        val s = session()
+        s.listen()
+        s.permissionGranted()
+        s.cancel()
+        s.consentGranted()
+        assertEquals(ListenState.Cancelled, s.state.value)
+    }
+
+    @Test fun `cancel while the capture is being stopped does not stop it twice or deliver`() = runTest {
+        val s = capturing()
+        audio.onStop = { s.cancel() }
+        s.stop()
+        runCurrent()
+        assertEquals(ListenState.Cancelled, s.state.value)
+        assertEquals(1, audio.stopped)
+        assertEquals(0, transcriber.calls)
+    }
+
+    @Test fun `the capture is stopped without holding the session lock`() = runTest {
+        val s = capturing()
+        var stateReadable = false
+        audio.onStop = {
+            val t = Thread { s.state.value; s.dismiss(); stateReadable = true }
+            t.start()
+            t.join(2_000)
+        }
+        s.stop()
+        assertTrue(stateReadable)
     }
 }

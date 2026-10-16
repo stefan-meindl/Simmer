@@ -25,10 +25,10 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         // whisper.cpp for Listen (app/src/main/cpp), always optimised: see the CMakeLists.
-        // Built for arm64 phones only (other ABIs keep installing; Listen then fails there when it loads the library).
+        // arm64 phones, and x86_64 for emulators (other ABIs keep installing; Listen then fails there when it loads the library).
         externalNativeBuild {
             cmake {
-                abiFilters += "arm64-v8a"
+                abiFilters += listOf("arm64-v8a", "x86_64")
                 arguments += "-DCMAKE_BUILD_TYPE=Release"
             }
         }

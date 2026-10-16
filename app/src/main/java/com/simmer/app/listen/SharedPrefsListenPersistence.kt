@@ -23,8 +23,9 @@ class SharedPrefsListenPersistence(context: Context) : ListenPersistence {
             PersistedListen.Transcribing -> edit.putString(KEY_KIND, KIND_TRANSCRIBING)
             is PersistedListen.Done -> edit.putString(KEY_KIND, KIND_DONE).putString(KEY_TRANSCRIPT, value.transcript)
         }
-        // Commit, not apply: a process kill right after must find the record.
-        edit.commit()
+        // apply() updates memory at once and writes in the background (flushed when the service stops or the app
+        // pauses), so the main thread never waits for the disk.
+        edit.apply()
     }
 
     private companion object {
