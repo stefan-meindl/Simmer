@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Simmer: open-source Android recipe app</title>
-<meta name="description" content="Simmer is an open-source Android recipe app. Import recipes from Instagram Reels, set servings and variations, cook step by step with timers, and keep a shopping list. On-device AI, no account.">
+<meta name="description" content="Simmer is an open-source Android recipe app. Share an Instagram Reel to import its recipe, listen to its sound on your phone, set servings and variations, cook step by step with timer notifications, and keep a shopping list. On-device AI, no account.">
 <link rel="canonical" href="https://stefan-meindl.github.io/Simmer/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="Simmer">
 <meta property="og:title" content="Simmer: open-source Android recipe app">
-<meta property="og:description" content="Import recipes from Instagram Reels, scale servings, cook step by step with timers, and keep a shopping list. On-device AI, no account.">
+<meta property="og:description" content="Share an Instagram Reel to import its recipe, scale servings, cook step by step with timer notifications, and keep a shopping list. On-device AI, no account.">
 <meta property="og:url" content="https://stefan-meindl.github.io/Simmer/">
 <meta property="og:image" content="https://stefan-meindl.github.io/Simmer/screenshots/recipes.png">
 <meta property="og:image:alt" content="Simmer recipes tab with Cooking now and Planned cards">
@@ -46,16 +46,20 @@ footer{border-top:1px solid var(--line);padding:1.5rem 0 3rem;color:var(--muted)
 <header class="wrap">
   <h1>Simmer: open-source Android recipe app</h1>
   <p class="lead">Import a recipe from an Instagram Reel, set servings, pick variations, and cook step by step with timers. Runs on your phone, with on-device AI and no account.</p>
-  <a class="btn" href="https://github.com/stefan-meindl/Simmer/releases/latest">Download the latest APK</a>
+  <a class="btn" href="https://github.com/stefan-meindl/Simmer/releases">Download the APK</a>
 </header>
 <main class="wrap">
   <section aria-labelledby="features">
     <h2 id="features">What Simmer does</h2>
     <ul class="features">
-      <li><h3>Import from Instagram Reels</h3><p>Pull a recipe from the caption, or from the spoken audio, transcribed on your device with Whisper.</p></li>
+      <li><h3>Import from Instagram Reels</h3><p>Share a Reel to Simmer to get its caption, or press Listen to turn the sound into text on your phone with Whisper.</p></li>
+      <li><h3>Chatbot import with a Fix prompt</h3><p>Open the recipe in Gemini, paste the reply back, and copy a Fix prompt when a paste does not parse.</p></li>
       <li><h3>Servings and variations</h3><p>Scale amounts to the number of people and pick swaps and add-ins. Steps follow your choices.</p></li>
-      <li><h3>Step-by-step cooking</h3><p>Work through one step at a time and start a timer on any step that needs one.</p></li>
-      <li><h3>Shopping list</h3><p>Planned recipes add their ingredients, grouped by aisle.</p></li>
+      <li><h3>Cooking with timers</h3><p>Work through one step at a time. Timers run as notifications with Pause, Resume and Reset.</p></li>
+      <li><h3>Shopping list</h3><p>Planned recipes add their ingredients, grouped by aisle. Clear ticked items or the whole list, with Undo.</p></li>
+      <li><h3>Swipe to unplan or stop</h3><p>Swipe a Planned or Cooking now card away, and bring it back with Undo.</p></li>
+      <li><h3>Your kitchen</h3><p>Pick your appliances so new recipes only use what you have.</p></li>
+      <li><h3>Edit recipes</h3><p>Change any recipe, and restore the original of a built-in one.</p></li>
       <li><h3>On-device AI, no account</h3><p>Nothing to sign up for. Transcription runs locally on your phone.</p></li>
       <li><h3>Open source</h3><p>MIT licensed. Read the code or file an issue on <a href="https://github.com/stefan-meindl/Simmer">GitHub</a>.</p></li>
     </ul>
@@ -65,17 +69,22 @@ footer{border-top:1px solid var(--line);padding:1.5rem 0 3rem;color:var(--muted)
     <ul class="shots">
       <li><figure><img src="screenshots/recipes.png" width="1080" height="2400" loading="lazy" alt="Recipes tab with Cooking now and Planned cards"><figcaption>Recipes</figcaption></figure></li>
       <li><figure><img src="screenshots/recipe-detail.png" width="1080" height="2400" loading="lazy" alt="Recipe detail with servings and variations"><figcaption>Servings and variations</figcaption></figure></li>
+      <li><figure><img src="screenshots/edit-recipe.png" width="1080" height="2400" loading="lazy" alt="Edit recipe form with title, servings and ingredients"><figcaption>Edit recipe</figcaption></figure></li>
       <li><figure><img src="screenshots/cooking-step.png" width="1080" height="2400" loading="lazy" alt="Cooking step with a running timer"><figcaption>Cooking with timers</figcaption></figure></li>
+      <li><figure><img src="screenshots/timer-notification.png" width="1080" height="2400" loading="lazy" alt="Timer notification with a Pause button"><figcaption>Timer notification</figcaption></figure></li>
       <li><figure><img src="screenshots/shopping-list.png" width="1080" height="2400" loading="lazy" alt="Shopping list grouped by aisle"><figcaption>Shopping list</figcaption></figure></li>
       <li><figure><img src="screenshots/import.png" width="1080" height="2400" loading="lazy" alt="Add a recipe with a chatbot"><figcaption>Add a recipe</figcaption></figure></li>
+      <li><figure><img src="screenshots/fix-prompt.png" width="1080" height="2400" loading="lazy" alt="A reply that does not parse, with the Copy fix prompt button"><figcaption>Fix prompt</figcaption></figure></li>
       <li><figure><img src="screenshots/recipe-created.png" width="1080" height="2400" loading="lazy" alt="The imported recipe, ready to save"><figcaption>Review before saving</figcaption></figure></li>
+      <li><figure><img src="screenshots/reel-import.png" width="1080" height="2400" loading="lazy" alt="Reel card with caption and the Listen to the Reel button"><figcaption>Share a Reel</figcaption></figure></li>
+      <li><figure><img src="screenshots/your-kitchen.png" width="1080" height="2400" loading="lazy" alt="Your kitchen appliance checklist"><figcaption>Your kitchen</figcaption></figure></li>
     </ul>
   </section>
   <section aria-labelledby="install">
     <h2 id="install">Install</h2>
     <p>Simmer is installed by sideloading the APK. It needs Android 8.0 or newer.</p>
     <ol>
-      <li>Download the APK from the <a href="https://github.com/stefan-meindl/Simmer/releases/latest">latest release</a>.</li>
+      <li>Download the APK from the <a href="https://github.com/stefan-meindl/Simmer/releases">releases page</a>.</li>
       <li>Allow "install unknown apps" for your browser or file manager, then open the APK.</li>
     </ol>
     <p>More in the <a href="https://github.com/stefan-meindl/Simmer/blob/main/docs/releasing.md">install notes</a>.</p>
