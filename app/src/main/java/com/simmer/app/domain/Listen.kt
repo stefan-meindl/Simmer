@@ -1,6 +1,6 @@
 package com.simmer.app.domain
 
-import kotlin.math.abs
+import kotlin.math.sqrt
 
 /** The whisper.cpp base model (q5_1) Listen transcribes with, from the ggerganov/whisper.cpp repo on Hugging Face. */
 object WhisperModel {
@@ -22,11 +22,22 @@ const val LISTEN_MAX_SECONDS = 180
 /** Whisper reads 16 kHz mono; the capture records at this rate. */
 const val LISTEN_SAMPLE_RATE = 16_000
 
-/** Below this peak (about -46 dBFS) a capture counts as silence. */
-private const val SILENCE_PEAK = 0.005f
+/** Below this RMS level (-40 dBFS) a capture counts as silence; a lone click does not lift the average. */
+private const val SILENCE_RMS = 0.01
 
 /** True when [pcm] (float samples in -1..1) holds no audible sound, or no samples at all. */
-fun isSilent(pcm: FloatArray): Boolean = pcm.none { abs(it) >= SILENCE_PEAK }
+fun isSilent(pcm: FloatArray): Boolean {
+    if (pcm.isEmpty()) return true
+    var sum = 0.0
+    for (sample in pcm) sum += sample.toDouble() * sample
+    return sqrt(sum / pcm.size) < SILENCE_RMS
+}
+
+/** Minutes and seconds of the capture timer: "0:07", "2:30". */
+fun listenClock(seconds: Int): String = "%d:%02d".format(java.util.Locale.ROOT, seconds / 60, seconds % 60)
+
+/** [bytes] as whole megabytes (decimal), rounded, for the download size. */
+fun megabytes(bytes: Long): Long = (bytes + 500_000) / 1_000_000
 
 private val NON_SPEECH_TAG = Regex("""\[[^\]]*]""")
 
@@ -80,6 +91,3 @@ sealed interface ListenState {
             else -> false
         }
 }
-
-/** [text] with the Reel's [transcript] added under a [label] line, after anything already there. */
-fun withTranscript(text: String, transcript: String, label: String): String = withCaption(text, transcript, label)

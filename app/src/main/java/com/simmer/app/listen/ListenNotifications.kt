@@ -79,7 +79,8 @@ object ListenNotifications {
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
     )
 
-    private fun openAddRecipe(context: Context): PendingIntent = PendingIntent.getActivity(
+    /** Opens Add recipe in the running Simmer. */
+    fun openAddRecipe(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
         1,
         Intent(context, MainActivity::class.java)

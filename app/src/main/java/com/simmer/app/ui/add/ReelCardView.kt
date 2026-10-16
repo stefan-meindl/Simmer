@@ -1,6 +1,7 @@
 package com.simmer.app.ui.add
 
 import android.os.Build
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -27,6 +28,7 @@ import com.simmer.app.data.ReelCard
 import com.simmer.app.domain.DownloadFailure
 import com.simmer.app.domain.ListenFailure
 import com.simmer.app.domain.ListenState
+import com.simmer.app.domain.listenClock
 import com.simmer.app.ui.components.PrimaryButton
 import com.simmer.app.ui.components.RowCard
 import com.simmer.app.ui.components.SecondaryButton
@@ -48,9 +50,6 @@ internal class ListenCardActions(
     /** The silence message's Paste: closes the message and pastes the clipboard into the screen's text field. */
     val onPaste: () -> Unit,
 )
-
-/** Minutes and seconds of the capture timer: "0:07", "2:30". */
-internal fun listenClock(seconds: Int): String = "%d:%02d".format(seconds / 60, seconds % 60)
 
 /**
  * The Reel import card above Add recipe's text field: the shared link, the caption fetch status
@@ -109,16 +108,14 @@ private fun ListenSection(listen: ListenState, actions: ListenCardActions) {
             }
             is ListenState.ConfirmDownload, ListenState.AwaitingPermission, ListenState.AwaitingConsent ->
                 SecondaryButton(stringResource(R.string.reel_listen), onClick = {}, enabled = false, modifier = Modifier.fillMaxWidth())
-            is ListenState.Downloading -> {
-                ListenStatus(
-                    text = stringResource(
-                        if (listen.waiting) R.string.listen_downloading_waiting else R.string.listen_downloading,
-                        listen.percent,
-                    ),
-                    busy = true,
-                )
-                SecondaryButton(stringResource(R.string.listen_cancel), onClick = actions.onCancel, modifier = Modifier.fillMaxWidth())
-            }
+            is ListenState.Downloading -> BusyWithCancel(
+                text = stringResource(
+                    if (listen.waiting) R.string.listen_downloading_waiting else R.string.listen_downloading,
+                    listen.percent,
+                ),
+                actions = actions,
+            )
+            ListenState.Transcribing -> BusyWithCancel(text = stringResource(R.string.listen_transcribing), actions = actions)
             is ListenState.Capturing -> {
                 // Not a live region: it would be read out every second.
                 Text(
@@ -129,10 +126,6 @@ private fun ListenSection(listen: ListenState, actions: ListenCardActions) {
                 PrimaryButton(stringResource(R.string.listen_stop), onClick = actions.onStop, modifier = Modifier.fillMaxWidth())
                 Text(text = stringResource(R.string.listen_capturing_hint), style = SimmerTextStyle_Caption, color = colors.textTertiary)
             }
-            ListenState.Transcribing -> {
-                ListenStatus(text = stringResource(R.string.listen_transcribing), busy = true)
-                SecondaryButton(stringResource(R.string.listen_cancel), onClick = actions.onCancel, modifier = Modifier.fillMaxWidth())
-            }
             ListenState.Silent -> {
                 ListenStatus(text = stringResource(R.string.listen_silent), busy = false)
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
@@ -140,38 +133,32 @@ private fun ListenSection(listen: ListenState, actions: ListenCardActions) {
                     SecondaryButton(stringResource(R.string.listen_paste), onClick = actions.onPaste, modifier = Modifier.weight(1f))
                 }
             }
-            is ListenState.DownloadFailed -> {
-                ListenStatus(
-                    text = stringResource(
-                        if (listen.reason == DownloadFailure.NotEnoughStorage) R.string.listen_download_no_storage else R.string.listen_download_failed,
-                    ),
-                    busy = false,
-                )
-                EndActions(retry = actions.onConfirmDownload, actions = actions)
-            }
-            ListenState.PermissionDenied -> {
-                ListenStatus(text = stringResource(R.string.listen_permission_denied), busy = false)
-                EndActions(retry = actions.onListen, actions = actions)
-            }
-            ListenState.Cancelled -> {
-                ListenStatus(text = stringResource(R.string.listen_cancelled), busy = false)
-                EndActions(retry = actions.onListen, actions = actions)
-            }
-            ListenState.Interrupted -> {
-                ListenStatus(text = stringResource(R.string.listen_interrupted), busy = false)
-                EndActions(retry = actions.onListen, actions = actions)
-            }
-            is ListenState.Failed -> {
-                ListenStatus(
-                    text = stringResource(
-                        if (listen.reason == ListenFailure.CaptureFailed) R.string.listen_failed_capture else R.string.listen_failed_transcribe,
-                    ),
-                    busy = false,
-                )
-                EndActions(retry = actions.onListen, actions = actions)
+            // The rest ended without a transcript: a message, then Retry or Dismiss.
+            else -> {
+                ListenStatus(text = stringResource(listen.endMessage()), busy = false)
+                EndActions(retry = if (listen is ListenState.DownloadFailed) actions.onConfirmDownload else actions.onListen, actions = actions)
             }
         }
     }
+}
+
+/** The message of a run that ended without a transcript (not silence, which has its own Paste action). */
+@StringRes
+private fun ListenState.endMessage(): Int = when (this) {
+    is ListenState.DownloadFailed ->
+        if (reason == DownloadFailure.NotEnoughStorage) R.string.listen_download_no_storage else R.string.listen_download_failed
+    ListenState.PermissionDenied -> R.string.listen_permission_denied
+    ListenState.Cancelled -> R.string.listen_cancelled
+    ListenState.Interrupted -> R.string.listen_interrupted
+    is ListenState.Failed ->
+        if (reason == ListenFailure.CaptureFailed) R.string.listen_failed_capture else R.string.listen_failed_transcribe
+    else -> error("$this has no end message")
+}
+
+@Composable
+private fun BusyWithCancel(text: String, actions: ListenCardActions) {
+    ListenStatus(text = text, busy = true)
+    SecondaryButton(stringResource(R.string.listen_cancel), onClick = actions.onCancel, modifier = Modifier.fillMaxWidth())
 }
 
 @Composable

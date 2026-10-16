@@ -35,6 +35,9 @@ interface ListenModel {
 
     /** Enqueues the download task. */
     fun startDownload()
+
+    /** Cancels the download task (the partial file stays for a later resume). */
+    fun cancelDownload()
 }
 
 /** What survives process death of a Listen run. Audio is never saved. */
@@ -58,7 +61,7 @@ interface ListenPersistence {
  * comes back as [ListenState.Interrupted] ([restore]).
  *
  * Threading: public functions come from the main thread and the service, the ticks and the transcription from
- * [scope]'s dispatcher, so every change of state happens under [lock].
+ * [scope]'s dispatcher, so every change of state happens under [lock]. The blocking [AudioSource.stop] runs outside it.
  */
 class ListenSession(
     private val audio: AudioSource,
@@ -76,9 +79,13 @@ class ListenSession(
     private var ticks: Job? = null
     private var work: Job? = null
 
+    /** [AudioSource.stop] is under way (outside [lock]); the state is still Capturing until it returns. */
+    private var stopping = false
+
     /** The Listen button: starts a run, asking for the model download first when it is missing. Ignored while a run is active. */
     fun listen() = synchronized(lock) {
-        if (mutableState.value.active) return@synchronized
+        // A finished transcript nobody took yet is not thrown away by a new run.
+        if (mutableState.value.active || mutableState.value is ListenState.Done) return@synchronized
         generation++
         mutableState.value =
             if (model.isInstalled()) ListenState.AwaitingPermission else ListenState.ConfirmDownload(model.sizeBytes)
@@ -123,7 +130,11 @@ class ListenSession(
 
     /** The system consent was given and the projection is attached to [audio]: start capturing. */
     fun consentGranted() = synchronized(lock) {
-        if (mutableState.value != ListenState.AwaitingConsent) return@synchronized
+        if (mutableState.value != ListenState.AwaitingConsent) {
+            // Nothing is waiting for this consent (the process was recreated while the dialog was up): say so.
+            if (mutableState.value == ListenState.Idle) mutableState.value = ListenState.Interrupted
+            return@synchronized
+        }
         try {
             audio.start()
         } catch (e: Exception) {
@@ -138,28 +149,50 @@ class ListenSession(
                 delay(1_000)
                 val last = second == LISTEN_MAX_SECONDS
                 ifCurrent(mine) {
-                    if (last) stopCapture() else mutableState.value = ListenState.Capturing(second)
+                    if (!last) mutableState.value = ListenState.Capturing(second)
                 }
+                if (last) stopCapture(mine)
             }
         }
     }
 
     /** Stop (notification, button) and the projection ending (screen lock, status bar chip) both end the capture. */
-    fun stop() = synchronized(lock) { stopCapture() }
+    fun stop() = stopCapture(null)
 
     fun projectionEnded() = stop()
 
-    /** Callers hold [lock]. */
-    private fun stopCapture() {
-        if (mutableState.value !is ListenState.Capturing) return
-        ticks?.cancel()
-        val pcm = audio.stop()
-        if (isSilent(pcm)) {
-            persistence.save(null)
-            mutableState.value = ListenState.Silent
+    /** [expected]: the generation of the tick that asks, so a tick of an older run does nothing. */
+    private fun stopCapture(expected: Int?) {
+        val mine = synchronized(lock) {
+            if (mutableState.value !is ListenState.Capturing || stopping || (expected != null && expected != generation)) return
+            ticks?.cancel()
+            stopping = true
+            ++generation
+        }
+        // Joins the capture thread: not under the lock, and not while the main thread is waiting for it.
+        val pcm = try {
+            audio.stop()
+        } catch (e: Exception) {
+            ifCurrent(mine) {
+                stopping = false
+                persistence.save(null)
+                mutableState.value = ListenState.Failed(ListenFailure.CaptureFailed)
+            }
             return
         }
-        val mine = ++generation
+        ifCurrent(mine) {
+            stopping = false
+            if (isSilent(pcm)) {
+                persistence.save(null)
+                mutableState.value = ListenState.Silent
+            } else {
+                transcribe(pcm, mine)
+            }
+        }
+    }
+
+    /** Callers hold [lock]. */
+    private fun transcribe(pcm: FloatArray, mine: Int) {
         persistence.save(PersistedListen.Transcribing)
         mutableState.value = ListenState.Transcribing
         work = scope.launch {
@@ -185,16 +218,23 @@ class ListenSession(
         }
     }
 
-    /** Ends any active run: the audio is thrown away and nothing is transcribed. */
-    fun cancel() = synchronized(lock) {
-        val current = mutableState.value
-        if (!current.active) return@synchronized
-        generation++
-        ticks?.cancel()
-        work?.cancel()
-        if (current is ListenState.Capturing) audio.stop()
-        persistence.save(null)
-        mutableState.value = ListenState.Cancelled
+    /** Ends any active run: the audio is thrown away, nothing is transcribed and a model download stops. */
+    fun cancel() {
+        val before = synchronized(lock) {
+            val current = mutableState.value
+            if (!current.active) return
+            generation++
+            ticks?.cancel()
+            work?.cancel()
+            persistence.save(null)
+            mutableState.value = ListenState.Cancelled
+            // A stop already under way releases the capture itself.
+            val release = current is ListenState.Capturing && !stopping
+            stopping = false
+            current to release
+        }
+        if (before.second) audio.stop()
+        if (before.first is ListenState.Downloading) model.cancelDownload()
     }
 
     /** The transcript went into the text field. */

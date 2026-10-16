@@ -15,6 +15,7 @@ import com.simmer.app.domain.WhisperModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -67,8 +68,10 @@ class WhisperModelController @Inject constructor(
             )
         }
 
+    @Volatile private var enqueuing: Job? = null
+
     override fun startDownload() {
-        scope.launch {
+        enqueuing = scope.launch {
             val wifiOnly = prefs.readerWifiOnly.first()
             val request = OneTimeWorkRequestBuilder<ModelDownloadWorker>()
                 .setInputData(workDataOf(ModelDownloadWorker.KEY_MODEL to ModelDownloadWorker.MODEL_WHISPER))
@@ -81,6 +84,12 @@ class WhisperModelController @Inject constructor(
                 .build()
             work.enqueueUniqueWork(WORK_NAME, ExistingWorkPolicy.REPLACE, request)
         }
+    }
+
+    override fun cancelDownload() {
+        // Also a start that has not reached WorkManager yet.
+        enqueuing?.cancel()
+        work.cancelUniqueWork(WORK_NAME)
     }
 
     companion object {
