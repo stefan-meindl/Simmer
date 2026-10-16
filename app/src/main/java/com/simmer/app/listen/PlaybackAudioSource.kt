@@ -6,6 +6,7 @@ import android.media.AudioFormat
 import android.media.AudioPlaybackCaptureConfiguration
 import android.media.AudioRecord
 import android.media.projection.MediaProjection
+import android.os.Build
 import com.simmer.app.data.AudioSource
 import com.simmer.app.domain.LISTEN_MAX_SECONDS
 import com.simmer.app.domain.LISTEN_SAMPLE_RATE
@@ -35,6 +36,8 @@ class PlaybackAudioSource @Inject constructor() : AudioSource {
     @SuppressLint("MissingPermission") // RECORD_AUDIO is asked before the consent screen.
     @Synchronized
     override fun start() {
+        // AudioPlaybackCapture exists from Android 10; the Listen button is hidden below that.
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) throw UnsupportedOperationException("Needs Android 10")
         val projection = checkNotNull(projection) { "No MediaProjection attached" }
         val config = AudioPlaybackCaptureConfiguration.Builder(projection)
             .addMatchingUsage(AudioAttributes.USAGE_MEDIA)

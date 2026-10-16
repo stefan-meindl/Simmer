@@ -1,5 +1,6 @@
 package com.simmer.app.ui.add
 
+import android.os.Build
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -90,7 +91,8 @@ internal fun ReelCardView(card: ReelCard, listen: ListenState, actions: ListenCa
                 }
                 Text(text = status, style = SimmerTextStyle_BodySm, color = colors.textSecondary)
             }
-            ListenSection(listen, actions)
+            // AudioPlaybackCapture needs Android 10; on older phones the card has no Listen section.
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) ListenSection(listen, actions)
         }
     }
 }
