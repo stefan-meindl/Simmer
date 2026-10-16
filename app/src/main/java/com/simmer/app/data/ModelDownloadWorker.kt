@@ -8,6 +8,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.util.Log
+import androidx.annotation.StringRes
 import androidx.core.app.NotificationCompat
 import androidx.work.CoroutineWorker
 import androidx.work.ForegroundInfo
@@ -16,6 +17,7 @@ import androidx.work.workDataOf
 import com.simmer.app.MainActivity
 import com.simmer.app.R
 import com.simmer.app.domain.DownloadFailure
+import com.simmer.app.listen.ListenNotifications
 import dagger.hilt.EntryPoint
 import dagger.hilt.InstallIn
 import dagger.hilt.android.EntryPointAccessors
@@ -35,20 +37,43 @@ interface WhisperEntryPoint {
  */
 class ModelDownloadWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
 
-    override suspend fun doWork(): Result {
-        val downloader = if (whisper) {
-            EntryPointAccessors.fromApplication(applicationContext, WhisperEntryPoint::class.java).whisperModelController().downloader
+    /** What differs between the two models this worker downloads. */
+    private class ModelConfig(
+        val downloader: ModelDownloader,
+        @StringRes val title: Int,
+        val notificationId: Int,
+        val contentIntent: PendingIntent,
+        val onFinished: () -> Unit = {},
+    )
+
+    private val config: ModelConfig by lazy {
+        val context = applicationContext
+        if (inputData.getString(KEY_MODEL) == MODEL_WHISPER) {
+            ModelConfig(
+                downloader = EntryPointAccessors.fromApplication(context, WhisperEntryPoint::class.java).whisperModelController().downloader,
+                title = R.string.whisper_notification_title,
+                notificationId = WHISPER_NOTIFICATION_ID,
+                contentIntent = ListenNotifications.openAddRecipe(context),
+            )
         } else {
-            EntryPointAccessors.fromApplication(applicationContext, ReaderEntryPoint::class.java).readerController().downloader
+            val reader = EntryPointAccessors.fromApplication(context, ReaderEntryPoint::class.java).readerController()
+            ModelConfig(
+                downloader = reader.downloader,
+                title = R.string.reader_notification_title,
+                notificationId = NOTIFICATION_ID,
+                contentIntent = openSettings(context),
+                onFinished = reader::filesChanged,
+            )
         }
+    }
+
+    override suspend fun doWork(): Result {
         showForeground(0)
-        val outcome = downloader.download { percent ->
+        val outcome = config.downloader.download { percent ->
             setProgress(workDataOf(ReaderController.KEY_PERCENT to percent))
             showForeground(percent)
         }
-        if (!whisper) {
-            EntryPointAccessors.fromApplication(applicationContext, ReaderEntryPoint::class.java).readerController().filesChanged()
-        }
+        config.onFinished()
         return when (outcome) {
             DownloadOutcome.Completed -> Result.success()
             is DownloadOutcome.Interrupted -> Result.retry()
@@ -59,8 +84,6 @@ class ModelDownloadWorker(context: Context, params: WorkerParameters) : Coroutin
     }
 
     override suspend fun getForegroundInfo(): ForegroundInfo = foregroundInfo(0)
-
-    private val whisper get() = inputData.getString(KEY_MODEL) == MODEL_WHISPER
 
     /** Android may refuse a foreground start from the background; the download then runs without the notification. */
     private suspend fun showForeground(percent: Int) {
@@ -80,25 +103,16 @@ class ModelDownloadWorker(context: Context, params: WorkerParameters) : Coroutin
         )
         val notification: Notification = NotificationCompat.Builder(context, CHANNEL)
             .setSmallIcon(R.drawable.ic_download)
-            .setContentTitle(context.getString(if (whisper) R.string.whisper_notification_title else R.string.reader_notification_title))
+            .setContentTitle(context.getString(config.title))
             .setContentText(context.getString(R.string.reader_notification_progress, percent))
             .setProgress(100, percent, false)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-            .setContentIntent(if (whisper) openAddRecipe(context) else openSettings(context))
+            .setContentIntent(config.contentIntent)
             .build()
-        return ForegroundInfo(if (whisper) WHISPER_NOTIFICATION_ID else NOTIFICATION_ID, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
+        return ForegroundInfo(config.notificationId, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
     }
-
-    private fun openAddRecipe(context: Context): PendingIntent = PendingIntent.getActivity(
-        context,
-        1,
-        Intent(context, MainActivity::class.java)
-            .putExtra(MainActivity.EXTRA_OPEN_ADD_RECIPE, true)
-            .addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP),
-        PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-    )
 
     private fun openSettings(context: Context): PendingIntent = PendingIntent.getActivity(
         context,
