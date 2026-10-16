@@ -19,7 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import androidx.test.ext.junit.runners.AndroidJUnit4
 
-/** A ticked check row strikes its label through, except where the caller opts out (Your Kitchen appliances). */
+/** A ticked check row keeps its label plain, except where the caller opts in to strike-through (the shopping list). */
 @RunWith(AndroidJUnit4::class)
 class CheckRowLabelStyleTest {
     @get:Rule
@@ -32,20 +32,22 @@ class CheckRowLabelStyleTest {
     }
 
     @Test
-    fun tickedRowStrikesLabelThroughByDefault() {
-        rule.setContent { SimmerTheme { CheckRow(label = "Milk", checked = true, onCheckedChange = {}) } }
+    fun tickedRowStrikesLabelThroughWhenOptedIn() {
+        rule.setContent {
+            SimmerTheme { CheckRow(label = "Milk", checked = true, onCheckedChange = {}, strikeThroughWhenChecked = true) }
+        }
         assertEquals(TextDecoration.LineThrough, rule.onNodeWithText("Milk").labelStyle().textDecoration)
     }
 
     @Test
-    fun tickedRowWithoutStrikeThroughKeepsPrimaryColourAndNoDecoration() {
+    fun tickedRowKeepsPrimaryColourAndNoDecorationByDefault() {
         var primary: Color? = null
         var tertiary: Color? = null
         rule.setContent {
             SimmerTheme {
                 primary = LocalSimmerColors.current.textPrimary
                 tertiary = LocalSimmerColors.current.textTertiary
-                CheckRow(label = "Hob", checked = true, onCheckedChange = {}, strikeThroughWhenChecked = false)
+                CheckRow(label = "Hob", checked = true, onCheckedChange = {})
             }
         }
         rule.waitForIdle()

@@ -270,17 +270,20 @@ private fun CheckRowContent() {
         label = "200g spaghetti",
         checked = checked1,
         onCheckedChange = { checked1 = it },
+        strikeThroughWhenChecked = true,
     )
     CheckRow(
         label = "3 egg yolks",
         checked = checked2,
         onCheckedChange = { checked2 = it },
+        strikeThroughWhenChecked = true,
         subtitle = "Room temperature",
     )
     CheckRow(
         label = "100g Pecorino Romano",
         checked = checked3,
         onCheckedChange = { checked3 = it },
+        strikeThroughWhenChecked = true,
         subtitle = "Finely grated",
     )
 }

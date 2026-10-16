@@ -458,6 +458,7 @@ Needs a device or emulator with gesture navigation (Android 13+; predictive back
 ### Your Kitchen ticked Appliance (#73)
 
 - Settings > Your Kitchen: a ticked Appliance keeps its name plain (primary colour, no strike-through) and shows the orange filled box with the check icon. Unticked shows the empty outlined box. Check in light and OLED dark.
+- Recipe flow, Servings tab: a ticked optional add-in keeps its label plain (primary colour, no strike-through) and shows the filled box with the check icon.
 - Shopping list and Steps still strike a ticked row through.
 
 ### Release APK launch smoke check (#65)
