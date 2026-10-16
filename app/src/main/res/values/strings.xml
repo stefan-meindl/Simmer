@@ -460,6 +460,40 @@
     </plurals>
     <string name="reel_not_found">No caption found. You can paste the text below.</string>
     <string name="reel_listen">Listen to the Reel</string>
-    <string name="reel_listen_soon">Coming soon</string>
+    <string name="reel_listen_hint">Simmer listens while you play the Reel in Instagram.</string>
+
+    <!-- Listen: transcribe the Reel's sound on this phone -->
+    <string name="listen_transcript_label">Transcript</string>
+    <string name="listen_explainer_title">Listen to the Reel</string>
+    <string name="listen_explainer_body">Simmer records only the Reel\'s sound, not your microphone. It opens the Reel in Instagram; play it there, then tap Stop in the notification. The audio stays on this phone and is deleted after it is turned into text.</string>
+    <string name="listen_continue">Continue</string>
+    <string name="listen_cancel">Cancel</string>
+    <string name="listen_download_title">Download the speech model?</string>
+    <string name="listen_download_body">Listening needs a speech model of %1$s. It is downloaded once and then works without internet.</string>
+    <string name="listen_download">Download</string>
+    <string name="listen_downloading">Downloading the speech model · %1$d%%</string>
+    <string name="listen_downloading_waiting">Speech model download waiting for a connection · %1$d%%</string>
+    <string name="listen_download_failed">The speech model could not be downloaded.</string>
+    <string name="listen_download_no_storage">Not enough free storage for the speech model.</string>
+    <string name="listen_permission_denied">Simmer needs the audio permission to capture the Reel\'s sound. It never records your microphone.</string>
+    <string name="listen_capturing">Listening · %1$s</string>
+    <string name="listen_capturing_hint">Play the Reel in Instagram, then tap Stop.</string>
+    <string name="listen_stop">Stop</string>
+    <string name="listen_transcribing">Transcribing…</string>
+    <string name="listen_silent">No audio captured</string>
+    <string name="listen_cancelled">Listening cancelled.</string>
+    <string name="listen_interrupted">Listening was interrupted. Try again.</string>
+    <string name="listen_failed_capture">Simmer could not capture the Reel\'s sound.</string>
+    <string name="listen_failed_transcribe">Simmer could not turn the sound into text.</string>
+    <string name="listen_retry">Retry</string>
+    <string name="listen_paste">Paste</string>
+    <string name="listen_dismiss">Close</string>
+    <string name="listen_channel_capture">Listening</string>
+    <string name="listen_channel_done">Transcript</string>
+    <string name="listen_notification_title">Listening to the Reel</string>
+    <string name="listen_notification_text">Play the Reel in Instagram. Tap Stop when it ends.</string>
+    <string name="listen_ready_title">Transcript ready</string>
+    <string name="listen_silent_title">No audio captured</string>
+    <string name="whisper_notification_title">Downloading speech model</string>
 
 </resources>

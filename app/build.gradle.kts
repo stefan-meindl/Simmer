@@ -23,7 +23,24 @@ android {
         versionName = providers.gradleProperty("versionName").getOrElse("1.0")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        // whisper.cpp for Listen (app/src/main/cpp), always optimised: see the CMakeLists.
+        // Built for arm64 phones only (other ABIs keep installing; Listen then fails there when it loads the library).
+        externalNativeBuild {
+            cmake {
+                abiFilters += "arm64-v8a"
+                arguments += "-DCMAKE_BUILD_TYPE=Release"
+            }
+        }
     }
+
+    externalNativeBuild {
+        cmake {
+            path = file("src/main/cpp/CMakeLists.txt")
+            version = "3.22.1"
+        }
+    }
+    ndkVersion = "27.2.12479018"
 
     // Release signing comes from env vars; when KEYSTORE_PATH is absent the release APK stays unsigned.
     val keystorePath = providers.environmentVariable("KEYSTORE_PATH").orNull
