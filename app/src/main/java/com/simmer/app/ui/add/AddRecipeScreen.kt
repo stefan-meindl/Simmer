@@ -326,6 +326,9 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
     }
 
     val reel by viewModel.reel.collectAsStateWithLifecycle()
+    val listen by viewModel.listen.collectAsStateWithLifecycle()
+    ListenFlow(listen, viewModel)
+    val pastePromptText = rememberPasteAction(onPasted = viewModel::setPromptText, onEmpty = {})
     val scrollState = rememberScrollState()
     val errorText = stringResource(R.string.add_reply_error)
     LaunchedEffect(viewModel) {
@@ -352,7 +355,7 @@ private fun ColumnScope.ChatbotStage(ui: AddRecipeUi.Chatbot, viewModel: AddReci
             color = colors.textPrimary,
             modifier = Modifier.semantics { heading() },
         )
-        reel?.let { ReelCardView(it) }
+        reel?.let { ReelCardView(it, listen, viewModel.listenActions(pastePromptText)) }
         Text(
             text = stringResource(R.string.add_step_prompt),
             style = SimmerTextStyle_Heading5,
@@ -527,6 +530,8 @@ private fun ColumnScope.PasteStage(
     val textLabel = stringResource(R.string.add_recipe_text)
     val askNotificationPermission = rememberNotificationPermissionRequest()
     val reel by viewModel.reel.collectAsStateWithLifecycle()
+    val listen by viewModel.listen.collectAsStateWithLifecycle()
+    ListenFlow(listen, viewModel)
     val shared by viewModel.shared.collectAsStateWithLifecycle()
 
     TopRow(stringResource(R.string.add_caption_new), onBack)
@@ -547,7 +552,7 @@ private fun ColumnScope.PasteStage(
             Text(text = stringResource(R.string.add_intro), style = SimmerTextStyle_BodyMd, color = colors.textSecondary)
         }
 
-        reel?.let { ReelCardView(it) }
+        reel?.let { ReelCardView(it, listen, viewModel.listenActions(pasteText)) }
 
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             Row(
