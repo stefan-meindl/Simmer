@@ -457,6 +457,45 @@
     </plurals>
     <string name="reel_not_found">Keine Beschreibung gefunden. Du kannst den Text unten einfügen.</string>
     <string name="reel_listen">Reel anhören</string>
-    <string name="reel_listen_soon">Bald verfügbar</string>
+    <string name="reel_listen_hint">Simmer hört zu, während du das Reel in Instagram abspielst.</string>
+
+    <!-- Listen: transcribe the Reel's sound on this phone -->
+    <string name="listen_transcript_label">Transkript</string>
+    <string name="listen_explainer_title">Reel anhören</string>
+    <string name="listen_explainer_body">Simmer nimmt nur den Ton des Reels auf, nicht dein Mikrofon. Das Reel wird in Instagram geöffnet; spiele es dort ab und tippe dann in der Benachrichtigung auf Stopp. Der Ton bleibt auf diesem Handy und wird nach der Umwandlung in Text gelöscht.</string>
+    <string name="listen_overlay_title">Schwebende Stopp-Taste?</string>
+    <string name="listen_overlay_body">Simmer kann beim Zuhören eine kleine Stopp-Taste über Instagram anzeigen. Dafür ist \"Über anderen Apps einblenden\" nötig. Du kannst das überspringen; Stopp in der Benachrichtigung funktioniert immer.</string>
+    <string name="listen_overlay_allow">Erlauben</string>
+    <string name="listen_overlay_skip">Überspringen</string>
+    <string name="listen_continue">Weiter</string>
+    <string name="listen_cancel">Abbrechen</string>
+    <string name="listen_download_title">Sprachmodell laden?</string>
+    <string name="listen_download_body">Zum Anhören braucht Simmer ein Sprachmodell von %1$s. Es wird einmal geladen und funktioniert danach ohne Internet.</string>
+    <string name="listen_size_megabytes">%1$d MB</string>
+    <string name="listen_download">Laden</string>
+    <string name="listen_downloading">Sprachmodell wird geladen · %1$d %%</string>
+    <string name="listen_downloading_waiting">Download des Sprachmodells wartet auf eine Verbindung · %1$d %%</string>
+    <string name="listen_download_failed">Das Sprachmodell konnte nicht geladen werden.</string>
+    <string name="listen_download_no_storage">Nicht genug freier Speicher für das Sprachmodell.</string>
+    <string name="listen_permission_denied">Simmer braucht die Audio-Berechtigung, um den Ton des Reels aufzunehmen. Dein Mikrofon wird nie aufgenommen.</string>
+    <string name="listen_capturing">Höre zu · %1$s</string>
+    <string name="listen_capturing_hint">Spiele das Reel in Instagram ab und tippe dann auf Stopp.</string>
+    <string name="listen_stop">Stopp</string>
+    <string name="listen_transcribing">Wird transkribiert…</string>
+    <string name="listen_silent">Kein Ton aufgenommen</string>
+    <string name="listen_cancelled">Anhören abgebrochen.</string>
+    <string name="listen_interrupted">Das Anhören wurde unterbrochen. Versuche es erneut.</string>
+    <string name="listen_failed_capture">Simmer konnte den Ton des Reels nicht aufnehmen.</string>
+    <string name="listen_failed_transcribe">Simmer konnte den Ton nicht in Text umwandeln.</string>
+    <string name="listen_retry">Erneut versuchen</string>
+    <string name="listen_paste">Einfügen</string>
+    <string name="listen_dismiss">Schließen</string>
+    <string name="listen_channel_capture">Zuhören</string>
+    <string name="listen_channel_done">Transkript</string>
+    <string name="listen_notification_title">Reel wird angehört</string>
+    <string name="listen_notification_text">Spiele das Reel in Instagram ab. Tippe auf Stopp, wenn es zu Ende ist.</string>
+    <string name="listen_ready_title">Transkript fertig</string>
+    <string name="listen_silent_title">Kein Ton aufgenommen</string>
+    <string name="whisper_notification_title">Sprachmodell wird geladen</string>
 
 </resources>

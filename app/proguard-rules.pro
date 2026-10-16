@@ -3,3 +3,6 @@
 # parent stayed package-private, crashing at startup with IllegalAccessError
 # (kotlin.sequences.d extended by yz2). Keep their names so the hierarchy stays in one package.
 -keepnames class kotlin.**Kt**
+
+# Listen: the JNI function names of whisper.cpp are bound to this class and its method names.
+-keep class com.simmer.app.listen.WhisperLib { native <methods>; }

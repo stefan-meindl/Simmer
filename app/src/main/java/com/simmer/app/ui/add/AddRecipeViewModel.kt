@@ -9,9 +9,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.simmer.app.data.AddRecipeSession
 import com.simmer.app.data.CaptionFetcher
+import com.simmer.app.data.ListenSession
 import com.simmer.app.data.ReelCard
 import com.simmer.app.data.ReelImport
 import com.simmer.app.data.ShareInbox
+import com.simmer.app.domain.ListenState
 import com.simmer.app.domain.SharedContent
 import com.simmer.app.domain.readSharedText
 import com.simmer.app.domain.withCaption
@@ -134,6 +136,7 @@ class AddRecipeViewModel @Inject constructor(
     readerState: ReaderStateSource,
     fetcher: CaptionFetcher,
     private val inbox: ShareInbox,
+    private val listenSession: ListenSession,
     @ApplicationContext private val context: Context,
 ) : ViewModel() {
 
@@ -166,10 +169,40 @@ class AddRecipeViewModel @Inject constructor(
     }
 
     /** The caption's label line in the Settings language, which may differ from the device's. */
-    private fun captionLabel(lang: String): String {
+    private fun captionLabel(lang: String): String = labelIn(lang, R.string.reel_caption_label)
+
+    private fun labelIn(lang: String, id: Int): String {
         val config = Configuration(context.resources.configuration).apply { setLocale(Locale(lang)) }
-        return context.createConfigurationContext(config).getString(R.string.reel_caption_label)
+        return context.createConfigurationContext(config).getString(id)
     }
+
+    /** Listen: the shared run, its state shown on the Reel card. */
+    val listen: StateFlow<ListenState> = listenSession.state
+
+    /** The shared Reel link Listen opens in Instagram; null when the text did not come from a Reel. */
+    val reelUrl: String? get() = reelImport.sourceUrl
+
+    fun listen() = listenSession.listen()
+    fun confirmListenDownload() = listenSession.confirmDownload()
+    fun cancelListen() = listenSession.cancel()
+    fun stopListen() = listenSession.stop()
+    fun listenPermissionGranted() = listenSession.permissionGranted()
+    fun listenPermissionDenied() = listenSession.permissionDenied()
+    fun listenConsentDenied() = listenSession.consentDenied()
+    fun dismissListen() = listenSession.dismiss()
+
+    /** The Reel card's Listen buttons; [paste] puts the clipboard into the stage's text field. */
+    internal fun listenActions(paste: () -> Unit) = ListenCardActions(
+        onListen = ::listen,
+        onConfirmDownload = ::confirmListenDownload,
+        onStop = ::stopListen,
+        onCancel = ::cancelListen,
+        onDismiss = ::dismissListen,
+        onPaste = {
+            dismissListen()
+            paste()
+        },
+    )
 
     /** The Reel card on the paste stage; null unless the user arrived by sharing an Instagram link. */
     val reel: StateFlow<ReelCard?> = reelImport.card.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
@@ -228,6 +261,17 @@ class AddRecipeViewModel @Inject constructor(
         // A conversion that was running when the process died resumes (or shows the error stage).
         job.restore()
         reelImport.resume()
+        listenSession.restore()
+        // A finished transcript (also one that was waiting since before process death) goes into the field once.
+        viewModelScope.launch {
+            listenSession.state.collect { state ->
+                if (state is ListenState.Done) {
+                    setText(withCaption(text.value, state.transcript, labelIn(prefs.lang.first(), R.string.listen_transcript_label)))
+                    fillChatbotPrompt()
+                    listenSession.acknowledge()
+                }
+            }
+        }
         // A share waits in the inbox while a recipe is being converted or reviewed, so it cannot destroy that work.
         viewModelScope.launch {
             combine(inbox.pending.filterNotNull(), busy) { shared, busy -> shared.takeUnless { busy } }
